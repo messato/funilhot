@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.utmify.com.br; style-src 'self' 'unsafe-inline'; img-src 'self' https://i.imgur.com data:; connect-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" />
+  <title>VIP agatha</title>
+  <style>
+    :root {
+      --azul:       #00AFF0;
+      --azul-dark:  #0077B6;
+      --cinza-bg:   #f2f2f2;
+      --cinza-card: #ffffff;
+      --texto:      #1a1a1a;
+      --texto-leve: #666666;
+      --amarelo:    #FFD600;
+      --amarelo-txt:#7a5c00;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--cinza-bg);
+      color: var(--texto);
+      min-height: 100vh;
+      padding-bottom: 90px;
+    }
+    .header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 56px;
+      background: #fff;
+      box-shadow: 0 1px 8px rgba(0,0,0,.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .logo { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; }
+    .logo span { color: var(--azul); }
+    .capa-wrap { margin-top: 56px; position: relative; }
+    .capa { width: 100%; height: 180px; object-fit: cover; object-position: center 60%; display: block; }
+    .stats-badge {
+      position: absolute; bottom: 10px; right: 12px;
+      background: rgba(0,0,0,.5); color: #fff;
+      font-size: 12px; padding: 4px 10px; border-radius: 8px;
+      backdrop-filter: blur(4px);
+    }
+    .perfil-wrap { padding: 0 16px; position: relative; }
+    .avatar {
+      width: 80px; height: 80px; border-radius: 50%;
+      border: 4px solid #fff; object-fit: cover;
+      position: absolute; top: -40px; left: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.15);
+    }
+    .nome-wrap { padding-top: 48px; }
+    .nome { display: flex; align-items: center; gap: 6px; font-size: 20px; font-weight: 800; }
+    .badge-verificado {
+      width: 20px; height: 20px;
+      display: inline-block;
+      flex-shrink: 0;
+      vertical-align: middle;
+      background-image: url('https://i.imgur.com/ueIQzoM.png');
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+    .badge-verificado::after { content: ''; }
+    .username { color: var(--texto-leve); font-size: 14px; margin-top: 2px; }
+    .secao { padding: 20px 16px; }
+    .bio-titulo { font-size: 17px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+    .bio-texto { color: var(--texto-leve); font-size: 15px; line-height: 1.6; }
+    .bio-lista { list-style: none; margin: 10px 0; }
+    .bio-lista li { margin-bottom: 4px; font-size: 15px; }
+    .gatilhos {
+      margin: 0 16px 20px; background: #e8f7fd;
+      border: 1px solid #b3e0f7; border-radius: 16px; padding: 14px 16px;
+    }
+    .gatilhos p { font-size: 14px; color: #1a4f6e; margin-bottom: 6px; }
+    .gatilhos p:last-child { margin-bottom: 0; }
+    .planos { padding: 0 16px 24px; }
+    .planos-titulo { font-size: 18px; font-weight: 800; margin-bottom: 14px; }
+    .plano-btn {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; background: var(--azul); color: #fff;
+      border: none; border-radius: 18px; padding: 16px 18px; margin-bottom: 12px;
+      cursor: pointer; font-size: 15px; font-weight: 700; text-decoration: none;
+      transition: transform .15s; box-shadow: 0 4px 16px rgba(0,175,240,.3);
+      position: relative;
+    }
+    .plano-btn:active { transform: scale(.97); }
+    .plano-destaque {
+      background: linear-gradient(135deg, var(--azul) 0%, var(--azul-dark) 100%);
+      box-shadow: 0 4px 20px rgba(0,119,182,.4);
+      border: 2px solid var(--amarelo);
+      margin-top: 20px;
+    }
+    .plano-destaque-badge {
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+      background: var(--amarelo); color: var(--amarelo-txt);
+      font-size: 11px; font-weight: 900; padding: 4px 14px;
+      border-radius: 99px; white-space: nowrap; letter-spacing: .3px;
+    }
+    .plano-esquerda { text-align: left; }
+    .plano-nome { font-size: 15px; font-weight: 800; }
+    .plano-sub { font-size: 12px; opacity: .75; margin-top: 2px; }
+    .plano-tag {
+      display: inline-block; background: rgba(255,255,255,.25);
+      font-size: 11px; font-weight: 700; padding: 2px 8px;
+      border-radius: 99px; margin-top: 4px;
+    }
+    .plano-tag-amarela { background: var(--amarelo); color: var(--amarelo-txt); }
+    .plano-preco { font-size: 20px; font-weight: 900; white-space: nowrap; margin-left: 12px; }
+    /* CONTEÚDO */
+    .conteudo { padding: 0 16px; }
+    .secao-titulo { font-size: 18px; font-weight: 800; margin-bottom: 14px; }
+    .grid-posts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .post-card { background: #ddd; border-radius: 12px; overflow: hidden; }
+    .post-thumb {
+      height: 130px; background: linear-gradient(135deg,#c8c8c8,#e0e0e0);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .icone-cadeado { font-size: 28px; }
+    .post-stats { padding: 8px 10px; font-size: 12px; color: #666; background: #fff; }
+    .comentarios { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .comentario-card { background: #fff; border-radius: 12px; padding: 12px; }
+    .comentario-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .comentario-user { font-size: 13px; font-weight: 700; }
+    .comentario-tempo { font-size: 12px; color: #aaa; }
+    .comentario-blur { font-size: 13px; color: transparent; text-shadow: 0 0 8px rgba(0,0,0,.5); margin-bottom: 8px; user-select: none; }
+    .btn-desbloquear {
+      width: 100%; background: var(--azul); color: #fff;
+      border: none; border-radius: 8px; padding: 8px;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    /* RODAPÉ FIXO */
+    .rodape-fixo {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #fff; padding: 12px 16px;
+      box-shadow: 0 -2px 16px rgba(0,0,0,.1); z-index: 99;
+    }
+    .rodape-btn {
+      width: 100%; background: linear-gradient(135deg, var(--azul), var(--azul-dark));
+      color: #fff; border: none; border-radius: 14px; padding: 16px;
+      font-size: 15px; font-weight: 900; cursor: pointer; letter-spacing: .3px;
+    }
+    /* POPUP */
+    .popup-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.6); z-index: 200;
+      align-items: flex-end; justify-content: center;
+    }
+    .popup-overlay.ativo { display: flex; }
+    .popup-card {
+      background: #fff; border-radius: 24px 24px 0 0;
+      padding: 24px 20px 32px; width: 100%; max-width: 480px;
+    }
+    .popup-cabecalho { text-align: center; margin-bottom: 20px; position: relative; }
+    .popup-fechar {
+      position: absolute; top: 0; right: 0;
+      background: #f0f0f0; border: none; border-radius: 50%;
+      width: 32px; height: 32px; font-size: 14px; cursor: pointer;
+    }
+    .popup-emoji { font-size: 36px; display: block; margin-bottom: 8px; }
+    .popup-titulo { font-size: 24px; font-weight: 900; }
+    .popup-sub { color: var(--texto-leve); font-size: 14px; margin-top: 4px; }
+    .popup-preco-box { text-align: center; margin-bottom: 20px; }
+    .popup-preco-antigo { font-size: 16px; color: #bbb; text-decoration: line-through; }
+    .popup-preco-novo { font-size: 40px; font-weight: 900; color: var(--azul); }
+    .popup-preco-desc { font-size: 13px; color: var(--texto-leve); margin-top: 4px; }
+    .popup-aceitar {
+      display: block; width: 100%;
+      background: linear-gradient(135deg, var(--azul), var(--azul-dark));
+      color: #fff; border: none; border-radius: 14px; padding: 16px;
+      font-size: 16px; font-weight: 900; text-align: center;
+      cursor: pointer; text-decoration: none; margin-bottom: 10px;
+    }
+    .popup-recusar {
+      display: block; width: 100%; background: none; border: none;
+      color: #aaa; font-size: 13px; padding: 8px; cursor: pointer; text-align: center;
+    }
+    @media (min-width: 520px) {
+      body { max-width: 480px; margin: 0 auto; }
+      .capa { height: 220px; }
+    }
+  </style>
+  <!-- UTMIFY: captura UTMs e repassa para links de pagamento -->
+  <script
+    src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+    data-utmify-prevent-xcod-sck
+    data-utmify-prevent-subids
+    async
+    defer
+  ></script>
+</head>
+<body>
+
+ <header class="header">
+  <img 
+    src="https://i.imgur.com/zAOmcVw.png" 
+    alt="VIPP agatha"
+    style="width:180px; height:auto;"
+  >
+</header>
+
+
+  <div class="capa-wrap">
+    <img class="capa" src="https://i.imgur.com/ZNnVDZJ.png" alt="Capa Agatha" draggable="false" oncontextmenu="return false;" />
+    <div class="stats-badge">243 posts • 4,8k likes</div>
+    <div class="perfil-wrap">
+      <img class="avatar" src="https://i.imgur.com/vGKSqLm.png" alt="Agatha" draggable="false" oncontextmenu="return false;" />
+    </div>
+  </div>
+
+  <div class="perfil-wrap">
+    <div class="nome-wrap">
+      <div class="nome">Agatha Luisa <span class="badge-verificado"></span></div>
+      <div class="username">@eu_agathaluisa</div>
+    </div>
+  </div>
+
+  <div class="secao">
+    <p class="bio-titulo">Conteúdos exclusivos para Adultos 🔞</p>
+    <p class="bio-texto">Não publicados nas redes sociais</p>
+    <ul class="bio-lista bio-texto">
+      <li>🔥 Fotos inéditas</li>
+      <li>🔥 Vídeos exclusivos</li>
+      <li>🔥 Bastidores</li>
+      <li>🔥 Conteúdos mais provocativos</li>
+    </ul>
+    <p class="bio-texto">Entre agora e descubra meu lado mais exclusivo...</p>
+  </div>
+
+  <div class="gatilhos">
+    <p>🔥 Mais de <strong>4.800 membros</strong> já passaram pelo VIP</p>
+    <p>⚡ Acesso liberado <strong>imediatamente</strong> após confirmação</p>
+    <p>🔞 Conteúdo exclusivo para <strong>maiores de 18 anos</strong></p>
+  </div>
+
+  <!-- ==========================================
+       PLANOS — 3 opções conforme funil
+  ========================================== -->
+  <div class="planos" id="planos">
+    <p class="planos-titulo">Escolha seu plano:</p>
+
+    <!-- PLANO MENSAL -->
+    <a class="plano-btn" href="upsell-mensal.html">
+      <div class="plano-esquerda">
+        <div class="plano-nome">Mensal — 30 dias</div>
+        <div class="plano-sub">Acesso Premium</div>
+      </div>
+      <div class="plano-preco">R$ 39,90</div>
+    </a>
+
+    <!-- PLANO TRIMESTRAL — destaque -->
+    <a class="plano-btn plano-destaque" href="upsell-trimestral.html">
+      <span class="plano-destaque-badge">🔥 MAIS ESCOLHIDO</span>
+      <div class="plano-esquerda">
+        <div class="plano-nome">Trimestral — 90 dias</div>
+        <div class="plano-sub">Melhor custo-benefício</div>
+        <span class="plano-tag plano-tag-amarela">Economize 18%</span>
+      </div>
+      <div class="plano-preco">R$ 97,90</div>
+    </a>
+
+    <!-- PLANO ANUAL -->
+    <a class="plano-btn"
+       href="https://app.pushinpay.com.br/service/pay/SEU_LINK_ANUAL"´´´
+       target="_blank" rel="noopener noreferrer">
+      <div class="plano-esquerda">
+        <div class="plano-nome">Anual</div>
+        <div class="plano-sub">Acesso completo por 1 ano</div>
+        <span class="plano-tag">Melhor preço/dia</span>
+      </div>
+      <div class="plano-preco">R$ 297,00</div>
+    </a>
+
+  </div>
+
+  <div class="conteudo">
+    <h2 class="secao-titulo">Conteúdo Premium</h2>
+    <div class="grid-posts">
+      <div class="post-card">
+        <div class="post-thumb"><span class="icone-cadeado">🔒</span></div>
+        <div class="post-stats">❤️ 2.360 &nbsp; 💬 508</div>
+      </div>
+      <div class="post-card">
+        <div class="post-thumb"><span class="icone-cadeado">🔒</span></div>
+        <div class="post-stats">❤️ 1.847 &nbsp; 💬 342</div>
+      </div>
+      <div class="post-card">
+        <div class="post-thumb"><span class="icone-cadeado">🔒</span></div>
+        <div class="post-stats">❤️ 3.012 &nbsp; 💬 621</div>
+      </div>
+      <div class="post-card">
+        <div class="post-thumb"><span class="icone-cadeado">🔒</span></div>
+        <div class="post-stats">❤️ 2.105 &nbsp; 💬 487</div>
+      </div>
+    </div>
+    <div class="comentarios">
+      <div class="comentario-card">
+        <div class="comentario-header">
+          <span class="comentario-user">@RJ_Carlos</span>
+          <span class="comentario-tempo">2h atrás</span>
+        </div>
+        <div class="comentario-blur">🔥 Cara isso aqui é incrível, nunca vi nada igual mto bom mesmo</div>
+        <button class="btn-desbloquear" onclick="irParaPlanos()">🔒 Desbloquear Conteúdo</button>
+      </div>
+      <div class="comentario-card">
+        <div class="comentario-header">
+          <span class="comentario-user">@SP_Lucas</span>
+          <span class="comentario-tempo">5h atrás</span>
+        </div>
+        <div class="comentario-blur">💪 Melhor conteúdo que já assisti, vale muito cada centavo</div>
+        <button class="btn-desbloquear" onclick="irParaPlanos()">🔒 Desbloquear Conteúdo</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="rodape-fixo">
+    <button class="rodape-btn" onclick="irParaPlanos()">
+      🔒 DESBLOQUEAR TODOS OS CONTEÚDOS 🔒
+    </button>
+  </div>
+
+  <!-- POPUP DE SAÍDA -->
+  <div class="popup-overlay" id="popup-saida">
+    <div class="popup-card">
+      <div class="popup-cabecalho">
+        <button class="popup-fechar" onclick="fecharPopup()">✕</button>
+        <span class="popup-emoji">⚠️</span>
+        <h2 class="popup-titulo">ESPERE!</h2>
+        <p class="popup-sub">Oferta especial antes de sair...</p>
+      </div>
+      <div class="popup-corpo">
+        <div class="popup-preco-box">
+          <div class="popup-preco-antigo">R$ 97,90</div>
+          <div class="popup-preco-novo">R$ 88,11</div>
+          <div class="popup-preco-desc">Trimestral com 10% OFF exclusivo</div>
+        </div>
+        <a class="popup-aceitar"
+           href="upsell-trimestral.html"
+           onclick="fecharPopup()">
+          🔥 QUERO APROVEITAR
+        </a>
+        <button class="popup-recusar" onclick="fecharPopup()">
+          Não, prefiro pagar mais depois
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function irParaPlanos() {
+      document.getElementById('planos').scrollIntoView({ behavior: 'smooth' });
+    }
+    let popupMostrado = false;
+    document.addEventListener('mouseleave', function(e) {
+      if (e.clientY <= 0 && !popupMostrado) {
+        popupMostrado = true;
+        document.getElementById('popup-saida').classList.add('ativo');
+      }
+    });
+    function fecharPopup() {
+      document.getElementById('popup-saida').classList.remove('ativo');
+    }
+    document.getElementById('popup-saida').addEventListener('click', function(e) {
+      if (e.target === this) fecharPopup();
+    });
+  </script>
+</body>
+</html>

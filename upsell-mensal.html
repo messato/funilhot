@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.utmify.com.br; style-src 'self' 'unsafe-inline'; img-src 'self' https://i.imgur.com data:; connect-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" />
+  <title>VIP agatha — Upgrade Trimestral</title>
+  <style>
+    :root {
+      --azul: #00AFF0; --azul-dark: #0077B6;
+      --cinza-bg: #f2f2f2; --texto: #1a1a1a; --texto-leve: #666;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--cinza-bg); color: var(--texto); min-height: 100vh; }
+    .header { height: 56px; background: #fff; box-shadow: 0 1px 8px rgba(0,0,0,.1); display: flex; align-items: center; justify-content: center; }
+    .logo { font-size: 20px; font-weight: 900; }
+    .logo span { color: var(--azul); }
+    .pagina { max-width: 420px; margin: 0 auto; padding: 32px 20px 40px; }
+    .badge-topo { display: flex; justify-content: center; margin-bottom: 24px; }
+    .badge-topo span { background: #FFD600; color: #7a5c00; font-size: 12px; font-weight: 900; padding: 6px 18px; border-radius: 99px; }
+    .titulo { font-size: 26px; font-weight: 900; text-align: center; line-height: 1.25; margin-bottom: 10px; }
+    .subtitulo { text-align: center; color: var(--texto-leve); font-size: 15px; margin-bottom: 28px; }
+    .subtitulo strong { color: var(--azul); }
+    .card-preco { background: linear-gradient(135deg, var(--azul), var(--azul-dark)); border-radius: 20px; padding: 28px 24px; color: #fff; text-align: center; margin-bottom: 20px; box-shadow: 0 8px 32px rgba(0,119,182,.35); }
+    .card-preco .label { font-size: 13px; opacity: .75; margin-bottom: 4px; }
+    .card-preco .valor { font-size: 52px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+    .card-preco .obs { font-size: 13px; opacity: .7; }
+    .card-preco .itens { margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.2); text-align: left; display: flex; flex-direction: column; gap: 6px; }
+    .card-preco .itens p { font-size: 14px; opacity: .9; }
+    .comparacao { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 24px; font-size: 14px; }
+    .comparacao-linha { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
+    .comparacao-linha:last-child { border-bottom: none; }
+    .comparacao-linha .label { color: var(--texto-leve); }
+    .comparacao-linha .valor-out { color: #bbb; text-decoration: line-through; }
+    .comparacao-linha .valor-ok { color: var(--azul); font-weight: 800; }
+    .economia { text-align: right; font-size: 12px; color: #22c55e; font-weight: 700; margin-top: 6px; }
+    .btn-sim { display: block; width: 100%; background: linear-gradient(135deg, var(--azul), var(--azul-dark)); color: #fff; border: none; border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 900; text-align: center; cursor: pointer; text-decoration: none; margin-bottom: 12px; transition: transform .15s; }
+    .btn-sim:active { transform: scale(.97); }
+    .btn-nao { display: block; width: 100%; background: #e5e5e5; color: #888; border: none; border-radius: 14px; padding: 14px; font-size: 14px; font-weight: 600; text-align: center; cursor: pointer; text-decoration: none; }
+    .btn-nao:hover { background: #d5d5d5; }
+    .rodape-seguro { text-align: center; font-size: 12px; color: #aaa; margin-top: 16px; }
+    @media (min-width: 520px) { body { max-width: 480px; margin: 0 auto; } }
+  </style>
+  <!-- UTMIFY: captura UTMs e repassa para links de pagamento -->
+  <script
+    src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+    data-utmify-prevent-xcod-sck
+    data-utmify-prevent-subids
+    async
+    defer
+  ></script>
+</head>
+<body>
+   <header class="header">
+  <img 
+    src="https://i.imgur.com/zAOmcVw.png" 
+    alt="VIPP agatha"
+    style="width:180px; height:auto;"
+  >
+</header>
+  <div class="pagina">
+    <div class="badge-topo"><span>⚠️ ESPERE!</span></div>
+    <h1 class="titulo">Seu acesso ainda<br/>não foi liberado.</h1>
+    <p class="subtitulo">Adicione mais <strong>60 dias</strong> e acesse por 90 dias no total:</p>
+
+    <div class="card-preco">
+      <div class="label">Upgrade para Trimestral</div>
+      <div class="valor">+ R$ 49,90</div>
+      <div class="obs">+60 dias — total de 90 dias de acesso</div>
+      <div class="itens">
+        <p>✅ Todo conteúdo atual e futuro</p>
+        <p>✅ Liberado imediatamente</p>
+        <p>✅ Sem custos adicionais</p>
+      </div>
+    </div>
+
+    <div class="comparacao">
+      <div class="comparacao-linha">
+        <span class="label">Plano Mensal (30 dias)</span>
+        <span class="valor-out">R$ 39,90</span>
+      </div>
+      <div class="comparacao-linha">
+        <span class="label">Total com upgrade (90 dias)</span>
+        <span class="valor-ok">R$ 89,80</span>
+      </div>
+      <p class="economia">🎯 Economize tempo e tenha 3x mais acesso!</p>
+    </div>
+
+    <!-- SIM → link do upgrade trimestral | NÃO → downsell mensal -->
+    <a class="btn-sim"
+       href="https://app.pushinpay.com.br/service/pay/SEU_LINK_UPSELL_MENSAL"
+       target="_blank" rel="noopener noreferrer">
+      SIM, QUERO OS 90 DIAS 🚀
+    </a>
+    <a class="btn-nao" href="downsell-mensal.html">
+      Não, continuar só com 30 dias
+    </a>
+    <p class="rodape-seguro">🔒 Pagamento seguro &nbsp;•&nbsp; Acesso imediato</p>
+  </div>
+
+  <!-- UTMIFY: back redirect — ao apertar "voltar", redireciona para downsell-mensal.html -->
+  <script>
+    (function() {
+      const link = 'downsell-mensal.html';
+      function setBackRedirect(url) {
+        let dest = url.trim() + (url.indexOf('?') > 0 ? '&' : '?') +
+          document.location.search.replace('?', '').toString();
+        history.pushState({}, '', location.href);
+        history.pushState({}, '', location.href);
+        history.pushState({}, '', location.href);
+        window.addEventListener('popstate', () => {
+          setTimeout(() => { location.href = dest; }, 1);
+        });
+      }
+      setBackRedirect(link);
+    })();
+  </script>
+</body>
+</html>

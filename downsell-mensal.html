@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.utmify.com.br; style-src 'self' 'unsafe-inline'; img-src 'self' https://i.imgur.com data:; connect-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" />
+  <title>VIP DORY — Última Oportunidade</title>
+  <style>
+    :root {
+      --vermelho: #ef4444; --vermelho-dark: #b91c1c;
+      --azul: #00AFF0; --cinza-bg: #f2f2f2; --texto: #1a1a1a; --texto-leve: #666;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--cinza-bg); color: var(--texto); min-height: 100vh; }
+    .header { height: 56px; background: #fff; box-shadow: 0 1px 8px rgba(0,0,0,.1); display: flex; align-items: center; justify-content: center; }
+    .logo { font-size: 20px; font-weight: 900; } .logo span { color: var(--azul); }
+    .pagina { max-width: 420px; margin: 0 auto; padding: 32px 20px 40px; }
+    .badge-topo { display: flex; justify-content: center; margin-bottom: 24px; }
+    .badge-topo span { background: var(--vermelho); color: #fff; font-size: 12px; font-weight: 900; padding: 6px 18px; border-radius: 99px; animation: pulsa 1.5s ease-in-out infinite; }
+    @keyframes pulsa { 0%, 100% { opacity: 1; } 50% { opacity: .7; } }
+    .titulo { font-size: 26px; font-weight: 900; text-align: center; line-height: 1.25; margin-bottom: 8px; }
+    .subtitulo { text-align: center; color: var(--texto-leve); font-size: 14px; margin-bottom: 28px; }
+    .card-preco { background: linear-gradient(135deg, var(--vermelho), #ec4899); border-radius: 20px; padding: 28px 24px; color: #fff; text-align: center; margin-bottom: 16px; box-shadow: 0 8px 32px rgba(239,68,68,.35); }
+    .card-preco .label { font-size: 13px; opacity: .8; margin-bottom: 4px; }
+    .card-preco .valor { font-size: 52px; font-weight: 900; line-height: 1; margin-bottom: 2px; }
+    .card-preco .obs { font-size: 12px; opacity: .7; }
+    .card-preco .itens { margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.2); text-align: left; display: flex; flex-direction: column; gap: 6px; }
+    .card-preco .itens p { font-size: 14px; opacity: .9; }
+    .aviso-economia { background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; padding: 14px 16px; margin-bottom: 24px; text-align: center; }
+    .aviso-economia p { font-size: 14px; color: #166534; font-weight: 700; }
+    .aviso-economia small { font-size: 12px; color: #16a34a; }
+    .btn-sim { display: block; width: 100%; background: linear-gradient(135deg, var(--vermelho), #ec4899); color: #fff; border: none; border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 900; text-align: center; cursor: pointer; text-decoration: none; margin-bottom: 12px; transition: transform .15s; }
+    .btn-sim:active { transform: scale(.97); }
+    .btn-nao { display: block; width: 100%; background: #e5e5e5; color: #888; border: none; border-radius: 14px; padding: 14px; font-size: 14px; font-weight: 600; text-align: center; cursor: pointer; text-decoration: none; }
+    .rodape-seguro { text-align: center; font-size: 12px; color: #aaa; margin-top: 16px; }
+    @media (min-width: 520px) { body { max-width: 480px; margin: 0 auto; } }
+  </style>
+  <!-- UTMIFY: captura UTMs e repassa para links de pagamento -->
+  <script
+    src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+    data-utmify-prevent-xcod-sck
+    data-utmify-prevent-subids
+    async
+    defer
+  ></script>
+</head>
+<body>
+  <header class="header">
+  <img 
+    src="https://i.imgur.com/zAOmcVw.png" 
+    alt="VIPP DORY"
+    style="width:180px; height:auto;"
+  >
+</header>
+  <div class="pagina">
+    <div class="badge-topo"><span>🚨 ÚLTIMA OPORTUNIDADE</span></div>
+    <h1 class="titulo">Última Oportunidade!</h1>
+    <p class="subtitulo">Esta oferta não aparecerá novamente.</p>
+
+    <div class="card-preco">
+      <div class="label">Adicione +60 dias por apenas</div>
+      <div class="valor">+ R$ 39,90</div>
+      <div class="obs">Oferta especial — menor preço disponível</div>
+      <div class="itens">
+        <p>✅ 90 dias de acesso completo</p>
+        <p>✅ Conteúdo exclusivo sem limites</p>
+        <p>✅ Liberado imediatamente</p>
+      </div>
+    </div>
+
+    <div class="aviso-economia">
+      <p>💰 R$ 10,00 a menos que a oferta anterior</p>
+      <small>Preço válido apenas agora</small>
+    </div>
+
+    <!-- SIM → link downsell mensal | NÃO → pagamento do plano mensal original -->
+    <a class="btn-sim"
+       href="https://app.pushinpay.com.br/service/pay/SEU_LINK_DOWNSELL_MENSAL"
+       target="_blank" rel="noopener noreferrer">
+      SIM, QUERO POR R$ 39,90 🔥
+    </a>
+    <a class="btn-nao"
+       href="https://app.pushinpay.com.br/service/pay/SEU_LINK_MENSAL_ORIGINAL"
+       target="_blank" rel="noopener noreferrer">
+      Não, continuar apenas com 30 dias
+    </a>
+    <p class="rodape-seguro">🔒 Pagamento seguro &nbsp;•&nbsp; Acesso imediato</p>
+  </div>
+
+  <!-- UTMIFY: back redirect — ao apertar "voltar", redireciona para upsell-mensal.html -->
+  <script>
+    (function() {
+      const link = 'upsell-mensal.html';
+      function setBackRedirect(url) {
+        let dest = url.trim() + (url.indexOf('?') > 0 ? '&' : '?') +
+          document.location.search.replace('?', '').toString();
+        history.pushState({}, '', location.href);
+        history.pushState({}, '', location.href);
+        history.pushState({}, '', location.href);
+        window.addEventListener('popstate', () => {
+          setTimeout(() => { location.href = dest; }, 1);
+        });
+      }
+      setBackRedirect(link);
+    })();
+  </script>
+</body>
+</html>

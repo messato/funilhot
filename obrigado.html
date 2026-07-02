@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.utmify.com.br; style-src 'self' 'unsafe-inline'; img-src 'self' https://i.imgur.com data:; connect-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" />
+  <title>VIP agatha — Acesso Liberado!</title>
+  <style>
+    :root {
+      --azul:      #00AFF0;
+      --azul-dark: #0077B6;
+      --verde:     #22c55e;
+      --cinza-bg:  #f2f2f2;
+      --texto:     #1a1a1a;
+      --texto-leve:#666;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--cinza-bg);
+      color: var(--texto);
+      min-height: 100vh;
+    }
+
+    .header {
+      height: 56px;
+      background: #fff;
+      box-shadow: 0 1px 8px rgba(0,0,0,.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo { font-size: 20px; font-weight: 900; }
+    .logo span { color: var(--azul); }
+
+    .pagina {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 40px 20px 40px;
+      text-align: center;
+    }
+
+    /* ícone de sucesso */
+    .icone-sucesso {
+      width: 90px; height: 90px;
+      background: #dcfce7;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
+      margin: 0 auto 24px;
+      animation: pop .5s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes pop {
+      0%   { transform: scale(.6); opacity: 0; }
+      70%  { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .titulo {
+      font-size: 28px;
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
+
+    .status-box {
+      background: #dcfce7;
+      border: 1px solid #86efac;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 20px;
+    }
+    .status-box p { font-size: 15px; color: #166534; font-weight: 700; }
+
+    .instrucoes {
+      color: var(--texto-leve);
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+    .instrucoes strong { color: var(--texto); }
+
+    /* botão principal */
+    .btn-acessar {
+      display: block;
+      width: 100%;
+      background: linear-gradient(135deg, var(--azul), var(--azul-dark));
+      color: #fff;
+      border: none;
+      border-radius: 16px;
+      padding: 18px;
+      font-size: 17px;
+      font-weight: 900;
+      text-align: center;
+      cursor: pointer;
+      text-decoration: none;
+      margin-bottom: 24px;
+      box-shadow: 0 6px 24px rgba(0,119,182,.35);
+      transition: transform .15s;
+      letter-spacing: .3px;
+    }
+    .btn-acessar:active { transform: scale(.97); }
+
+    /* passo a passo */
+    .como-acessar {
+      background: #e8f7fd;
+      border: 1px solid #b3e0f7;
+      border-radius: 16px;
+      padding: 18px 20px;
+      text-align: left;
+      margin-bottom: 28px;
+    }
+    .como-acessar .subtitulo-como {
+      font-size: 14px;
+      font-weight: 800;
+      color: #1a4f6e;
+      margin-bottom: 12px;
+    }
+    .passo {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      color: #1a4f6e;
+    }
+    .passo:last-child { margin-bottom: 0; }
+    .passo .num {
+      background: var(--azul);
+      color: #fff;
+      border-radius: 50%;
+      width: 22px; height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 900;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* suporte */
+    .suporte {
+      font-size: 13px;
+      color: #aaa;
+    }
+    .suporte a { color: var(--azul); font-weight: 700; text-decoration: none; }
+
+    .rodape-marca {
+      margin-top: 40px;
+      font-size: 12px;
+      color: #ccc;
+    }
+  </style>
+  <!-- UTMIFY: captura UTMs e repassa para links de pagamento -->
+  <script
+    src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+    data-utmify-prevent-xcod-sck
+    data-utmify-prevent-subids
+    async
+    defer
+  ></script>
+</head>
+<body>
+
+   <header class="header">
+  <img 
+    src="https://i.imgur.com/zAOmcVw.png" 
+    alt="VIPP agatha"
+    style="width:180px; height:auto;"
+  >
+</header>
+
+  <div class="pagina">
+
+    <div class="icone-sucesso">🎉</div>
+
+    <h1 class="titulo">Pagamento Confirmado!</h1>
+
+    <div class="status-box">
+      <p id="status-texto">✅ Seu acesso está sendo liberado...</p>
+    </div>
+
+    <!-- ==========================================
+         TEXTO
+    ========================================== -->
+    <p class="instrucoes">
+      Clique no botão abaixo para acessar imediatamente o
+      <strong>Telegram VIP</strong> e ter acesso a todo o
+      conteúdo exclusivo da Agatha.
+    </p>
+
+    <!-- ==========================================
+         BOTÃO PRINCIPAL
+         → troque o href pelo link do seu grupo Telegram
+    ========================================== -->
+    <a class="btn-acessar"
+       href="https://t.me/+LINK_DO_GRUPO_VIP"
+       target="_blank" rel="noopener noreferrer">
+      🔓 ACESSAR VIP AGORA
+    </a>
+
+    <!-- PASSO A PASSO -->
+    <div class="como-acessar">
+      <p class="subtitulo-como">📱 Como acessar:</p>
+      <div class="passo">
+        <span class="num">1</span>
+        <span>Clique no botão acima</span>
+      </div>
+      <div class="passo">
+        <span class="num">2</span>
+        <span>Abra o Telegram quando solicitado</span>
+      </div>
+      <div class="passo">
+        <span class="num">3</span>
+        <span>Solicite entrar no grupo VIP</span>
+      </div>
+      <div class="passo">
+        <span class="num">4</span>
+        <span>Aproveite todo o conteúdo! 🔥</span>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SUPORTE
+         → troque pelo seu arroba de suporte
+    ========================================== -->
+    <p class="suporte">
+      Problemas? Fale com o suporte:
+      <a href="https://t.me/suporte_agatha" target="_blank" rel="noopener noreferrer">@suporte_agatha</a>
+    </p>
+
+    <p class="rodape-marca">VIP agatha • Conteúdo Exclusivo</p>
+
+  </div>
+
+  <script>
+    // Animação de "liberando..." nos três pontinhos
+    const statusEl = document.getElementById('status-texto');
+    let pontos = 0;
+    setInterval(() => {
+      pontos = (pontos + 1) % 4;
+      statusEl.textContent = '✅ Seu acesso está sendo liberado' + '.'.repeat(pontos);
+    }, 500);
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.utmify.com.br; style-src 'self' 'unsafe-inline'; img-src 'self' https://i.imgur.com data:; connect-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" />
+  <title>VIP agatha — Oferta Final</title>
+  <style>
+    :root {
+      --laranja: #f97316; --laranja-dark: #c2410c;
+      --azul: #00AFF0; --cinza-bg: #f2f2f2; --texto: #1a1a1a; --texto-leve: #666;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--cinza-bg); color: var(--texto); min-height: 100vh; }
+    .header { height: 56px; background: #fff; box-shadow: 0 1px 8px rgba(0,0,0,.1); display: flex; align-items: center; justify-content: center; }
+    .logo { font-size: 20px; font-weight: 900; } .logo span { color: var(--azul); }
+    .pagina { max-width: 420px; margin: 0 auto; padding: 32px 20px 40px; }
+    .badge-topo { display: flex; justify-content: center; margin-bottom: 24px; }
+    .badge-topo span { background: var(--laranja); color: #fff; font-size: 12px; font-weight: 900; padding: 6px 18px; border-radius: 99px; }
+    .titulo { font-size: 26px; font-weight: 900; text-align: center; line-height: 1.25; margin-bottom: 8px; }
+    .subtitulo { text-align: center; color: var(--texto-leve); font-size: 14px; margin-bottom: 28px; }
+    .card-preco { background: linear-gradient(135deg, var(--laranja), var(--laranja-dark)); border-radius: 20px; padding: 28px 24px; color: #fff; text-align: center; margin-bottom: 16px; box-shadow: 0 8px 32px rgba(249,115,22,.35); }
+    .card-preco .label { font-size: 13px; opacity: .8; margin-bottom: 4px; }
+    .card-preco .valor { font-size: 52px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+    .card-preco .preco-antigo { font-size: 13px; opacity: .65; text-decoration: line-through; margin-top: 4px; }
+    .card-preco .economia { font-size: 13px; opacity: .85; }
+    .card-preco .itens { margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.2); text-align: left; display: flex; flex-direction: column; gap: 6px; }
+    .card-preco .itens p { font-size: 14px; opacity: .9; }
+    .aviso-urgencia { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 14px 16px; margin-bottom: 24px; text-align: center; }
+    .aviso-urgencia p { font-size: 14px; color: #9a3412; font-weight: 700; }
+    .aviso-urgencia small { font-size: 12px; color: #c2410c; }
+    .btn-sim { display: block; width: 100%; background: linear-gradient(135deg, var(--laranja), var(--laranja-dark)); color: #fff; border: none; border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 900; text-align: center; cursor: pointer; text-decoration: none; margin-bottom: 12px; transition: transform .15s; }
+    .btn-sim:active { transform: scale(.97); }
+    .btn-nao { display: block; width: 100%; background: #e5e5e5; color: #888; border: none; border-radius: 14px; padding: 14px; font-size: 14px; font-weight: 600; text-align: center; cursor: pointer; text-decoration: none; }
+    .rodape-seguro { text-align: center; font-size: 12px; color: #aaa; margin-top: 16px; }
+    @media (min-width: 520px) { body { max-width: 480px; margin: 0 auto; } }
+  </style>
+  <!-- UTMIFY: captura UTMs e repassa para links de pagamento -->
+  <script
+    src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+    data-utmify-prevent-xcod-sck
+    data-utmify-prevent-subids
+    async
+    defer
+  ></script>
+</head>
+<body>
+  <header class="header">
+  <img 
+    src="https://i.imgur.com/RElJt4D.png" 
+    alt="VIPP agatha"
+    style="width:180px; height:auto;"
+  >
+</header>
+  <div class="pagina">
+    <div class="badge-topo"><span>⏰ Última Chance</span></div>
+    <h1 class="titulo">Anual por<br/>ainda menos!</h1>
+    <p class="subtitulo">Esta é nossa oferta final. Não haverá outra.</p>
+
+    <div class="card-preco">
+      <div class="label">Upgrade Anual por apenas</div>
+      <div class="valor">+ R$ 119,90</div>
+      <div class="preco-antigo">De R$ 297,00</div>
+      <div class="economia">— Economia de R$ 177,10</div>
+      <div class="itens">
+        <p>✅ 1 ano de acesso completo</p>
+        <p>✅ Todo conteúdo atual e futuro</p>
+        <p>✅ Sem mensalidade por 12 meses</p>
+      </div>
+    </div>
+
+    <div class="aviso-urgencia">
+      <p>⚠️ Esta oferta desaparece quando você sair desta página</p>
+      <small>Menor preço disponível em toda a plataforma</small>
+    </div>
+
+    <!-- SIM → link downsell anual | NÃO → pagamento trimestral original -->
+    <a class="btn-sim"
+       href="https://app.pushinpay.com.br/service/pay/SEU_LINK_DOWNSELL_ANUAL"
+       target="_blank" rel="noopener noreferrer">
+      SIM, QUERO POR R$ 119,90 🔥
+    </a>
+    <a class="btn-nao"
+       href="https://app.pushinpay.com.br/service/pay/SEU_LINK_TRIMESTRAL_ORIGINAL"
+       target="_blank" rel="noopener noreferrer">
+      Não, continuar só com trimestral
+    </a>
+    <p class="rodape-seguro">🔒 Pagamento seguro &nbsp;•&nbsp; Acesso imediato</p>
+  </div>
+
+  <!-- UTMIFY: back redirect — ao apertar "voltar", redireciona para upsell-trimestral.html -->
+  <script>
+    (function() {
+      const link = 'upsell-trimestral.html';
+      function setBackRedirect(url) {
+        let dest = url.trim() + (url.indexOf('?') > 0 ? '&' : '?') +
+          document.location.search.replace('?', '').toString();
+        history.pushState({}, '', location.href);
+        history.pushState({}, '', location.href);
+        history.pushState({}, '', location.href);
+        window.addEventListener('popstate', () => {
+          setTimeout(() => { location.href = dest; }, 1);
+        });
+      }
+      setBackRedirect(link);
+    })();
+  </script>
+</body>
+</html>
