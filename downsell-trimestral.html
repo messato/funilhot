@@ -76,17 +76,31 @@
 
     <!-- SIM → link downsell anual | NÃO → pagamento trimestral original -->
     <a class="btn-sim"
-       href="https://app.pushinpay.com.br/service/pay/SEU_LINK_DOWNSELL_ANUAL"
-       target="_blank" rel="noopener noreferrer">
+       href="upsell-checkout.html?plan=trimestral&offer=downsell"
+       target="_self" rel="noopener noreferrer">
       SIM, QUERO POR R$ 119,90 🔥
     </a>
     <a class="btn-nao"
-       href="https://app.pushinpay.com.br/service/pay/SEU_LINK_TRIMESTRAL_ORIGINAL"
-       target="_blank" rel="noopener noreferrer">
+       href="obrigado.html"
+       target="_self" rel="noopener noreferrer">
       Não, continuar só com trimestral
     </a>
     <p class="rodape-seguro">🔒 Pagamento seguro &nbsp;•&nbsp; Acesso imediato</p>
   </div>
+
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      document.querySelectorAll('.btn-sim, .btn-nao').forEach((link) => {
+        const href = new URL(link.getAttribute('href'), window.location.href);
+        for (const [key, value] of params.entries()) {
+          if (key === 'plan' && href.searchParams.has('plan')) continue;
+          href.searchParams.set(key, value);
+        }
+        link.setAttribute('href', `${href.pathname}${href.search}`);
+      });
+    })();
+  </script>
 
   <!-- UTMIFY: back redirect — ao apertar "voltar", redireciona para upsell-trimestral.html -->
   <script>

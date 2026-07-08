@@ -55,16 +55,11 @@
     .nome-wrap { padding-top: 48px; }
     .nome { display: flex; align-items: center; gap: 6px; font-size: 20px; font-weight: 800; }
     .badge-verificado {
-      width: 20px; height: 20px;
-      display: inline-block;
-      flex-shrink: 0;
-      vertical-align: middle;
-      background-image: url('https://i.imgur.com/ueIQzoM.png');
-      background-size: 100% 100%;
-      background-repeat: no-repeat;
-      background-position: center;
+      width: 20px; height: 20px; background: var(--azul);
+      border-radius: 50%; display: inline-flex; align-items: center;
+      justify-content: center; flex-shrink: 0;
     }
-    .badge-verificado::after { content: ''; }
+    .badge-verificado::after { content: '✓'; color: #fff; font-size: 11px; font-weight: 900; }
     .username { color: var(--texto-leve); font-size: 14px; margin-top: 2px; }
     .secao { padding: 20px 16px; }
     .bio-titulo { font-size: 17px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
@@ -204,10 +199,10 @@
 
 
   <div class="capa-wrap">
-    <img class="capa" src="https://i.imgur.com/ZNnVDZJ.png" alt="Capa Agatha" draggable="false" oncontextmenu="return false;" />
+    <img class="capa" src="https://i.imgur.com/ZNnVDZJ.png" alt="Capa Agatha" />
     <div class="stats-badge">243 posts • 4,8k likes</div>
     <div class="perfil-wrap">
-      <img class="avatar" src="https://i.imgur.com/vGKSqLm.png" alt="Agatha" draggable="false" oncontextmenu="return false;" />
+      <img class="avatar" src="https://i.imgur.com/vGKSqLm.png" alt="Agatha" />
     </div>
   </div>
 
@@ -243,7 +238,7 @@
     <p class="planos-titulo">Escolha seu plano:</p>
 
     <!-- PLANO MENSAL -->
-    <a class="plano-btn" href="upsell-mensal.html">
+    <a class="plano-btn" href="checkout.html?plan=mensal">
       <div class="plano-esquerda">
         <div class="plano-nome">Mensal — 30 dias</div>
         <div class="plano-sub">Acesso Premium</div>
@@ -252,7 +247,7 @@
     </a>
 
     <!-- PLANO TRIMESTRAL — destaque -->
-    <a class="plano-btn plano-destaque" href="upsell-trimestral.html">
+    <a class="plano-btn plano-destaque" href="checkout.html?plan=trimestral">
       <span class="plano-destaque-badge">🔥 MAIS ESCOLHIDO</span>
       <div class="plano-esquerda">
         <div class="plano-nome">Trimestral — 90 dias</div>
@@ -264,8 +259,8 @@
 
     <!-- PLANO ANUAL -->
     <a class="plano-btn"
-       href="https://app.pushinpay.com.br/service/pay/SEU_LINK_ANUAL"´´´
-       target="_blank" rel="noopener noreferrer">
+       href="checkout.html?plan=anual"
+       target="_self" rel="noopener noreferrer">
       <div class="plano-esquerda">
         <div class="plano-nome">Anual</div>
         <div class="plano-sub">Acesso completo por 1 ano</div>
@@ -303,7 +298,7 @@
           <span class="comentario-tempo">2h atrás</span>
         </div>
         <div class="comentario-blur">🔥 Cara isso aqui é incrível, nunca vi nada igual mto bom mesmo</div>
-        <button class="btn-desbloquear" onclick="irParaPlanos()">🔒 Acessar Conteúdo</button>
+        <button class="btn-desbloquear" onclick="irParaPlanos()">🔒 Desbloquear Conteúdo</button>
       </div>
       <div class="comentario-card">
         <div class="comentario-header">
@@ -311,14 +306,14 @@
           <span class="comentario-tempo">5h atrás</span>
         </div>
         <div class="comentario-blur">💪 Melhor conteúdo que já assisti, vale muito cada centavo</div>
-        <button class="btn-desbloquear" onclick="irParaPlanos()">🔒 Acessar Conteúdo</button>
+        <button class="btn-desbloquear" onclick="irParaPlanos()">🔒 Desbloquear Conteúdo</button>
       </div>
     </div>
   </div>
 
   <div class="rodape-fixo">
     <button class="rodape-btn" onclick="irParaPlanos()">
-       🔥 Acessar todos os conteúdos exclusivos 
+      🔒 DESBLOQUEAR TODOS OS CONTEÚDOS 🔒
     </button>
   </div>
 

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.utmify.com.br; style-src 'self' 'unsafe-inline'; img-src 'self' https://i.imgur.com data:; connect-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" />
+  <title>VIP agatha — Checkout</title>
+  <style>
+    :root {
+      --azul: #00AFF0;
+      --azul-dark: #0077B6;
+      --cinza-bg: #f2f2f2;
+      --cinza-card: #ffffff;
+      --texto: #1a1a1a;
+      --texto-leve: #666666;
+      --verde: #16a34a;
+      --verde-bg: #ecfdf3;
+      --borda: #e5e7eb;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--cinza-bg);
+      color: var(--texto);
+      min-height: 100vh;
+      padding-bottom: 32px;
+    }
+
+    .header {
+      height: 56px;
+      background: #fff;
+      box-shadow: 0 1px 8px rgba(0,0,0,.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pagina {
+      max-width: 460px;
+      margin: 0 auto;
+      padding: 24px 16px 0;
+    }
+
+    .topo {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #e8f7fd;
+      color: var(--azul-dark);
+      font-size: 12px;
+      font-weight: 800;
+      padding: 6px 12px;
+      border-radius: 999px;
+      margin-bottom: 10px;
+    }
+
+    .titulo {
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+
+    .subtitulo {
+      color: var(--texto-leve);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .card-resumo,
+    .checkout-form {
+      background: var(--cinza-card);
+      border-radius: 18px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.06);
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    .card-label {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--texto-leve);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 10px;
+    }
+
+    .plan-name {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 10px;
+      border-top: 1px solid var(--borda);
+      margin-top: 10px;
+      font-size: 15px;
+      color: var(--texto-leve);
+    }
+
+    .price-row strong {
+      color: var(--texto);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .tag {
+      display: inline-block;
+      margin-top: 10px;
+      background: var(--verde-bg);
+      color: var(--verde);
+      font-size: 12px;
+      font-weight: 800;
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+
+    .campo {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 14px;
+      color: var(--texto);
+      background: #fff;
+      outline: none;
+    }
+
+    textarea { min-height: 90px; resize: vertical; }
+
+    input:focus,
+    textarea:focus {
+      border-color: var(--azul);
+      box-shadow: 0 0 0 3px rgba(0,175,240,.12);
+    }
+
+    .metodo-pagamento {
+      display: flex;
+      gap: 8px;
+      margin: 8px 0 14px;
+    }
+
+    .metodo {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 14px;
+      background: #fff;
+      color: var(--texto-leve);
+    }
+
+    .metodo.ativo {
+      border-color: var(--azul);
+      color: var(--azul-dark);
+      background: #e8f7fd;
+    }
+
+    .pix-card {
+      background: linear-gradient(135deg, #fff, #f7fbff);
+      border: 1px solid #b3e0f7;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .pix-title {
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .pix-card p {
+      font-size: 13px;
+      color: var(--texto-leve);
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    .pix-code {
+      font-size: 14px;
+      font-weight: 800;
+      background: #fff;
+      border: 1px dashed var(--azul);
+      border-radius: 10px;
+      padding: 10px;
+      word-break: break-all;
+      margin-bottom: 10px;
+    }
+
+    .btn-copiar,
+    .btn-submit {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform .15s ease;
+    }
+
+    .btn-copiar {
+      background: #e8f7fd;
+      color: var(--azul-dark);
+      margin-bottom: 8px;
+    }
+
+    .btn-submit {
+      background: linear-gradient(135deg, var(--azul), var(--azul-dark));
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(0,119,182,.25);
+    }
+
+    .btn-copiar:active,
+    .btn-submit:active {
+      transform: scale(.98);
+    }
+
+    .pix-status {
+      font-size: 12px;
+      color: var(--texto-leve);
+      text-align: center;
+    }
+
+    .status-box {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      display: none;
+    }
+
+    .status-box.erro {
+      display: block;
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .status-box.sucesso {
+      display: block;
+      background: var(--verde-bg);
+      color: #166534;
+      border: 1px solid #a7f3d0;
+    }
+
+    .seguro {
+      color: var(--texto-leve);
+      font-size: 12px;
+      text-align: center;
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+
+    @media (min-width: 520px) {
+      body { max-width: 480px; margin: 0 auto; }
+      .pagina { padding-top: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <img src="https://i.imgur.com/zAOmcVw.png" alt="VIP agatha" style="width:180px; height:auto;" />
+  </header>
+
+  <main class="pagina">
+    <div class="topo">
+      <span class="badge">🔒 Checkout Seguro</span>
+      <h1 class="titulo" id="checkout-title">Finalize seu acesso VIP</h1>
+      <p class="subtitulo" id="checkout-subtitle">Preencha os seus dados e finalize o pagamento por PIX.</p>
+    </div>
+
+    <section class="card-resumo">
+      <div class="card-label">Resumo do pedido</div>
+      <div class="plan-name" id="checkout-plan">Plano selecionado</div>
+      <div class="price-row">
+        <span>Valor</span>
+        <strong id="checkout-price">R$ 0,00</strong>
+      </div>
+      <div class="tag" id="checkout-duration">Acesso imediato após confirmação</div>
+    </section>
+
+    <form id="checkout-form" class="checkout-form">
+      <div class="campo">
+        <label for="nome">Nome completo</label>
+        <input id="nome" name="nome" required placeholder="Seu nome" />
+      </div>
+
+      <div class="campo">
+        <label for="email">E-mail</label>
+        <input id="email" name="email" type="email" required placeholder="seu@email.com" />
+      </div>
+
+      <div class="campo">
+        <label for="telefone">WhatsApp / telefone</label>
+        <input id="telefone" name="telefone" placeholder="(11) 99999-9999" />
+      </div>
+
+      <div class="metodo-pagamento">
+        <div class="metodo ativo">PIX</div>
+      </div>
+
+      <div class="pix-card">
+        <div class="pix-title">Pagamento por PIX</div>
+        <p>Após confirmar, você receberá o código PIX para copiar e pagar.</p>
+        <div class="pix-code" id="pix-code">PIX-AGATHA-0001</div>
+        <button type="button" class="btn-copiar" id="copy-pix">Copiar código PIX</button>
+        <div class="pix-status" id="pix-status">O código será gerado automaticamente para o seu pedido.</div>
+      </div>
+
+      <div class="status-box" id="form-status"></div>
+
+      <button type="submit" class="btn-submit" id="submit-btn">Finalizar pagamento</button>
+      <p class="seguro">🔒 Seus dados ficam protegidos e o fluxo já está preparado para integração com a API.</p>
+    </form>
+  </main>
+
+  <script src="checkout.js"></script>
+</body>
+</html>
