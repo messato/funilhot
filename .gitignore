@@ -1,1 +1,12 @@
 .DS_Store
+node_modules/
+
+# segredos — NUNCA commitar
+.env
+.env.*
+!.env.example
+
+# artefatos
+*.vsix
+.netlify/
+npm-debug.log*

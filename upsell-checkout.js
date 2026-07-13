@@ -1,70 +1,135 @@
 const params = new URLSearchParams(window.location.search);
 const plan = params.get('plan') || 'mensal';
-const offerType = params.get('offer') || 'upsell';
+const offerType = params.get('offer') === 'downsell' ? 'downsell' : 'upsell';
 
 const lead = {
   nome: params.get('nome') || 'Lead',
-  email: params.get('email') || 'não informado'
+  email: params.get('email') || 'não informado',
 };
 
-const config = {
-  mensal: {
-    title: offerType === 'downsell' ? 'Oferta Final Mensal' : 'Upgrade Mensal',
-    value: offerType === 'downsell' ? 'R$ 39,90' : 'R$ 49,90',
-    description: offerType === 'downsell'
-      ? 'Oferta especial para manter o acesso com mais 60 dias.'
-      : 'Mais 60 dias de acesso com o upgrade mensal.',
-    pixCode: offerType === 'downsell' ? 'PIX-DOWNSILL-MENSAL-03990' : 'PIX-UPSELL-MENSAL-04990'
+// Apenas exibição. O preço real é definido pelo servidor.
+const DISPLAY = {
+  upsell: {
+    mensal: { title: 'Upgrade Mensal', price: 'R$ 49,90', description: 'Mais 60 dias de acesso com o upgrade mensal.' },
+    trimestral: { title: 'Upgrade Trimestral', price: 'R$ 149,90', description: 'Mais 60 dias de acesso com o upgrade trimestral.' },
   },
-  trimestral: {
-    title: offerType === 'downsell' ? 'Oferta Final Trimestral' : 'Upgrade Trimestral',
-    value: offerType === 'downsell' ? 'R$ 119,90' : 'R$ 149,90',
-    description: offerType === 'downsell'
-      ? 'Última chance para manter o acesso com valor especial.'
-      : 'Mais 60 dias de acesso com o upgrade trimestral.',
-    pixCode: offerType === 'downsell' ? 'PIX-DOWNSILL-TRIMESTRAL-11990' : 'PIX-UPSELL-TRIMESTRAL-14990'
-  }
+  downsell: {
+    mensal: { title: 'Oferta Final Mensal', price: 'R$ 39,90', description: 'Oferta especial para manter o acesso com mais 60 dias.' },
+    trimestral: { title: 'Oferta Final Trimestral', price: 'R$ 119,90', description: 'Última chance para manter o acesso com valor especial.' },
+  },
 };
 
-const selected = config[plan] || config.mensal;
+const display = (DISPLAY[offerType] && DISPLAY[offerType][plan]) || DISPLAY.upsell.mensal;
 
-const titulo = document.getElementById('titulo');
-const valor = document.getElementById('valor');
-const descricao = document.getElementById('descricao');
-const leadNome = document.getElementById('lead-nome');
-const leadEmail = document.getElementById('lead-email');
-const pixCode = document.getElementById('pix-code');
-const copyBtn = document.getElementById('copy-pix');
-const confirmBtn = document.getElementById('confirmar-pagamento');
-const statusBox = document.getElementById('status-box');
+const el = (id) => document.getElementById(id);
+const titulo = el('titulo');
+const valor = el('valor');
+const descricao = el('descricao');
+const leadNome = el('lead-nome');
+const leadEmail = el('lead-email');
+const pixCodeEl = el('pix-code');
+const copyBtn = el('copy-pix');
+const confirmBtn = el('confirmar-pagamento');
+const statusBox = el('status-box');
 
-titulo.textContent = selected.title;
-valor.textContent = selected.value;
-descricao.textContent = selected.description;
+titulo.textContent = display.title;
+valor.textContent = display.price;
+descricao.textContent = display.description;
 leadNome.textContent = `Nome: ${lead.nome}`;
 leadEmail.textContent = `E-mail: ${lead.email}`;
-pixCode.textContent = selected.pixCode;
+pixCodeEl.textContent = 'Gerando código PIX...';
+
+let currentBrcode = '';
+let currentId = '';
+let pollTimer = null;
 
 copyBtn.addEventListener('click', async () => {
+  if (!currentBrcode) return;
   try {
-    await navigator.clipboard.writeText(selected.pixCode);
+    await navigator.clipboard.writeText(currentBrcode);
     statusBox.className = 'status-box sucesso';
-    statusBox.textContent = 'Código PIX copiado com sucesso.';
-  } catch (error) {
+    statusBox.textContent = 'Código PIX copiado! Cole no app do seu banco.';
+  } catch {
     statusBox.className = 'status-box erro';
     statusBox.textContent = 'Não foi possível copiar automaticamente.';
   }
 });
 
-confirmBtn.addEventListener('click', () => {
-  statusBox.className = 'status-box sucesso';
-  statusBox.textContent = 'Pagamento recebido. Redirecionando para a confirmação...';
+function showQr(qrImage) {
+  const ph = document.getElementById('qr-placeholder');
+  if (!qrImage || !ph) return;
+  const img = document.createElement('img');
+  img.src = qrImage;
+  img.alt = 'QR Code PIX';
+  img.style.cssText = 'width:180px;height:180px;object-fit:contain;border-radius:16px;background:#fff;';
+  ph.replaceWith(img);
+}
 
-  setTimeout(() => {
-    const nextUrl = new URL('obrigado.html', window.location.href);
-    nextUrl.searchParams.set('nome', lead.nome);
-    nextUrl.searchParams.set('email', lead.email);
-    nextUrl.searchParams.set('plan', plan);
-    window.location.href = nextUrl.toString();
-  }, 900);
-});
+function goToThankYou() {
+  const nextUrl = new URL('obrigado.html', window.location.href);
+  nextUrl.searchParams.set('nome', lead.nome);
+  nextUrl.searchParams.set('email', lead.email);
+  nextUrl.searchParams.set('plan', plan);
+  nextUrl.searchParams.set('id', currentId);
+  window.location.href = nextUrl.toString();
+}
+
+async function checkStatus(manual) {
+  if (!currentId) return;
+  try {
+    const res = await fetch(`/api/status?id=${encodeURIComponent(currentId)}`);
+    const data = await res.json().catch(() => ({}));
+    if (data.ok && data.paid) {
+      if (pollTimer) clearInterval(pollTimer);
+      statusBox.className = 'status-box sucesso';
+      statusBox.textContent = 'Pagamento confirmado! Redirecionando...';
+      setTimeout(goToThankYou, 800);
+    } else if (manual) {
+      statusBox.className = 'status-box erro';
+      statusBox.textContent = 'Ainda não identificamos o pagamento. Se já pagou, aguarde alguns segundos.';
+    }
+  } catch {
+    if (manual) {
+      statusBox.className = 'status-box erro';
+      statusBox.textContent = 'Não foi possível verificar agora. Tente de novo em instantes.';
+    }
+  }
+}
+
+confirmBtn.addEventListener('click', () => checkStatus(true));
+
+async function generateCharge() {
+  try {
+    const response = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ offer: offerType, plan, nome: lead.nome, email: lead.email }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.ok) {
+      throw new Error('Não foi possível gerar o PIX agora.');
+    }
+
+    const d = result.data;
+    currentBrcode = d.brcode || '';
+    currentId = d.id;
+    valor.textContent = d.price || display.price;
+    pixCodeEl.textContent = currentBrcode || 'Código indisponível';
+    showQr(d.qrImage);
+
+    statusBox.className = 'status-box sucesso';
+    statusBox.textContent = 'PIX gerado! Pague no app do banco — a confirmação é automática.';
+
+    if (d.status === 'paid') {
+      setTimeout(goToThankYou, 500);
+    } else {
+      pollTimer = setInterval(() => checkStatus(false), 4000);
+    }
+  } catch (error) {
+    pixCodeEl.textContent = 'Erro ao gerar PIX';
+    statusBox.className = 'status-box erro';
+    statusBox.textContent = error.message || 'Não foi possível gerar o PIX no momento.';
+  }
+}
+
+generateCharge();

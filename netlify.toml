@@ -1,0 +1,35 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# /api/* -> functions (sem isso o front chama /api/checkout e toma 404 em produção)
+[[redirects]]
+  from = "/api/checkout"
+  to = "/.netlify/functions/checkout"
+  status = 200
+
+[[redirects]]
+  from = "/api/status"
+  to = "/.netlify/functions/status"
+  status = 200
+
+[[redirects]]
+  from = "/api/webhook"
+  to = "/.netlify/functions/webhook"
+  status = 200
+
+# Não servir o código de backend como arquivo estático
+[[redirects]]
+  from = "/netlify/*"
+  to = "/index.html"
+  status = 404
+
+[[redirects]]
+  from = "/server.js"
+  to = "/index.html"
+  status = 404
+
+[[redirects]]
+  from = "/package.json"
+  to = "/index.html"
+  status = 404

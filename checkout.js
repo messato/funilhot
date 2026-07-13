@@ -1,98 +1,156 @@
 const params = new URLSearchParams(window.location.search);
 
-const planConfig = {
-  mensal: {
-    title: 'Plano Mensal',
-    price: 'R$ 39,90',
-    duration: '30 dias de acesso',
-    pixCode: 'PIX-MENSAL-001'
-  },
-  trimestral: {
-    title: 'Plano Trimestral',
-    price: 'R$ 97,90',
-    duration: '90 dias de acesso',
-    pixCode: 'PIX-TRIMESTRAL-001'
-  },
-  anual: {
-    title: 'Plano Anual',
-    price: 'R$ 297,00',
-    duration: '1 ano de acesso',
-    pixCode: 'PIX-ANUAL-001'
-  },
-  default: {
-    title: 'Plano selecionado',
-    price: 'R$ 0,00',
-    duration: 'Acesso imediato após confirmação',
-    pixCode: 'PIX-AGATHA-0001'
-  }
+// Apenas para exibição inicial (cosmético). O preço real vem do servidor.
+const DISPLAY = {
+  mensal: { title: 'Plano Mensal', price: 'R$ 39,90', duration: '30 dias de acesso' },
+  trimestral: { title: 'Plano Trimestral', price: 'R$ 97,90', duration: '90 dias de acesso' },
+  anual: { title: 'Plano Anual', price: 'R$ 297,00', duration: '1 ano de acesso' },
 };
 
-const selectedPlan = params.get('plan') || 'default';
-const config = planConfig[selectedPlan] || planConfig.default;
+const selectedPlan = params.get('plan') || 'mensal';
+const display = DISPLAY[selectedPlan] || DISPLAY.mensal;
 
-const checkoutTitle = document.getElementById('checkout-title');
-const checkoutSubtitle = document.getElementById('checkout-subtitle');
-const checkoutPlan = document.getElementById('checkout-plan');
-const checkoutPrice = document.getElementById('checkout-price');
-const checkoutDuration = document.getElementById('checkout-duration');
-const pixCode = document.getElementById('pix-code');
-const pixStatus = document.getElementById('pix-status');
-const copyPixButton = document.getElementById('copy-pix');
-const form = document.getElementById('checkout-form');
-const formStatus = document.getElementById('form-status');
+const el = (id) => document.getElementById(id);
+const checkoutTitle = el('checkout-title');
+const checkoutSubtitle = el('checkout-subtitle');
+const checkoutPlan = el('checkout-plan');
+const checkoutPrice = el('checkout-price');
+const checkoutDuration = el('checkout-duration');
+const pixCodeEl = el('pix-code');
+const pixStatus = el('pix-status');
+const copyPixButton = el('copy-pix');
+const form = el('checkout-form');
+const formStatus = el('form-status');
+const submitButton = el('submit-btn');
 
-checkoutTitle.textContent = `Finalize seu ${config.title.toLowerCase()}`;
-checkoutSubtitle.textContent = 'Preencha os seus dados e finalize o pagamento por PIX.';
-checkoutPlan.textContent = config.title;
-checkoutPrice.textContent = config.price;
-checkoutDuration.textContent = config.duration;
-pixCode.textContent = config.pixCode;
-pixStatus.textContent = `Código PIX preparado para ${config.title}.`;
+checkoutTitle.textContent = `Finalize seu ${display.title.toLowerCase()}`;
+checkoutSubtitle.textContent = 'Preencha seus dados e gere o PIX para pagar.';
+checkoutPlan.textContent = display.title;
+checkoutPrice.textContent = display.price;
+checkoutDuration.textContent = display.duration;
+pixCodeEl.textContent = 'O código PIX será gerado ao finalizar.';
+
+let currentBrcode = '';
+let currentId = '';
+let currentLead = { nome: '', email: '' };
+let pollTimer = null;
 
 copyPixButton.addEventListener('click', async () => {
+  if (!currentBrcode) {
+    pixStatus.textContent = 'Gere o PIX primeiro em "Finalizar pagamento".';
+    return;
+  }
   try {
-    await navigator.clipboard.writeText(config.pixCode);
-    pixStatus.textContent = 'Código PIX copiado com sucesso!';
-  } catch (error) {
+    await navigator.clipboard.writeText(currentBrcode);
+    pixStatus.textContent = 'Código PIX copiado! Cole no app do seu banco.';
+  } catch {
     pixStatus.textContent = 'Não foi possível copiar automaticamente. Copie manualmente.';
   }
 });
+
+function showQr(qrImage) {
+  if (!qrImage) return;
+  let img = document.getElementById('pix-qr');
+  if (!img) {
+    img = document.createElement('img');
+    img.id = 'pix-qr';
+    img.alt = 'QR Code PIX';
+    img.style.cssText = 'display:block;max-width:200px;width:100%;margin:0 auto 12px;border-radius:12px;background:#fff;';
+    pixCodeEl.parentNode.insertBefore(img, pixCodeEl);
+  }
+  img.src = qrImage;
+}
+
+function redirectPaid() {
+  const redirectMap = {
+    mensal: 'upsell-mensal.html',
+    trimestral: 'upsell-trimestral.html',
+    anual: 'obrigado.html',
+  };
+  const target = redirectMap[selectedPlan] || 'obrigado.html';
+  const query = new URLSearchParams({
+    plan: selectedPlan,
+    nome: currentLead.nome,
+    email: currentLead.email,
+    id: currentId,
+  });
+  window.location.href = `${target}?${query.toString()}`;
+}
+
+function startPolling() {
+  const startedAt = Date.now();
+  pollTimer = setInterval(async () => {
+    if (Date.now() - startedAt > 15 * 60 * 1000) {
+      clearInterval(pollTimer);
+      pixStatus.textContent = 'PIX expirado. Recarregue a página para gerar outro.';
+      return;
+    }
+    try {
+      const res = await fetch(`/api/status?id=${encodeURIComponent(currentId)}`);
+      const data = await res.json().catch(() => ({}));
+      if (data.ok && data.paid) {
+        clearInterval(pollTimer);
+        formStatus.className = 'status-box sucesso';
+        formStatus.textContent = 'Pagamento confirmado! Redirecionando...';
+        setTimeout(redirectPaid, 800);
+      }
+    } catch {
+      // rede instável — tenta de novo no próximo ciclo
+    }
+  }, 4000);
+}
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
 
   const formData = new FormData(form);
-  const payload = {
-    nome: formData.get('nome'),
-    email: formData.get('email'),
-    telefone: formData.get('telefone'),
-    plano: config.title,
-    valor: config.price,
-    metodo: 'pix',
-    status: 'pendente',
-    createdAt: new Date().toISOString()
-  };
+  const nome = (formData.get('nome') || '').toString().trim();
+  const email = (formData.get('email') || '').toString().trim();
+  const telefone = (formData.get('telefone') || '').toString().trim();
 
+  if (nome.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    formStatus.className = 'status-box erro';
+    formStatus.textContent = 'Informe um nome e um e-mail válidos.';
+    return;
+  }
+
+  submitButton.disabled = true;
   formStatus.className = 'status-box sucesso';
-  formStatus.textContent = 'Pedido recebido. Redirecionando para a próxima etapa...';
+  formStatus.textContent = 'Gerando seu PIX...';
 
-  console.info('Payload pronto para API:', payload);
+  try {
+    const response = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ offer: 'checkout', plan: selectedPlan, nome, email, telefone }),
+    });
 
-  const redirectMap = {
-    mensal: 'upsell-mensal.html',
-    trimestral: 'upsell-trimestral.html',
-    anual: 'obrigado.html'
-  };
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.ok) {
+      throw new Error('Não foi possível gerar o PIX agora. Tente novamente.');
+    }
 
-  const redirectTarget = redirectMap[selectedPlan] || 'obrigado.html';
+    const d = result.data;
+    currentBrcode = d.brcode || '';
+    currentId = d.id;
+    currentLead = { nome, email };
 
-  const query = new URLSearchParams({
-    plan: selectedPlan,
-    nome: payload.nome,
-    email: payload.email
-  }).toString();
+    checkoutPrice.textContent = d.price || display.price;
+    pixCodeEl.textContent = currentBrcode || 'Código indisponível';
+    showQr(d.qrImage);
 
-  setTimeout(() => {
-    window.location.href = `${redirectTarget}?${query}`;
-  }, 900);
+    pixStatus.textContent = 'Copie o código e pague no app do seu banco.';
+    formStatus.textContent = 'PIX gerado! Assim que o pagamento cair, você será redirecionado automaticamente.';
+    submitButton.textContent = 'Aguardando pagamento...';
+
+    if (d.status === 'paid') {
+      setTimeout(redirectPaid, 500);
+    } else {
+      startPolling();
+    }
+  } catch (error) {
+    submitButton.disabled = false;
+    formStatus.className = 'status-box erro';
+    formStatus.textContent = error.message || 'Não foi possível processar o pedido no momento.';
+  }
 });
