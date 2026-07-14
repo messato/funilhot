@@ -98,11 +98,19 @@ async function createPixCharge({ amount, webhookUrl, customer, label, externalRe
   try { data = JSON.parse(text); } catch { data = {}; }
 
   const pix = data.pix || {};
-  const qrImageBase64 = pix.qrcodeUrl ? await fetchQrAsDataUri(pix.qrcodeUrl) : '';
+  const brcode = pix.qrcode || pix.emv || pix.copyPaste || '';
+  // A AssetPay retorna qrcodeUrl null; nesse caso geramos a imagem do QR
+  // a partir do copia-e-cola e embutimos como data: (compatível com a CSP).
+  let qrImageBase64 = pix.qrcodeUrl ? await fetchQrAsDataUri(pix.qrcodeUrl) : '';
+  if (!qrImageBase64 && brcode) {
+    qrImageBase64 = await fetchQrAsDataUri(
+      'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(brcode)
+    );
+  }
 
   return {
     id: String(data.id || ''),
-    brcode: pix.qrcode || pix.emv || pix.copyPaste || '',
+    brcode,
     qrImageBase64,
     status: normalizeStatus(data.status),
     provider: 'assetpay',
