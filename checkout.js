@@ -106,13 +106,30 @@ form.addEventListener('submit', async (event) => {
   const formData = new FormData(form);
   const nome = (formData.get('nome') || '').toString().trim();
   const email = (formData.get('email') || '').toString().trim();
-  const telefone = (formData.get('telefone') || '').toString().trim();
+  const telefone = (formData.get('telefone') || '').toString().replace(/\D/g, '');
+  const cpf = (formData.get('cpf') || '').toString().replace(/\D/g, '');
 
   if (nome.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     formStatus.className = 'status-box erro';
     formStatus.textContent = 'Informe um nome e um e-mail válidos.';
     return;
   }
+  if (telefone.length < 10) {
+    formStatus.className = 'status-box erro';
+    formStatus.textContent = 'Informe um telefone válido com DDD.';
+    return;
+  }
+  if (cpf.length !== 11) {
+    formStatus.className = 'status-box erro';
+    formStatus.textContent = 'Informe um CPF válido (11 dígitos).';
+    return;
+  }
+
+  // Guarda o lead para as próximas etapas do funil (upsell/downsell)
+  // sem expor CPF/telefone na URL.
+  try {
+    sessionStorage.setItem('funil_lead', JSON.stringify({ nome, email, telefone, cpf }));
+  } catch { /* sessão indisponível não impede o checkout */ }
 
   submitButton.disabled = true;
   formStatus.className = 'status-box sucesso';
@@ -122,7 +139,7 @@ form.addEventListener('submit', async (event) => {
     const response = await fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ offer: 'checkout', plan: selectedPlan, nome, email, telefone }),
+      body: JSON.stringify({ offer: 'checkout', plan: selectedPlan, nome, email, telefone, cpf }),
     });
 
     const result = await response.json().catch(() => ({}));

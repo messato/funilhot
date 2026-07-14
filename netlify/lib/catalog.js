@@ -33,17 +33,20 @@ function formatBRL(cents) {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// AssetPay exige phone e document (CPF) para criar a transação.
 function validateLead(payload) {
   const errors = [];
   const nome = typeof payload.nome === 'string' ? payload.nome.trim() : '';
   const email = typeof payload.email === 'string' ? payload.email.trim() : '';
-  const telefone = typeof payload.telefone === 'string' ? payload.telefone.trim() : '';
+  const telefone = (typeof payload.telefone === 'string' ? payload.telefone : '').replace(/\D/g, '');
+  const cpf = (typeof payload.cpf === 'string' ? payload.cpf : '').replace(/\D/g, '');
 
   if (nome.length < 2 || nome.length > 120) errors.push('nome');
   if (!EMAIL_RE.test(email) || email.length > 160) errors.push('email');
-  if (telefone.length > 40) errors.push('telefone');
+  if (telefone.length < 10 || telefone.length > 13) errors.push('telefone');
+  if (cpf.length !== 11) errors.push('cpf');
 
-  return { errors, lead: { nome: nome.slice(0, 120), email: email.slice(0, 160), telefone: telefone.slice(0, 40) } };
+  return { errors, lead: { nome: nome.slice(0, 120), email: email.slice(0, 160), telefone, cpf } };
 }
 
 module.exports = { CATALOG, resolveOffer, formatBRL, validateLead };

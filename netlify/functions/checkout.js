@@ -55,7 +55,7 @@ exports.handler = async function (event) {
       amount: offer.amount,
       webhookUrl,
       label: offer.label,
-      customer: { name: lead.nome, email: lead.email, phone: lead.telefone },
+      customer: { name: lead.nome, email: lead.email, phone: lead.telefone, cpf: lead.cpf },
     });
     const qrImage = charge.qrImageBase64
       ? (charge.qrImageBase64.startsWith('data:') ? charge.qrImageBase64 : 'data:image/png;base64,' + charge.qrImageBase64)

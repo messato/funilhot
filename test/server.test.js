@@ -20,7 +20,7 @@ test('POST /api/checkout cria cobrança e resolve o preço no servidor', withSer
   const response = await fetch(`${base}/api/checkout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ offer: 'checkout', plan: 'mensal', nome: 'Ana', email: 'ana@example.com', valor: 'R$ 0,01' }),
+    body: JSON.stringify({ offer: 'checkout', plan: 'mensal', nome: 'Ana', email: 'ana@example.com', telefone: '11999998888', cpf: '11144477735', valor: 'R$ 0,01' }),
   });
   const body = await response.json();
   assert.equal(response.status, 200);
@@ -36,7 +36,7 @@ test('rejeita offer/plan desconhecidos (anti price tampering)', withServer(async
   const response = await fetch(`${base}/api/checkout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ offer: 'checkout', plan: 'gratis', nome: 'Ana', email: 'ana@example.com' }),
+    body: JSON.stringify({ offer: 'checkout', plan: 'gratis', nome: 'Ana', email: 'ana@example.com', telefone: '11999998888', cpf: '11144477735' }),
   });
   const body = await response.json();
   assert.equal(response.status, 400);
@@ -58,7 +58,7 @@ test('GET /api/status retorna paid em modo stub', withServer(async (base) => {
   const created = await fetch(`${base}/api/checkout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ offer: 'checkout', plan: 'anual', nome: 'Ana', email: 'ana@example.com' }),
+    body: JSON.stringify({ offer: 'checkout', plan: 'anual', nome: 'Ana', email: 'ana@example.com', telefone: '11999998888', cpf: '11144477735' }),
   }).then((r) => r.json());
 
   const status = await fetch(`${base}/api/status?id=${encodeURIComponent(created.data.id)}`).then((r) => r.json());

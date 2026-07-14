@@ -2,9 +2,16 @@ const params = new URLSearchParams(window.location.search);
 const plan = params.get('plan') || 'mensal';
 const offerType = params.get('offer') === 'downsell' ? 'downsell' : 'upsell';
 
+// Lead completo (com CPF/telefone) vem do sessionStorage gravado no checkout;
+// nome/e-mail da URL são só fallback de exibição.
+let stored = {};
+try { stored = JSON.parse(sessionStorage.getItem('funil_lead') || '{}'); } catch { stored = {}; }
+
 const lead = {
-  nome: params.get('nome') || 'Lead',
-  email: params.get('email') || 'não informado',
+  nome: stored.nome || params.get('nome') || 'Lead',
+  email: stored.email || params.get('email') || 'não informado',
+  telefone: stored.telefone || '',
+  cpf: stored.cpf || '',
 };
 
 // Apenas exibição. O preço real é definido pelo servidor.
@@ -99,11 +106,17 @@ async function checkStatus(manual) {
 confirmBtn.addEventListener('click', () => checkStatus(true));
 
 async function generateCharge() {
+  if (!lead.cpf) {
+    pixCodeEl.textContent = 'Dados do pedido não encontrados.';
+    statusBox.className = 'status-box erro';
+    statusBox.textContent = 'Não encontramos seus dados. Volte ao checkout e preencha novamente.';
+    return;
+  }
   try {
     const response = await fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ offer: offerType, plan, nome: lead.nome, email: lead.email }),
+      body: JSON.stringify({ offer: offerType, plan, nome: lead.nome, email: lead.email, telefone: lead.telefone, cpf: lead.cpf }),
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.ok) {

@@ -64,11 +64,14 @@ async function createPixCharge({ amount, webhookUrl, customer, label, externalRe
     paymentMethod: 'PIX',
     items: [{ title: label || 'Acesso VIP', unitPrice: amount, quantity: 1 }],
   };
-  if (customer && (customer.name || customer.email)) {
-    body.customer = {};
-    if (customer.name) body.customer.name = customer.name;
-    if (customer.email) body.customer.email = customer.email;
-    if (customer.phone) body.customer.phone = customer.phone;
+  if (customer) {
+    // phone e document (CPF) são obrigatórios na AssetPay
+    body.customer = {
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      document: { type: 'CPF', number: customer.cpf },
+    };
   }
   if (webhookUrl) body.postbackUrl = webhookUrl;
   if (externalRef) body.externalRef = externalRef;
