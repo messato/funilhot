@@ -1,5 +1,8 @@
 'use strict';
 
+const { markPaid } = require('../lib/orders');
+const { normalizeStatus } = require('../lib/provider');
+
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 
 // Recebe as confirmações de pagamento do gateway.
@@ -24,8 +27,12 @@ exports.handler = async function (event) {
     const body = JSON.parse(event.body || '{}');
     const tx = body.transaction || body;
     console.log('assetpay webhook:', body.event, tx && tx.id, tx && tx.status);
-  } catch {
+    if (tx && tx.id && normalizeStatus(tx.status) === 'paid') {
+      await markPaid(String(tx.id));
+    }
+  } catch (error) {
     // corpo inválido é ignorado — só confirmamos o recebimento
+    console.error('webhook processing failed:', error.message);
   }
 
   return { statusCode: 200, headers: JSON_HEADERS, body: JSON.stringify({ ok: true }) };

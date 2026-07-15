@@ -2,6 +2,9 @@
   publish = "."
   functions = "netlify/functions"
 
+[functions]
+  node_bundler = "esbuild"
+
 # /api/* -> functions (sem isso o front chama /api/checkout e toma 404 em produção)
 [[redirects]]
   from = "/api/checkout"
@@ -16,6 +19,22 @@
 [[redirects]]
   from = "/api/webhook"
   to = "/.netlify/functions/webhook"
+  status = 200
+
+[[redirects]]
+  from = "/api/track"
+  to = "/.netlify/functions/track"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/*"
+  to = "/.netlify/functions/admin/:splat"
+  status = 200
+
+# URL bonita do painel
+[[redirects]]
+  from = "/admin"
+  to = "/admin.html"
   status = 200
 
 # Não servir o código de backend como arquivo estático.

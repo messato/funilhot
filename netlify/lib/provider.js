@@ -113,6 +113,7 @@ async function createPixCharge({ amount, webhookUrl, customer, label, externalRe
     brcode,
     qrImageBase64,
     status: normalizeStatus(data.status),
+    netAmount: typeof data.netAmount === 'number' ? data.netAmount : null,
     provider: 'assetpay',
   };
 }

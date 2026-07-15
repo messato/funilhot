@@ -9,6 +9,8 @@ const { URL } = require('url');
 const checkoutFn = require('./netlify/functions/checkout');
 const statusFn = require('./netlify/functions/status');
 const webhookFn = require('./netlify/functions/webhook');
+const trackFn = require('./netlify/functions/track');
+const adminFn = require('./netlify/functions/admin');
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
@@ -30,6 +32,7 @@ const API_ROUTES = {
   '/api/checkout': checkoutFn,
   '/api/status': statusFn,
   '/api/webhook': webhookFn,
+  '/api/track': trackFn,
 };
 
 function readBody(req) {
@@ -50,6 +53,7 @@ async function handleApi(fn, req, res, url) {
 
   const event = {
     httpMethod: req.method,
+    path: url.pathname,
     headers: { ...req.headers, 'x-forwarded-proto': 'http' },
     body,
     queryStringParameters,
@@ -77,7 +81,7 @@ function createServer() {
   return http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
 
-    const route = API_ROUTES[url.pathname];
+    const route = url.pathname.startsWith('/api/admin') ? adminFn : API_ROUTES[url.pathname];
     if (route) {
       try {
         await handleApi(route, req, res, url);

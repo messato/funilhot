@@ -35,6 +35,16 @@ let currentId = '';
 let currentLead = { nome: '', email: '' };
 let pollTimer = null;
 
+// UTMs capturadas pelo funnel-track.js — atribuem a venda à origem do tráfego.
+function getUtm() {
+  try {
+    const u = JSON.parse(localStorage.getItem('funil_utm') || '{}');
+    return { us: u.utm_source || '', um: u.utm_medium || '', uc: u.utm_campaign || '' };
+  } catch {
+    return {};
+  }
+}
+
 copyPixButton.addEventListener('click', async () => {
   if (!currentBrcode) {
     pixStatus.textContent = 'Gere o PIX primeiro em "Finalizar pagamento".';
@@ -139,7 +149,7 @@ form.addEventListener('submit', async (event) => {
     const response = await fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ offer: 'checkout', plan: selectedPlan, nome, email, telefone, cpf }),
+      body: JSON.stringify({ offer: 'checkout', plan: selectedPlan, nome, email, telefone, cpf, ...getUtm() }),
     });
 
     const result = await response.json().catch(() => ({}));

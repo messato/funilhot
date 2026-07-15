@@ -2,6 +2,7 @@
 
 const { getStatus } = require('../lib/provider');
 const { rateLimit, clientIp } = require('../lib/ratelimit');
+const { markPaid } = require('../lib/orders');
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 
@@ -22,6 +23,10 @@ exports.handler = async function (event) {
 
   try {
     const s = await getStatus(id);
+    if (s.status === 'paid') {
+      // Mesmo sem webhook configurado, o polling do comprador marca a venda como paga.
+      try { await markPaid(id); } catch (error) { console.error('markPaid failed:', error.message); }
+    }
     return reply(200, { ok: true, status: s.status, paid: s.status === 'paid' });
   } catch (error) {
     console.error('status provider error:', error && error.message);

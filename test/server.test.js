@@ -65,3 +65,32 @@ test('GET /api/status retorna paid em modo stub', withServer(async (base) => {
   assert.equal(status.ok, true);
   assert.equal(status.paid, true);
 }));
+
+test('POST /api/track grava evento de visualização', withServer(async (base) => {
+  const response = await fetch(`${base}/api/track`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ page: 'landing', vid: 'v-teste-123', us: 'instagram', m: 1 }),
+  });
+  assert.equal(response.status, 204);
+}));
+
+test('admin exige senha e summary responde com ela', withServer(async (base) => {
+  process.env.ADMIN_PASSWORD = 'senha-de-teste';
+
+  const noAuth = await fetch(`${base}/api/admin/summary`);
+  assert.equal(noAuth.status, 401);
+
+  const wrong = await fetch(`${base}/api/admin/summary`, { headers: { 'x-admin-key': 'errada' } });
+  assert.equal(wrong.status, 401);
+
+  const ok = await fetch(`${base}/api/admin/summary?days=7`, { headers: { 'x-admin-key': 'senha-de-teste' } });
+  const body = await ok.json();
+  assert.equal(ok.status, 200);
+  assert.equal(body.ok, true);
+  assert.ok(Array.isArray(body.daily));
+  assert.ok(Array.isArray(body.funnel));
+  assert.ok(body.kpis);
+
+  delete process.env.ADMIN_PASSWORD;
+}));

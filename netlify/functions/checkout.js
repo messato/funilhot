@@ -3,6 +3,10 @@
 const { resolveOffer, validateLead, formatBRL } = require('../lib/catalog');
 const { createPixCharge } = require('../lib/provider');
 const { rateLimit, clientIp } = require('../lib/ratelimit');
+const { saveOrder } = require('../lib/orders');
+const { setJSON, dayKey } = require('../lib/store');
+
+const cleanUtm = (v) => (typeof v === 'string' ? v.slice(0, 80).replace(/[<>"']/g, '') : '');
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 
@@ -60,6 +64,40 @@ exports.handler = async function (event) {
     const qrImage = charge.qrImageBase64
       ? (charge.qrImageBase64.startsWith('data:') ? charge.qrImageBase64 : 'data:image/png;base64,' + charge.qrImageBase64)
       : '';
+
+    // Registra o pedido e o evento de PIX gerado para o painel /admin.
+    // Falha aqui não pode derrubar a venda — só loga.
+    try {
+      const now = Date.now();
+      await saveOrder({
+        id: charge.id,
+        offer: offer.offer,
+        plan: offer.plan,
+        label: offer.label,
+        amount: offer.amount,
+        netAmount: charge.netAmount,
+        status: charge.status === 'paid' ? 'paid' : 'pending',
+        nome: lead.nome,
+        email: lead.email,
+        telefone: lead.telefone,
+        utmSource: cleanUtm(payload.us),
+        utmMedium: cleanUtm(payload.um),
+        utmCampaign: cleanUtm(payload.uc),
+        createdAt: now,
+        paidAt: null,
+      });
+      await setJSON(`ev/${dayKey(now)}/${now}-${Math.random().toString(16).slice(2, 8)}.json`, {
+        e: 'pix',
+        offer: offer.offer,
+        plan: offer.plan,
+        amount: offer.amount,
+        us: cleanUtm(payload.us),
+        uc: cleanUtm(payload.uc),
+        ts: now,
+      });
+    } catch (error) {
+      console.error('order tracking failed:', error.message);
+    }
 
     // Retornamos APENAS o que o front precisa — sem vazar a resposta crua do gateway.
     return reply(200, {

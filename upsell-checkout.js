@@ -50,6 +50,16 @@ let currentBrcode = '';
 let currentId = '';
 let pollTimer = null;
 
+// UTMs capturadas pelo funnel-track.js — atribuem a venda à origem do tráfego.
+function getUtm() {
+  try {
+    const u = JSON.parse(localStorage.getItem('funil_utm') || '{}');
+    return { us: u.utm_source || '', um: u.utm_medium || '', uc: u.utm_campaign || '' };
+  } catch {
+    return {};
+  }
+}
+
 copyBtn.addEventListener('click', async () => {
   if (!currentBrcode) return;
   try {
@@ -116,7 +126,7 @@ async function generateCharge() {
     const response = await fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ offer: offerType, plan, nome: lead.nome, email: lead.email, telefone: lead.telefone, cpf: lead.cpf }),
+      body: JSON.stringify({ offer: offerType, plan, nome: lead.nome, email: lead.email, telefone: lead.telefone, cpf: lead.cpf, ...getUtm() }),
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.ok) {
