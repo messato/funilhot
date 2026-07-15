@@ -12,7 +12,9 @@ let lastError = '';
 async function getBlobs() {
   if (blobsStore || blobsFailed) return blobsStore;
   try {
-    const { getStore } = await import('@netlify/blobs');
+    // require estático: o bundler do Netlify detecta o pacote e injeta o
+    // contexto do Blobs na função (import() dinâmico passa despercebido).
+    const { getStore } = require('@netlify/blobs');
 
     // 1º tenta a configuração automática do runtime; se o runtime não injetar
     // o contexto, cai para a configuração manual via env vars.
