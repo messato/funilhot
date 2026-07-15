@@ -79,17 +79,13 @@
       heroCard(false, '🏦', 'Líquido', 'após taxas do gateway', brl(k.net), delta(k.net, p.net), 'margem ' + (k.gross ? Math.round(k.net / k.gross * 100) : 0) + '%') +
       heroCard(false, '🛒', 'Vendas pagas', 'pedidos confirmados', String(k.paidCount), delta(k.paidCount, p.paidCount), 'conversão PIX ' + k.pixConversion + '%');
 
-    var extra = (d.impact.upsell + d.impact.downsell);
     var mini = [
       { l: 'Lucro (pós-gasto)', v: brl(k.profit), d: delta(k.profit, p.profit) },
       { l: 'ROAS', v: k.roas ? k.roas + 'x' : '—', d: k.spend ? delta(k.roas, p.roas) : '' },
-      { l: 'Gasto em tráfego', v: brl(k.spend), d: '' },
-      { l: 'CPA (custo/venda)', v: k.cpa ? brl(k.cpa) : '—', d: '' },
-      { l: 'PIX gerados', v: String(k.pixCount), d: delta(k.pixCount, p.pixCount) },
+      { l: 'Ticket médio', v: brl(k.ticket), d: delta(k.ticket, p.ticket) },
+      { l: 'Conversão PIX', v: k.pixConversion + '%', d: delta(k.pixConversion, p.pixConversion) },
       { l: 'Visitas', v: String(k.visits), d: delta(k.visits, p.visits) },
-      { l: 'Visitantes únicos', v: String(k.uniques), d: delta(k.uniques, p.uniques) },
       { l: 'Tempo até pagar', v: d.avgPayMinutes ? d.avgPayMinutes + ' min' : '—', d: '' },
-      { l: 'Extra upsell/down', v: brl(extra), d: '' },
     ];
     $('mini').innerHTML = mini.map(function (m) {
       return '<div class="mini"><div class="l">' + m.l + '</div><div class="v">' + m.v + '</div>' + (m.d ? '<div class="d">' + m.d + '</div>' : '') + '</div>';
@@ -353,22 +349,42 @@
     b.classList.add('on'); state.orderStatus = b.dataset.status; renderOrders();
   });
   $('order-search').addEventListener('input', function (e) { state.orderQuery = e.target.value; renderOrders(); });
-  $('side-search').addEventListener('input', function (e) { state.orderQuery = e.target.value; $('order-search').value = e.target.value; renderOrders(); document.getElementById('sec-orders').scrollIntoView({ behavior: 'smooth' }); });
+  $('side-search').addEventListener('input', function (e) { state.orderQuery = e.target.value; $('order-search').value = e.target.value; renderOrders(); showView('vendas'); });
   $('btn-refresh').addEventListener('click', load);
   $('btn-csv').addEventListener('click', function () {
     api('export.csv?days=' + state.days).then(function (r) { return r.blob(); }).then(function (blob) {
       var a = el('a'); a.href = URL.createObjectURL(blob); a.download = 'pedidos.csv'; a.click(); URL.revokeObjectURL(a.href);
     });
   });
-  document.querySelectorAll('.nav-item[data-go]').forEach(function (item) {
-    item.addEventListener('click', function () {
-      document.querySelectorAll('.nav-item').forEach(function (n) { n.classList.remove('active'); });
-      item.classList.add('active');
-      var id = item.dataset.go;
-      if (id === 'sec-spend') { openSpendModal(); return; }
-      var t = document.getElementById(id); if (t) t.scrollIntoView({ behavior: 'smooth' });
-    });
+  // ---------- navegação por abas (views) ----------
+  var VIEWS = {
+    overview: { t: 'Visão geral', s: 'Os números que importam agora', data: true },
+    vendas: { t: 'Vendas', s: 'Pedidos e clientes', data: true },
+    abandonados: { t: 'PIX abandonados', s: 'Recupere quem gerou e não pagou', data: true },
+    funil: { t: 'Funil de conversão', s: 'Onde as pessoas param', data: true },
+    trafego: { t: 'Tráfego e ROAS', s: 'Retorno por origem de tráfego', data: true },
+    metas: { t: 'Metas & produtos', s: 'Progresso do mês', data: true },
+    config: { t: 'Configurações', s: 'Preços, links e textos — valem na hora', data: false },
+    recursos: { t: 'Recursos', s: 'Ligue e desligue funcionalidades', data: false },
+  };
+  function csvVisible() { return (state.view === 'vendas' || state.view === 'overview') && !(state.flags && state.flags.export_csv === false); }
+  function setCsv() { var b = $('btn-csv'); if (b) b.style.display = csvVisible() ? '' : 'none'; }
+  function showView(name) {
+    if (!VIEWS[name]) name = 'overview';
+    state.view = name;
+    document.querySelectorAll('.view').forEach(function (v) { v.classList.toggle('on', v.dataset.view === name); });
+    document.querySelectorAll('.nav-item[data-view]').forEach(function (n) { n.classList.toggle('active', n.dataset.view === name); });
+    $('view-title').textContent = VIEWS[name].t;
+    $('head-sub').textContent = VIEWS[name].s;
+    $('period').style.display = VIEWS[name].data ? '' : 'none';
+    setCsv();
+    if (name === 'overview' && state.data) renderChart(state.data); // re-mede o container ao exibir
+    window.scrollTo(0, 0);
+  }
+  document.querySelectorAll('.nav-item[data-view]').forEach(function (item) {
+    item.addEventListener('click', function () { showView(item.dataset.view); });
   });
+  $('btn-spend').addEventListener('click', openSpendModal);
 
   // ---------- recursos (on/off) ----------
   function applyFlags() {
@@ -376,7 +392,7 @@
     var show = function (id, on) { var e = $(id); if (e) e.style.display = (on === false) ? 'none' : ''; };
     show('sec-goal', f.card_meta); show('sec-traffic', f.card_roas); show('card-produtos', f.card_produtos);
     show('sec-funnel', f.card_funil); show('sec-heat', f.card_heatmap); show('sec-abandoned', f.card_abandonados);
-    var csv = $('btn-csv'); if (csv) csv.style.display = (f.export_csv === false) ? 'none' : '';
+    setCsv();
   }
   function renderFeatures() {
     var q = (state.featQuery || '').toLowerCase(), byCat = {}, ativos = 0, total = 0;
@@ -453,6 +469,7 @@
   function boot() {
     $('login').style.display = 'none';
     $('app').classList.add('on');
+    showView('overview');
     loadConfig();
     load();
     if (state.timer) clearInterval(state.timer);
