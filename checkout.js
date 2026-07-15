@@ -28,6 +28,13 @@ checkoutSubtitle.textContent = 'Preencha seus dados e gere o PIX para pagar.';
 checkoutPlan.textContent = display.title;
 checkoutPrice.textContent = display.price;
 checkoutDuration.textContent = display.duration;
+
+// Mostra o preço editado no painel já na abertura (o valor cobrado já vem do servidor).
+fetch('/api/settings').then(function (r) { return r.json(); }).then(function (j) {
+  if (!j.ok || !j.settings || !j.settings.prices) return;
+  var cents = j.settings.prices['checkout/' + selectedPlan];
+  if (cents) checkoutPrice.textContent = (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}).catch(function () {});
 pixCodeEl.textContent = 'O código PIX será gerado ao finalizar.';
 
 let currentBrcode = '';

@@ -62,9 +62,9 @@
 
     <div class="card-preco">
       <div class="label">Upgrade para Anual</div>
-      <div class="valor">+ R$ 149,90</div>
-      <div class="preco-antigo">De R$ 297,00</div>
-      <div class="economia-label">— Economia de R$ 147,10</div>
+      <div class="valor">+ <span data-price="upsell/trimestral">R$ 149,90</span></div>
+      <div class="preco-antigo">De <span data-price="checkout/anual">R$ 297,00</span></div>
+      <div class="economia-label">— Economia de <span data-price-diff="checkout/anual-upsell/trimestral">R$ 147,10</span></div>
       <div class="itens">
         <p>✅ 1 ano de acesso completo</p>
         <p>✅ Todo conteúdo atual e futuro</p>
@@ -76,11 +76,11 @@
     <div class="comparacao">
       <div class="comparacao-linha">
         <span class="label">Preço normal Anual</span>
-        <span class="out">R$ 297,00</span>
+        <span class="out" data-price="checkout/anual">R$ 297,00</span>
       </div>
       <div class="comparacao-linha">
         <span class="label">Seu preço especial</span>
-        <span class="ok">R$ 149,90</span>
+        <span class="ok" data-price="upsell/trimestral">R$ 149,90</span>
       </div>
     </div>
 
@@ -127,6 +127,7 @@
       setBackRedirect(link);
     })();
   </script>
+  <script src="price-sync.js" defer></script>
   <script src="funnel-track.js" defer></script>
 </body>
 </html>

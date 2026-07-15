@@ -243,7 +243,7 @@
         <div class="plano-nome">Mensal — 30 dias</div>
         <div class="plano-sub">Acesso Premium</div>
       </div>
-      <div class="plano-preco">R$ 39,90</div>
+      <div class="plano-preco" data-price="checkout/mensal">R$ 39,90</div>
     </a>
 
     <!-- PLANO TRIMESTRAL — destaque -->
@@ -254,7 +254,7 @@
         <div class="plano-sub">Melhor custo-benefício</div>
         <span class="plano-tag plano-tag-amarela">Economize 18%</span>
       </div>
-      <div class="plano-preco">R$ 97,90</div>
+      <div class="plano-preco" data-price="checkout/trimestral">R$ 97,90</div>
     </a>
 
     <!-- PLANO ANUAL -->
@@ -266,7 +266,7 @@
         <div class="plano-sub">Acesso completo por 1 ano</div>
         <span class="plano-tag">Melhor preço/dia</span>
       </div>
-      <div class="plano-preco">R$ 297,00</div>
+      <div class="plano-preco" data-price="checkout/anual">R$ 297,00</div>
     </a>
 
   </div>
@@ -328,8 +328,8 @@
       </div>
       <div class="popup-corpo">
         <div class="popup-preco-box">
-          <div class="popup-preco-antigo">R$ 97,90</div>
-          <div class="popup-preco-novo">R$ 88,11</div>
+          <div class="popup-preco-antigo" data-price="checkout/trimestral">R$ 97,90</div>
+          <div class="popup-preco-novo" data-price-pct="checkout/trimestral*90">R$ 88,11</div>
           <div class="popup-preco-desc">Trimestral com 10% OFF exclusivo</div>
         </div>
         <a class="popup-aceitar"
@@ -362,6 +362,7 @@
       if (e.target === this) fecharPopup();
     });
   </script>
+  <script src="price-sync.js" defer></script>
   <script src="funnel-track.js" defer></script>
 </body>
 </html>

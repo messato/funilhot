@@ -65,7 +65,7 @@
 
     <div class="card-preco">
       <div class="label">Upgrade para Trimestral</div>
-      <div class="valor">+ R$ 49,90</div>
+      <div class="valor">+ <span data-price="upsell/mensal">R$ 49,90</span></div>
       <div class="obs">+60 dias — total de 90 dias de acesso</div>
       <div class="itens">
         <p>✅ Todo conteúdo atual e futuro</p>
@@ -77,11 +77,11 @@
     <div class="comparacao">
       <div class="comparacao-linha">
         <span class="label">Plano Mensal (30 dias)</span>
-        <span class="valor-out">R$ 39,90</span>
+        <span class="valor-out" data-price="checkout/mensal">R$ 39,90</span>
       </div>
       <div class="comparacao-linha">
         <span class="label">Total com upgrade (90 dias)</span>
-        <span class="valor-ok">R$ 89,80</span>
+        <span class="valor-ok" data-price-sum="checkout/mensal+upsell/mensal">R$ 89,80</span>
       </div>
       <p class="economia">🎯 Economize tempo e tenha 3x mais acesso!</p>
     </div>
@@ -129,6 +129,7 @@
       setBackRedirect(link);
     })();
   </script>
+  <script src="price-sync.js" defer></script>
   <script src="funnel-track.js" defer></script>
 </body>
 </html>

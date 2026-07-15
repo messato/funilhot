@@ -59,9 +59,9 @@
 
     <div class="card-preco">
       <div class="label">Upgrade Anual por apenas</div>
-      <div class="valor">+ R$ 119,90</div>
-      <div class="preco-antigo">De R$ 297,00</div>
-      <div class="economia">— Economia de R$ 177,10</div>
+      <div class="valor">+ <span data-price="downsell/trimestral">R$ 119,90</span></div>
+      <div class="preco-antigo">De <span data-price="checkout/anual">R$ 297,00</span></div>
+      <div class="economia">— Economia de <span data-price-diff="checkout/anual-downsell/trimestral">R$ 177,10</span></div>
       <div class="itens">
         <p>✅ 1 ano de acesso completo</p>
         <p>✅ Todo conteúdo atual e futuro</p>
@@ -78,7 +78,7 @@
     <a class="btn-sim"
        href="upsell-checkout.html?plan=trimestral&offer=downsell"
        target="_self" rel="noopener noreferrer">
-      SIM, QUERO POR R$ 119,90 🔥
+      SIM, QUERO POR <span data-price="downsell/trimestral">R$ 119,90</span> 🔥
     </a>
     <a class="btn-nao"
        href="obrigado.html"
@@ -119,6 +119,7 @@
       setBackRedirect(link);
     })();
   </script>
+  <script src="price-sync.js" defer></script>
   <script src="funnel-track.js" defer></script>
 </body>
 </html>
