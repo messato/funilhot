@@ -1,10 +1,10 @@
 'use strict';
 
-const { resolveOffer, validateLead, formatBRL } = require('../lib/catalog');
-const { createPixCharge } = require('../lib/provider');
-const { rateLimit, clientIp } = require('../lib/ratelimit');
-const { saveOrder } = require('../lib/orders');
-const { setJSON, dayKey } = require('../lib/store');
+const { resolveOffer, validateLead, formatBRL } = require('../catalog');
+const { createPixCharge } = require('../provider');
+const { rateLimit, clientIp } = require('../ratelimit');
+const { saveOrder } = require('../orders');
+const { setJSON, dayKey } = require('../store');
 
 const cleanUtm = (v) => (typeof v === 'string' ? v.slice(0, 80).replace(/[<>"']/g, '') : '');
 

@@ -1,7 +1,7 @@
 'use strict';
 
-const { markPaid } = require('../lib/orders');
-const { normalizeStatus } = require('../lib/provider');
+const { markPaid } = require('../orders');
+const { normalizeStatus } = require('../provider');
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 

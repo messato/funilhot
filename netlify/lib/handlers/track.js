@@ -1,7 +1,7 @@
 'use strict';
 
-const { setJSON, dayKey } = require('../lib/store');
-const { rateLimit, clientIp } = require('../lib/ratelimit');
+const { setJSON, dayKey } = require('../store');
+const { rateLimit, clientIp } = require('../ratelimit');
 
 // Beacon de tráfego das páginas do funil. Grava um evento por visualização.
 const PAGES = new Set(['landing', 'checkout', 'upsell_oferta', 'downsell_oferta', 'pagamento', 'obrigado']);

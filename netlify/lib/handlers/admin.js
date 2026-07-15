@@ -1,11 +1,11 @@
 'use strict';
 
 const crypto = require('crypto');
-const { getJSON, setJSON, listKeys, storageKind, storageError, dayKey } = require('../lib/store');
-const { listOrders } = require('../lib/orders');
-const { getConfig } = require('../lib/provider');
-const { formatBRL } = require('../lib/catalog');
-const { rateLimit, clientIp } = require('../lib/ratelimit');
+const { getJSON, setJSON, listKeys, storageKind, storageError, dayKey } = require('../store');
+const { listOrders } = require('../orders');
+const { getConfig } = require('../provider');
+const { formatBRL } = require('../catalog');
+const { rateLimit, clientIp } = require('../ratelimit');
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 const reply = (statusCode, payload, headers = JSON_HEADERS) => ({

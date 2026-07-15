@@ -6,11 +6,11 @@ const path = require('path');
 const { URL } = require('url');
 
 // Reaproveita exatamente os mesmos handlers do Netlify no dev local.
-const checkoutFn = require('./netlify/functions/checkout');
-const statusFn = require('./netlify/functions/status');
-const webhookFn = require('./netlify/functions/webhook');
-const trackFn = require('./netlify/functions/track');
-const adminFn = require('./netlify/functions/admin');
+const checkoutFn = require('./netlify/lib/handlers/checkout');
+const statusFn = require('./netlify/lib/handlers/status');
+const webhookFn = require('./netlify/lib/handlers/webhook');
+const trackFn = require('./netlify/lib/handlers/track');
+const adminFn = require('./netlify/lib/handlers/admin');
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;

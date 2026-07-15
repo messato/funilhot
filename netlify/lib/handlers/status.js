@@ -1,8 +1,8 @@
 'use strict';
 
-const { getStatus } = require('../lib/provider');
-const { rateLimit, clientIp } = require('../lib/ratelimit');
-const { markPaid } = require('../lib/orders');
+const { getStatus } = require('../provider');
+const { rateLimit, clientIp } = require('../ratelimit');
+const { markPaid } = require('../orders');
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 
