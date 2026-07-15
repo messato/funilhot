@@ -9,12 +9,18 @@ let blobsStore = null;
 let blobsFailed = false;
 let lastError = '';
 
+// Os entrypoints v2 (.mjs) importam @netlify/blobs estaticamente (garantindo o
+// bundle) e injetam o getStore aqui antes do primeiro uso.
+let injectedGetStore = null;
+function useGetStore(fn) {
+  injectedGetStore = fn;
+  blobsFailed = false; // permite nova tentativa com a implementação injetada
+}
+
 async function getBlobs() {
   if (blobsStore || blobsFailed) return blobsStore;
   try {
-    // require estático: o bundler do Netlify detecta o pacote e injeta o
-    // contexto do Blobs na função (import() dinâmico passa despercebido).
-    const { getStore } = require('@netlify/blobs');
+    const getStore = injectedGetStore || require('@netlify/blobs').getStore;
 
     // 1º tenta a configuração automática do runtime; se o runtime não injetar
     // o contexto, cai para a configuração manual via env vars.
@@ -95,4 +101,4 @@ function dayKey(ts = Date.now()) {
   return new Date(ts - 3 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
-module.exports = { setJSON, getJSON, listKeys, del, storageKind, storageError, dayKey };
+module.exports = { setJSON, getJSON, listKeys, del, storageKind, storageError, dayKey, useGetStore };
