@@ -1,7 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
-const { getJSON, setJSON, listKeys, storageKind, dayKey } = require('../lib/store');
+const { getJSON, setJSON, listKeys, storageKind, storageError, dayKey } = require('../lib/store');
 const { listOrders } = require('../lib/orders');
 const { getConfig } = require('../lib/provider');
 const { formatBRL } = require('../lib/catalog');
@@ -163,6 +163,7 @@ async function summary(days) {
     generatedAt: now,
     days,
     storage: await storageKind(),
+    storageDetail: storageError() || undefined,
     provider: getConfig().enabled ? 'assetpay' : 'stub',
     telegram: Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
     kpis: kpisFrom(currAggs, currOrders),

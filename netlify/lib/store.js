@@ -7,16 +7,38 @@
 const MEMORY = new Map();
 let blobsStore = null;
 let blobsFailed = false;
+let lastError = '';
 
 async function getBlobs() {
   if (blobsStore || blobsFailed) return blobsStore;
   try {
     const { getStore } = await import('@netlify/blobs');
-    const store = getStore('funil');
-    // valida acesso de verdade — em ambiente local getStore existe mas falha ao usar
-    await store.get('__ping__');
-    blobsStore = store;
-  } catch {
+
+    // 1º tenta a configuração automática do runtime; se o runtime não injetar
+    // o contexto, cai para a configuração manual via env vars.
+    const candidates = [];
+    candidates.push(() => getStore('funil'));
+    if (process.env.BLOBS_SITE_ID && process.env.BLOBS_TOKEN) {
+      candidates.push(() => getStore({
+        name: 'funil',
+        siteID: process.env.BLOBS_SITE_ID,
+        token: process.env.BLOBS_TOKEN,
+      }));
+    }
+
+    for (const make of candidates) {
+      try {
+        const store = make();
+        await store.get('__ping__'); // valida acesso de verdade
+        blobsStore = store;
+        return blobsStore;
+      } catch (error) {
+        lastError = error.message || String(error);
+      }
+    }
+    blobsFailed = true;
+  } catch (error) {
+    lastError = error.message || String(error);
     blobsFailed = true;
   }
   return blobsStore;
@@ -62,9 +84,13 @@ async function storageKind() {
   return (await getBlobs()) ? 'blobs' : 'memory';
 }
 
+function storageError() {
+  return lastError;
+}
+
 // Dia no fuso de Brasília (UTC-3, sem horário de verão desde 2019).
 function dayKey(ts = Date.now()) {
   return new Date(ts - 3 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
-module.exports = { setJSON, getJSON, listKeys, del, storageKind, dayKey };
+module.exports = { setJSON, getJSON, listKeys, del, storageKind, storageError, dayKey };
