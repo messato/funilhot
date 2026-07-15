@@ -6,6 +6,8 @@ const { listOrders } = require('../orders');
 const { formatBRL } = require('../catalog');
 const { rateLimit, clientIp } = require('../ratelimit');
 const { summary, setSpend, setGoal, DAY_MS } = require('../metrics');
+const { FEATURES, getFlags, setFlag } = require('../features');
+const { getSettings, saveSettings } = require('../settings');
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 const reply = (statusCode, payload, headers = JSON_HEADERS) => ({
@@ -112,9 +114,19 @@ exports.handler = async function (event) {
       return reply(200, { ok: true, orders: filtered.slice(0, 500).map((o) => ({ ...o, price: formatBRL(o.amount) })) });
     }
 
+    if (route === 'settings') {
+      if (event.httpMethod === 'POST') {
+        let body = {};
+        try { body = JSON.parse(event.body || '{}'); } catch { /* ignore */ }
+        return reply(200, { ok: true, settings: await saveSettings(body) });
+      }
+      return reply(200, { ok: true, settings: await getSettings() });
+    }
+
     if (route === 'abandoned') {
       const orders = await listOrders(Date.now() - days * DAY_MS);
-      const cutoff = Date.now() - 10 * 60 * 1000;
+      const settings = await getSettings();
+      const cutoff = Date.now() - settings.abandonMinutes * 60 * 1000;
       const abandoned = orders.filter((o) => o.status !== 'paid' && o.createdAt < cutoff);
       return reply(200, { ok: true, abandoned: abandoned.slice(0, 500).map((o) => ({ ...o, price: formatBRL(o.amount) })) });
     }
@@ -136,6 +148,17 @@ exports.handler = async function (event) {
       const amount = Math.max(0, Math.round(Number(body.amount) * 100) || 0); // reais -> centavos
       await setSpend(day, source, amount);
       return reply(200, { ok: true });
+    }
+
+    // Recursos ligar/desligar
+    if (route === 'features') {
+      if (event.httpMethod === 'POST') {
+        let body = {};
+        try { body = JSON.parse(event.body || '{}'); } catch { /* ignore */ }
+        const ok = await setFlag(body.id, !!body.on);
+        return reply(ok ? 200 : 400, { ok, error: ok ? undefined : 'nao_ativavel' });
+      }
+      return reply(200, { ok: true, features: FEATURES, flags: await getFlags() });
     }
 
     // Definir meta do mês

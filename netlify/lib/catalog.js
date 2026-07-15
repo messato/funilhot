@@ -27,6 +27,19 @@ function resolveOffer(offer, plan) {
   return { offer, plan, label: item.label, amount: item.amount };
 }
 
+// Versão que aplica os preços editados no painel (config/settings.json).
+async function resolveOfferLive(offer, plan) {
+  const base = resolveOffer(offer, plan);
+  if (!base) return null;
+  try {
+    const { getSettings } = require('./settings');
+    const s = await getSettings();
+    const p = s.prices && s.prices[`${offer}/${plan}`];
+    if (typeof p === 'number' && p > 0) base.amount = p;
+  } catch { /* mantém o preço padrão se as settings falharem */ }
+  return base;
+}
+
 function formatBRL(cents) {
   return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -49,4 +62,4 @@ function validateLead(payload) {
   return { errors, lead: { nome: nome.slice(0, 120), email: email.slice(0, 160), telefone, cpf } };
 }
 
-module.exports = { CATALOG, resolveOffer, formatBRL, validateLead };
+module.exports = { CATALOG, resolveOffer, resolveOfferLive, formatBRL, validateLead };

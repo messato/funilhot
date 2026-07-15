@@ -130,3 +130,50 @@ test('admin: lança gasto e reflete ROAS no summary', withServer(async (base) =>
   assert.equal(s.kpis.spend, 10000); // R$100 -> 10000 centavos
   delete process.env.ADMIN_PASSWORD;
 }));
+
+test('admin: editar preço em settings reflete no checkout e no público', withServer(async (base) => {
+  process.env.ADMIN_PASSWORD = 'senha-set';
+  const token = (await (await fetch(`${base}/api/admin/login`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: 'senha-set' }),
+  })).json()).token;
+
+  await fetch(`${base}/api/admin/settings`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-key': token },
+    body: JSON.stringify({ prices: { 'checkout/mensal': 5990 }, vipLink: 'https://t.me/+novo' }),
+  });
+
+  const charge = await (await fetch(`${base}/api/checkout`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ offer: 'checkout', plan: 'mensal', nome: 'Ana', email: 'a@a.com', telefone: '11999998888', cpf: '11144477735' }),
+  })).json();
+  assert.equal(charge.data.amount, 5990);
+
+  const pub = await (await fetch(`${base}/api/settings`)).json();
+  assert.equal(pub.settings.prices['checkout/mensal'], 5990);
+  assert.equal(pub.settings.vipLink, 'https://t.me/+novo');
+
+  delete process.env.ADMIN_PASSWORD;
+}));
+
+test('admin: features lista e alterna só os ativos', withServer(async (base) => {
+  process.env.ADMIN_PASSWORD = 'senha-feat';
+  const token = (await (await fetch(`${base}/api/admin/login`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: 'senha-feat' }),
+  })).json()).token;
+
+  const list = await (await fetch(`${base}/api/admin/features`, { headers: { 'x-admin-key': token } })).json();
+  assert.ok(Array.isArray(list.features));
+  assert.ok(list.flags && typeof list.flags.som_venda === 'boolean');
+
+  const okToggle = await fetch(`${base}/api/admin/features`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-key': token }, body: JSON.stringify({ id: 'som_venda', on: false }),
+  });
+  assert.equal(okToggle.status, 200);
+
+  const soon = await fetch(`${base}/api/admin/features`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-key': token }, body: JSON.stringify({ id: 'meta_capi', on: true }),
+  });
+  assert.equal(soon.status, 400);
+
+  delete process.env.ADMIN_PASSWORD;
+}));

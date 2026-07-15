@@ -2,6 +2,7 @@ import { getStore } from '@netlify/blobs';
 import store from '../lib/store.js';
 import metrics from '../lib/metrics.js';
 import catalog from '../lib/catalog.js';
+import features from '../lib/features.js';
 
 store.useGetStore(getStore);
 
@@ -13,6 +14,9 @@ export default async function () {
   const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) {
     return new Response('telegram não configurado', { status: 200 });
+  }
+  if (!(await features.isEnabled('telegram_resumo'))) {
+    return new Response('resumo desativado', { status: 200 });
   }
 
   const s = await metrics.summary(1);

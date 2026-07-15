@@ -233,8 +233,9 @@
 
   // ---------- pedidos / abandonados ----------
   var fmtDH = function (ts) { return ts ? new Date(ts).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; };
-  var maskEmail = function (e) { e = String(e || ''); var at = e.indexOf('@'); return at < 2 ? e : e.slice(0, 2) + '***' + e.slice(at); };
-  var maskPhone = function (p) { p = String(p || '').replace(/\D/g, ''); return p.length < 6 ? p : p.slice(0, 2) + '*****' + p.slice(-2); };
+  var piiOn = function () { return !(state.flags && state.flags.mascarar_pii === false); };
+  var maskEmail = function (e) { e = String(e || ''); if (!piiOn()) return e; var at = e.indexOf('@'); return at < 2 ? e : e.slice(0, 2) + '***' + e.slice(at); };
+  var maskPhone = function (p) { p = String(p || '').replace(/\D/g, ''); if (!piiOn()) return p; return p.length < 6 ? p : p.slice(0, 2) + '*****' + p.slice(-2); };
 
   function renderOrders() {
     var rows = state.orders.filter(function (o) {
@@ -326,7 +327,7 @@
       // alerta de venda nova
       var paidIds = state.orders.filter(function (o) { return o.status === 'paid'; }).map(function (o) { return o.id; });
       if (state.seenPaid === null) { state.seenPaid = {}; paidIds.forEach(function (id) { state.seenPaid[id] = 1; }); }
-      else { var novos = paidIds.filter(function (id) { return !state.seenPaid[id]; }); if (novos.length) { beep(); novos.forEach(function (id) { state.seenPaid[id] = 1; }); } }
+      else { var novos = paidIds.filter(function (id) { return !state.seenPaid[id]; }); if (novos.length) { if (!(state.flags && state.flags.som_venda === false)) beep(); novos.forEach(function (id) { state.seenPaid[id] = 1; }); } }
     }).catch(function () {});
 
     api('abandoned?days=' + state.days).then(function (r) { return r.json(); }).then(function (j) {
@@ -369,9 +370,90 @@
     });
   });
 
+  // ---------- recursos (on/off) ----------
+  function applyFlags() {
+    var f = state.flags || {};
+    var show = function (id, on) { var e = $(id); if (e) e.style.display = (on === false) ? 'none' : ''; };
+    show('sec-goal', f.card_meta); show('sec-traffic', f.card_roas); show('card-produtos', f.card_produtos);
+    show('sec-funnel', f.card_funil); show('sec-heat', f.card_heatmap); show('sec-abandoned', f.card_abandonados);
+    var csv = $('btn-csv'); if (csv) csv.style.display = (f.export_csv === false) ? 'none' : '';
+  }
+  function renderFeatures() {
+    var q = (state.featQuery || '').toLowerCase(), byCat = {}, ativos = 0, total = 0;
+    (state.features || []).forEach(function (f) {
+      if (f.status === 'ativo') total++;
+      if (f.status === 'ativo' && state.flags[f.id]) ativos++;
+      if (q && (f.label + ' ' + f.desc).toLowerCase().indexOf(q) < 0) return;
+      (byCat[f.cat] = byCat[f.cat] || []).push(f);
+    });
+    var html = '';
+    Object.keys(byCat).forEach(function (cat) {
+      html += '<div class="feat-cat">' + esc(cat) + '</div>';
+      byCat[cat].forEach(function (f) {
+        var on = !!state.flags[f.id], soon = f.status !== 'ativo';
+        var badge = soon ? '<span class="badge-soon">em breve</span>' : (on ? '<span class="badge-on">ativo</span>' : '');
+        html += '<div class="feat-row"><div class="fx"><div class="fl">' + esc(f.label) + badge + '</div><div class="fd">' + esc(f.desc) + '</div></div>' +
+          '<div class="sw' + (on ? ' on' : '') + (soon ? ' dis' : '') + '" data-fid="' + f.id + '" data-soon="' + (soon ? 1 : 0) + '"></div></div>';
+      });
+    });
+    $('features-list').innerHTML = html;
+    $('feat-count').textContent = ativos + ' de ' + total + ' recursos ativos · ' + (state.features || []).length + ' no total';
+  }
+
+  // ---------- configurações editáveis ----------
+  var PRICE_LABELS = {
+    'checkout/mensal': 'Checkout — Mensal', 'checkout/trimestral': 'Checkout — Trimestral', 'checkout/anual': 'Checkout — Anual',
+    'upsell/mensal': 'Upsell — Mensal', 'upsell/trimestral': 'Upsell — Trimestral',
+    'downsell/mensal': 'Downsell — Mensal', 'downsell/trimestral': 'Downsell — Trimestral',
+  };
+  function renderSettings() {
+    var s = state.settings; if (!s) return;
+    $('set-prices').innerHTML = Object.keys(PRICE_LABELS).map(function (k) {
+      var reais = ((s.prices[k] || 0) / 100).toFixed(2);
+      return '<div class="feat-row"><div class="fx"><div class="fl">' + PRICE_LABELS[k] + '</div></div>' +
+        '<input class="set-in price-in" data-key="' + k + '" type="number" step="0.01" value="' + reais + '"></div>';
+    }).join('');
+    $('set-vip').value = s.vipLink || ''; $('set-support').value = s.supportLink || '';
+    $('set-recovery').value = s.recoveryMsg || ''; $('set-abandon').value = s.abandonMinutes || 10;
+  }
+  function saveSettings() {
+    var prices = {};
+    document.querySelectorAll('.price-in').forEach(function (inp) { prices[inp.dataset.key] = Math.round(parseFloat(inp.value || '0') * 100); });
+    var patch = {
+      prices: prices,
+      vipLink: $('set-vip').value, supportLink: $('set-support').value,
+      recoveryMsg: $('set-recovery').value, abandonMinutes: parseInt($('set-abandon').value, 10) || 10,
+    };
+    $('set-status').textContent = 'salvando…';
+    api('settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) })
+      .then(function (r) { return r.json(); }).then(function (j) {
+        if (j.ok) { state.settings = j.settings; renderSettings(); $('set-status').textContent = '✅ salvo'; setTimeout(function () { $('set-status').textContent = ''; }, 2500); }
+      }).catch(function () { $('set-status').textContent = 'erro ao salvar'; });
+  }
+
+  function loadConfig() {
+    api('features').then(function (r) { return r.json(); }).then(function (j) {
+      if (!j.ok) return; state.features = j.features; state.flags = j.flags; renderFeatures(); applyFlags();
+    }).catch(function () {});
+    api('settings').then(function (r) { return r.json(); }).then(function (j) {
+      if (!j.ok) return; state.settings = j.settings; renderSettings();
+    }).catch(function () {});
+  }
+
+  $('features-list').addEventListener('click', function (e) {
+    var sw = e.target.closest('.sw'); if (!sw || sw.dataset.soon === '1') return;
+    var id = sw.dataset.fid, on = !state.flags[id];
+    state.flags[id] = on; sw.classList.toggle('on', on);
+    api('features', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, on: on }) })
+      .then(function () { renderFeatures(); applyFlags(); });
+  });
+  $('feat-search').addEventListener('input', function (e) { state.featQuery = e.target.value; renderFeatures(); });
+  $('set-save').addEventListener('click', saveSettings);
+
   function boot() {
     $('login').style.display = 'none';
     $('app').classList.add('on');
+    loadConfig();
     load();
     if (state.timer) clearInterval(state.timer);
     state.timer = setInterval(load, 60000);

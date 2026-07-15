@@ -2,6 +2,7 @@
 
 const { setJSON, getJSON, listKeys, dayKey } = require('./store');
 const { formatBRL } = require('./catalog');
+const { isEnabled } = require('./features');
 
 // Pedidos particionados por mês: orders/<yyyy-mm>/<txid>.json
 function monthOf(ts = Date.now()) {
@@ -48,6 +49,7 @@ async function notifyTelegram(order) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) return;
+  if (!(await isEnabled('telegram_venda'))) return;
 
   const text = [
     '💰 VENDA CONFIRMADA!',

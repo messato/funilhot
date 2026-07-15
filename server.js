@@ -11,6 +11,7 @@ const statusFn = require('./netlify/lib/handlers/status');
 const webhookFn = require('./netlify/lib/handlers/webhook');
 const trackFn = require('./netlify/lib/handlers/track');
 const adminFn = require('./netlify/lib/handlers/admin');
+const settingsFn = require('./netlify/lib/handlers/public-settings');
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
@@ -33,6 +34,7 @@ const API_ROUTES = {
   '/api/status': statusFn,
   '/api/webhook': webhookFn,
   '/api/track': trackFn,
+  '/api/settings': settingsFn,
 };
 
 function readBody(req) {

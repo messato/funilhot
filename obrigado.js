@@ -18,6 +18,14 @@ function revealAccess() {
   statusEl.textContent = '✅ Pagamento confirmado! Seu acesso está liberado.';
 }
 
+// Link do grupo VIP e suporte vêm das configurações editáveis do painel.
+fetch('/api/settings').then(function (r) { return r.json(); }).then(function (j) {
+  if (!j.ok || !j.settings) return;
+  if (acessarBtn && j.settings.vipLink) acessarBtn.setAttribute('href', j.settings.vipLink);
+  var sup = document.querySelector('.suporte a');
+  if (sup && j.settings.supportLink) sup.setAttribute('href', j.settings.supportLink);
+}).catch(function () { /* mantém os links padrão do HTML */ });
+
 // O acesso só aparece depois que o gateway confirmar o pagamento.
 hideAccess();
 if (tituloEl) tituloEl.textContent = 'Confirmando pagamento...';

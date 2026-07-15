@@ -1,6 +1,6 @@
 'use strict';
 
-const { resolveOffer, validateLead, formatBRL } = require('../catalog');
+const { resolveOfferLive, validateLead, formatBRL } = require('../catalog');
 const { createPixCharge } = require('../provider');
 const { rateLimit, clientIp } = require('../ratelimit');
 const { saveOrder } = require('../orders');
@@ -34,7 +34,7 @@ exports.handler = async function (event) {
 
   // Preço é resolvido no servidor a partir de (offer, plan). O valor enviado
   // pelo cliente é ignorado de propósito.
-  const offer = resolveOffer(payload.offer, payload.plan);
+  const offer = await resolveOfferLive(payload.offer, payload.plan);
   if (!offer) {
     return reply(400, { ok: false, error: 'invalid_offer' });
   }

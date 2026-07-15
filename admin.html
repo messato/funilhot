@@ -211,6 +211,24 @@
     .reveal { color: var(--orange); cursor: pointer; font-size: 11px; font-weight: 700; }
     .empty { color: var(--muted); text-align: center; padding: 22px 0; font-size: 13px; }
 
+    /* toggles de recursos */
+    .feat-cat { font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 20px 0 2px; }
+    .feat-row { display: flex; align-items: center; gap: 12px; padding: 12px 2px; border-bottom: 1px solid var(--line); }
+    .feat-row .fx { flex: 1; min-width: 0; }
+    .feat-row .fl { font-weight: 700; font-size: 13.5px; }
+    .feat-row .fd { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .sw { position: relative; width: 44px; height: 25px; border-radius: 999px; background: var(--bar); cursor: pointer; transition: background .15s; flex-shrink: 0; border: 1px solid var(--line); }
+    .sw.on { background: var(--orange); border-color: transparent; }
+    .sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 17px; height: 17px; border-radius: 50%; background: #fff; transition: left .15s; }
+    .sw.on::after { left: 22px; }
+    .sw.dis { opacity: .35; cursor: not-allowed; }
+    .badge-soon { background: var(--bar); color: var(--ink-2); font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 999px; margin-left: 6px; }
+    .badge-on { background: var(--good-dim); color: var(--good); font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 999px; margin-left: 6px; }
+    .set-in { width: 100%; padding: 11px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--page); color: var(--ink); font-size: 14px; margin: 4px 0 12px; outline: none; }
+    .set-in:focus { border-color: var(--orange); }
+    textarea.set-in { min-height: 70px; resize: vertical; font-family: inherit; }
+    .price-in { max-width: 130px; text-align: right; margin: 0; }
+
     .section { scroll-margin-top: 74px; }
     .foot { color: var(--muted); font-size: 11px; text-align: center; padding: 24px 0 8px; }
 
@@ -255,6 +273,8 @@
       <div class="nav-label">Configurar</div>
       <div class="nav-item" data-go="sec-goal"><span class="ic">🎯</span> Meta do mês</div>
       <div class="nav-item" data-go="sec-spend"><span class="ic">💸</span> Gasto de tráfego</div>
+      <div class="nav-item" data-go="sec-settings"><span class="ic">⚙️</span> Configurações</div>
+      <div class="nav-item" data-go="sec-config"><span class="ic">🧩</span> Recursos (on/off)</div>
 
       <div class="side-foot">
         <div class="t"><span class="dot"></span><span id="foot-provider">carregando…</span></div>
@@ -328,7 +348,7 @@
             <div class="cap">Marque seus anúncios com <code>?utm_source=…&utm_campaign=…</code>. Lance o gasto abaixo pra ver o retorno.</div>
             <div class="table-scroll"><div id="utm"></div></div>
           </div>
-          <div class="card">
+          <div class="card" id="card-produtos">
             <h2>Vendas por produto</h2>
             <div class="cap">Faturamento por oferta no período.</div>
             <div class="table-scroll"><div id="products"></div></div>
@@ -357,6 +377,31 @@
             </div>
           </div>
           <div class="table-scroll"><div id="orders"></div></div>
+        </div>
+
+        <div class="card section" id="sec-settings" style="margin-top:18px">
+          <h2>Configurações gerais</h2>
+          <div class="cap">Edite preços, links e textos aqui — vale na hora, sem mexer no código.</div>
+          <div class="feat-cat">Preços dos planos (R$)</div>
+          <div id="set-prices"></div>
+          <div class="feat-cat">Links</div>
+          <label class="sub">Link do grupo VIP (Telegram)</label>
+          <input id="set-vip" class="set-in" placeholder="https://t.me/+..." />
+          <label class="sub">Link de suporte</label>
+          <input id="set-support" class="set-in" placeholder="https://t.me/..." />
+          <div class="feat-cat">Mensagens & regras</div>
+          <label class="sub">Mensagem de recuperação (use {nome} e {produto})</label>
+          <textarea id="set-recovery" class="set-in"></textarea>
+          <label class="sub">Considerar PIX abandonado após (minutos)</label>
+          <input id="set-abandon" type="number" class="set-in" style="max-width:130px" />
+          <div><button class="btn-o" id="set-save">Salvar configurações</button> <span id="set-status" class="sub" style="margin-left:10px"></span></div>
+        </div>
+
+        <div class="card section" id="sec-config" style="margin-top:18px">
+          <h2>Recursos <span class="hint" id="feat-count"></span></h2>
+          <div class="cap">Ative e desative cada funcionalidade. Os marcados “em breve” entram nas próximas fases — vão sendo ligados conforme eu construo.</div>
+          <div class="tbl-search" style="margin-bottom:6px">🔎 <input id="feat-search" placeholder="Buscar recurso…" /></div>
+          <div id="features-list"></div>
         </div>
 
         <div class="foot" id="foot-updated">—</div>
