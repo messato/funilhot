@@ -22,8 +22,11 @@ async function toEvent(req) {
 }
 
 function toResponse(result) {
-  return new Response(result.body || '', {
-    status: result.statusCode || 200,
+  const status = result.statusCode || 200;
+  // Status "sem corpo" (204/205/304) exigem body null — string vazia é inválida.
+  const body = [101, 204, 205, 304].includes(status) ? null : (result.body || '');
+  return new Response(body, {
+    status,
     headers: result.headers || {},
   });
 }
