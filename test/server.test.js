@@ -75,22 +75,58 @@ test('POST /api/track grava evento de visualização', withServer(async (base) =
   assert.equal(response.status, 204);
 }));
 
-test('admin exige senha e summary responde com ela', withServer(async (base) => {
+test('admin: login por senha emite token e protege as rotas', withServer(async (base) => {
   process.env.ADMIN_PASSWORD = 'senha-de-teste';
 
+  // sem token -> 401
   const noAuth = await fetch(`${base}/api/admin/summary`);
   assert.equal(noAuth.status, 401);
 
-  const wrong = await fetch(`${base}/api/admin/summary`, { headers: { 'x-admin-key': 'errada' } });
-  assert.equal(wrong.status, 401);
+  // senha errada no login -> 401
+  const badLogin = await fetch(`${base}/api/admin/login`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: 'errada' }),
+  });
+  assert.equal(badLogin.status, 401);
 
-  const ok = await fetch(`${base}/api/admin/summary?days=7`, { headers: { 'x-admin-key': 'senha-de-teste' } });
+  // login correto -> token
+  const login = await fetch(`${base}/api/admin/login`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: 'senha-de-teste' }),
+  });
+  const loginBody = await login.json();
+  assert.equal(login.status, 200);
+  assert.ok(loginBody.token);
+
+  // token inválido -> 401
+  const forged = await fetch(`${base}/api/admin/summary`, { headers: { 'x-admin-key': '999.abc' } });
+  assert.equal(forged.status, 401);
+
+  // token válido -> 200 com métricas
+  const ok = await fetch(`${base}/api/admin/summary?days=7`, { headers: { 'x-admin-key': loginBody.token } });
   const body = await ok.json();
   assert.equal(ok.status, 200);
   assert.equal(body.ok, true);
   assert.ok(Array.isArray(body.daily));
   assert.ok(Array.isArray(body.funnel));
   assert.ok(body.kpis);
+  assert.ok(body.goal);
+  assert.ok(Array.isArray(body.heatmap));
 
+  delete process.env.ADMIN_PASSWORD;
+}));
+
+test('admin: lança gasto e reflete ROAS no summary', withServer(async (base) => {
+  process.env.ADMIN_PASSWORD = 'senha-roas';
+  const token = (await (await fetch(`${base}/api/admin/login`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: 'senha-roas' }),
+  })).json()).token;
+
+  const spend = await fetch(`${base}/api/admin/spend`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-key': token },
+    body: JSON.stringify({ source: 'instagram', amount: 100 }),
+  });
+  assert.equal(spend.status, 200);
+
+  const s = await (await fetch(`${base}/api/admin/summary?days=1`, { headers: { 'x-admin-key': token } })).json();
+  assert.equal(s.kpis.spend, 10000); // R$100 -> 10000 centavos
   delete process.env.ADMIN_PASSWORD;
 }));

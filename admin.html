@@ -8,221 +8,359 @@
   <title>Funil — Painel</title>
   <style>
     :root {
-      --surface: #fcfcfb;
-      --page: #f9f9f7;
-      --ink: #0b0b0b;
-      --ink-2: #52514e;
-      --muted: #898781;
-      --grid: #e1e0d9;
-      --axis: #c3c2b7;
-      --accent: #2a78d6;
-      --accent-soft: #cde2fb;
-      --good: #006300;
-      --bad: #d03b3b;
-      --card-border: rgba(11,11,11,.10);
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --surface: #1a1a19;
-        --page: #0d0d0d;
-        --ink: #ffffff;
-        --ink-2: #c3c2b7;
-        --muted: #898781;
-        --grid: #2c2c2a;
-        --axis: #383835;
-        --accent: #3987e5;
-        --accent-soft: #184f95;
-        --good: #0ca30c;
-        --card-border: rgba(255,255,255,.10);
-      }
+      --page: #0d0d0d;
+      --sidebar: #141414;
+      --card: #1a1a1a;
+      --card-2: #202020;
+      --line: rgba(255,255,255,.07);
+      --line-strong: rgba(255,255,255,.12);
+      --ink: #ffffff;
+      --ink-2: #a0a0a0;
+      --muted: #6b6b6b;
+      --orange: #ff6a2b;
+      --orange-2: #f0500f;
+      --orange-soft: rgba(255,106,43,.14);
+      --good: #34d399;
+      --good-dim: #1c3a2c;
+      --bad: #f87171;
+      --grid: #262626;
+      --bar: #2b2b2b;
     }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * , *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
     body {
       font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
       background: var(--page);
       color: var(--ink);
-      min-height: 100vh;
       font-size: 14px;
+      -webkit-font-smoothing: antialiased;
     }
+    a { color: inherit; text-decoration: none; }
 
-    .topbar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 16px; background: var(--surface);
-      border-bottom: 1px solid var(--grid);
-      position: sticky; top: 0; z-index: 10;
-      gap: 8px; flex-wrap: wrap;
-    }
-    .topbar h1 { font-size: 16px; font-weight: 800; }
-    .topbar .sub { color: var(--muted); font-size: 12px; }
-
-    .wrap { max-width: 1080px; margin: 0 auto; padding: 16px; }
-
-    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-
-    .chip {
-      border: 1px solid var(--grid); background: var(--surface); color: var(--ink-2);
-      padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer;
-    }
-    .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
-
-    .banner {
-      margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; font-size: 13px;
-      background: #fff7e6; color: #7a5c00; border: 1px solid #ffd98a; display: none;
-    }
-    @media (prefers-color-scheme: dark) {
-      .banner { background: #33290a; color: #fab219; border-color: #665312; }
-    }
-
-    .kpis {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 10px; margin-top: 14px;
-    }
-    .kpi {
-      background: var(--surface); border: 1px solid var(--card-border);
-      border-radius: 14px; padding: 14px;
-    }
-    .kpi .label { color: var(--muted); font-size: 12px; font-weight: 700; margin-bottom: 6px; }
-    .kpi .value { font-size: 24px; font-weight: 900; letter-spacing: -.3px; }
-    .kpi .delta { font-size: 12px; font-weight: 700; margin-top: 4px; }
-    .delta.up { color: var(--good); }
-    .delta.down { color: var(--bad); }
-    .delta.flat { color: var(--muted); }
-
-    .card {
-      background: var(--surface); border: 1px solid var(--card-border);
-      border-radius: 14px; padding: 16px; margin-top: 14px;
-    }
-    .card h2 { font-size: 14px; font-weight: 800; margin-bottom: 12px; }
-    .card h2 .hint { color: var(--muted); font-weight: 600; font-size: 12px; }
-
-    .chart-scroll { overflow-x: auto; }
-    svg text { font-family: inherit; }
-
-    .funnel-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .funnel-label { width: 42%; min-width: 160px; font-size: 13px; color: var(--ink-2); }
-    .funnel-track { flex: 1; height: 22px; position: relative; }
-    .funnel-bar {
-      height: 100%; background: var(--accent); border-radius: 0 4px 4px 0;
-      min-width: 2px; transition: width .4s ease;
-    }
-    .funnel-num { font-size: 12px; font-weight: 800; white-space: nowrap; width: 110px; }
-    .funnel-num .pct { color: var(--muted); font-weight: 600; }
-
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th {
-      text-align: left; color: var(--muted); font-size: 11px; text-transform: uppercase;
-      letter-spacing: .05em; padding: 8px 10px; border-bottom: 1px solid var(--grid);
-    }
-    td { padding: 9px 10px; border-bottom: 1px solid var(--grid); }
-    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-    .table-scroll { overflow-x: auto; }
-
-    .pill { padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 800; }
-    .pill.paid { background: #dcfce7; color: #166534; }
-    .pill.pending { background: #fef3c7; color: #92400e; }
-    @media (prefers-color-scheme: dark) {
-      .pill.paid { background: #0d3a1d; color: #4ade80; }
-      .pill.pending { background: #3a2e0d; color: #fbbf24; }
-    }
-
-    .btn {
-      border: none; border-radius: 10px; padding: 9px 14px; font-size: 13px;
-      font-weight: 800; cursor: pointer; background: var(--accent); color: #fff;
-    }
-    .btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
-    .wa {
-      color: #16a34a; font-weight: 800; text-decoration: none; white-space: nowrap;
-    }
-
-    .empty { color: var(--muted); text-align: center; padding: 18px 0; font-size: 13px; }
-
-    /* Login */
+    /* ---------- Login ---------- */
     #login {
-      max-width: 340px; margin: 18vh auto 0; background: var(--surface);
-      border: 1px solid var(--card-border); border-radius: 16px; padding: 24px; text-align: center;
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(1200px 600px at 70% -10%, rgba(255,106,43,.10), transparent), var(--page);
+      padding: 20px;
     }
-    #login h1 { font-size: 18px; margin-bottom: 4px; }
-    #login p { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+    #login .box {
+      width: 100%; max-width: 360px; background: var(--card); border: 1px solid var(--line);
+      border-radius: 20px; padding: 28px; text-align: center;
+    }
+    #login .logo-badge { width: 44px; height: 44px; border-radius: 12px; margin: 0 auto 14px;
+      background: linear-gradient(135deg, var(--orange), var(--orange-2)); display: grid; place-items: center; font-size: 22px; }
+    #login h1 { font-size: 19px; margin-bottom: 4px; }
+    #login p { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
     #login input {
-      width: 100%; padding: 12px; border: 1px solid var(--grid); border-radius: 10px;
-      background: var(--page); color: var(--ink); font-size: 14px; margin-bottom: 10px; outline: none;
+      width: 100%; padding: 13px 14px; border: 1px solid var(--line-strong); border-radius: 12px;
+      background: var(--page); color: var(--ink); font-size: 15px; margin-bottom: 12px; outline: none;
     }
-    #login input:focus { border-color: var(--accent); }
-    #login .erro { color: var(--bad); font-size: 13px; margin-top: 8px; display: none; }
+    #login input:focus { border-color: var(--orange); }
+    #login .erro { color: var(--bad); font-size: 13px; margin-top: 10px; min-height: 18px; }
 
-    #app { display: none; }
-    .foot { color: var(--muted); font-size: 11px; text-align: center; padding: 20px 0; }
+    /* ---------- App shell ---------- */
+    #app { display: none; min-height: 100vh; grid-template-columns: 248px 1fr; }
+    #app.on { display: grid; }
+
+    .sidebar {
+      background: var(--sidebar); border-right: 1px solid var(--line);
+      padding: 18px 14px; display: flex; flex-direction: column; gap: 6px;
+      position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 4px 6px 14px; }
+    .brand .mark { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--orange), var(--orange-2)); display: grid; place-items: center; font-size: 18px; }
+    .brand b { font-size: 16px; letter-spacing: -.2px; }
+    .brand span { color: var(--muted); font-size: 11px; display: block; font-weight: 500; }
+
+    .side-search { display: flex; align-items: center; gap: 8px; background: var(--page); border: 1px solid var(--line);
+      border-radius: 10px; padding: 9px 11px; color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+    .side-search input { flex: 1; background: none; border: none; outline: none; color: var(--ink); font-size: 13px; }
+
+    .nav-label { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; padding: 14px 8px 6px; }
+    .nav-item { display: flex; align-items: center; gap: 11px; padding: 10px 11px; border-radius: 10px; color: var(--ink-2);
+      font-weight: 600; cursor: pointer; font-size: 13.5px; border: 1px solid transparent; }
+    .nav-item:hover { background: var(--card); color: var(--ink); }
+    .nav-item.active { background: var(--card); color: var(--ink); border-color: var(--line); }
+    .nav-item .ic { width: 18px; height: 18px; flex-shrink: 0; opacity: .9; }
+    .nav-item .badge { margin-left: auto; background: var(--orange-soft); color: var(--orange); font-size: 11px; font-weight: 800; padding: 1px 8px; border-radius: 999px; }
+
+    .side-foot { margin-top: auto; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+    .side-foot .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); display: inline-block; margin-right: 6px; box-shadow: 0 0 0 3px var(--good-dim); }
+    .side-foot .t { font-size: 12.5px; font-weight: 700; }
+    .side-foot .s { color: var(--muted); font-size: 11px; margin-top: 3px; }
+
+    /* ---------- Main ---------- */
+    .main { min-width: 0; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 14px 22px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: rgba(13,13,13,.85);
+      backdrop-filter: blur(8px); z-index: 20; }
+    .crumbs { color: var(--muted); font-size: 13px; font-weight: 600; }
+    .crumbs b { color: var(--ink); }
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .icon-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--card);
+      display: grid; place-items: center; cursor: pointer; color: var(--ink-2); }
+    .icon-btn:hover { color: var(--ink); border-color: var(--line-strong); }
+    .live { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); background: var(--card);
+      border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+    .live .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--good); animation: pulse 1.6s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+
+    .content { padding: 22px; max-width: 1240px; }
+
+    .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+    .page-head h1 { font-size: 22px; letter-spacing: -.4px; }
+    .page-head p { color: var(--muted); font-size: 13px; margin-top: 3px; }
+    .seg { display: inline-flex; background: var(--card); border: 1px solid var(--line); border-radius: 11px; padding: 3px; gap: 2px; }
+    .seg button { border: none; background: none; color: var(--ink-2); font-weight: 700; font-size: 12.5px; padding: 7px 13px; border-radius: 8px; cursor: pointer; }
+    .seg button.on { background: var(--orange); color: #fff; }
+    .btn-o { background: linear-gradient(135deg, var(--orange), var(--orange-2)); color: #fff; border: none; border-radius: 11px; padding: 9px 15px; font-weight: 800; font-size: 13px; cursor: pointer; }
+    .btn-ghost { background: var(--card); border: 1px solid var(--line); color: var(--ink-2); border-radius: 11px; padding: 9px 13px; font-weight: 700; font-size: 13px; cursor: pointer; }
+    .btn-ghost:hover { color: var(--ink); }
+
+    .banner { margin-bottom: 16px; padding: 12px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5;
+      background: rgba(255,106,43,.08); color: #ffb98f; border: 1px solid rgba(255,106,43,.25); display: none; }
+
+    /* Hero KPI cards */
+    .hero-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 14px; }
+    .hero { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; position: relative; overflow: hidden; }
+    .hero.accent { background: linear-gradient(135deg, var(--orange) 0%, var(--orange-2) 100%); border-color: transparent; }
+    .hero .h-top { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .hero .h-ic { width: 38px; height: 38px; border-radius: 11px; background: rgba(255,255,255,.10); display: grid; place-items: center; font-size: 18px; }
+    .hero.accent .h-ic { background: rgba(255,255,255,.22); }
+    .hero .h-title { font-weight: 800; font-size: 14px; }
+    .hero .h-sub { font-size: 11.5px; color: var(--muted); }
+    .hero.accent .h-sub { color: rgba(255,255,255,.8); }
+    .hero .h-val { font-size: 30px; font-weight: 900; letter-spacing: -.6px; }
+    .hero .h-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--ink-2); }
+    .hero.accent .h-foot { border-top-color: rgba(255,255,255,.22); color: rgba(255,255,255,.9); }
+    .delta { font-weight: 800; font-size: 12px; }
+    .delta.up { color: var(--good); } .delta.down { color: var(--bad); } .delta.flat { color: var(--muted); }
+    .hero.accent .delta.up, .hero.accent .delta.down, .hero.accent .delta.flat { color: #fff; }
+
+    /* mini KPI strip */
+    .mini-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .mini { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+    .mini .l { color: var(--muted); font-size: 11.5px; font-weight: 700; margin-bottom: 6px; }
+    .mini .v { font-size: 20px; font-weight: 900; letter-spacing: -.3px; }
+    .mini .d { font-size: 11px; font-weight: 700; margin-top: 3px; }
+
+    .two-col { display: grid; grid-template-columns: 380px 1fr; gap: 14px; margin-bottom: 18px; }
+    .two-col.even { grid-template-columns: 1fr 1fr; }
+
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; }
+    .card h2 { font-size: 15px; font-weight: 800; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+    .card h2 .hint { color: var(--muted); font-weight: 600; font-size: 11.5px; }
+    .card .cap { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+
+    /* Meta / progresso */
+    .goal-val { font-size: 26px; font-weight: 900; letter-spacing: -.5px; }
+    .goal-sub { color: var(--muted); font-size: 12px; margin: 2px 0 14px; }
+    .track { height: 12px; border-radius: 999px; background: var(--bar); overflow: hidden; }
+    .track > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--orange), var(--orange-2)); }
+    .goal-legend { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--ink-2); }
+    .prod-mini { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .prod-cell { background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 11px; }
+    .prod-cell .pn { font-size: 12px; color: var(--ink-2); font-weight: 700; }
+    .prod-cell .pv { font-size: 16px; font-weight: 900; margin-top: 3px; }
+    .prod-cell .pc { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+    /* Chart */
+    .chart-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+    .chart-big { font-size: 28px; font-weight: 900; letter-spacing: -.6px; }
+    .chart-cap { color: var(--muted); font-size: 12px; }
+    .chart-wrap { position: relative; overflow-x: auto; }
+    .tooltip { position: absolute; pointer-events: none; background: #000; border: 1px solid var(--line-strong);
+      border-radius: 10px; padding: 8px 10px; font-size: 12px; opacity: 0; transition: opacity .12s; white-space: nowrap; z-index: 5; }
+    .tooltip b { display: block; color: var(--muted); font-weight: 700; font-size: 10.5px; margin-bottom: 2px; }
+
+    /* Funil */
+    .fn-row { display: flex; align-items: center; gap: 12px; margin-bottom: 9px; }
+    .fn-label { width: 210px; min-width: 150px; font-size: 13px; color: var(--ink-2); }
+    .fn-track { flex: 1; height: 26px; background: var(--bar); border-radius: 8px; overflow: hidden; }
+    .fn-bar { height: 100%; background: linear-gradient(90deg, var(--orange), var(--orange-2)); border-radius: 8px; min-width: 3px; transition: width .5s; }
+    .fn-num { width: 120px; text-align: right; font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .fn-num .pct { color: var(--muted); font-weight: 600; font-size: 11.5px; }
+
+    /* Heatmap */
+    .heat { overflow-x: auto; }
+    .heat table { border-collapse: separate; border-spacing: 3px; }
+    .heat td, .heat th { text-align: center; }
+    .heat th { color: var(--muted); font-size: 10px; font-weight: 700; padding: 2px; }
+    .heat .cell { width: 100%; min-width: 20px; height: 20px; border-radius: 4px; background: var(--bar); }
+    .heat .rowlabel { color: var(--muted); font-size: 11px; font-weight: 700; padding-right: 6px; text-align: right; white-space: nowrap; }
+
+    /* Tables */
+    .tbl-tools { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .tbl-search { display: flex; align-items: center; gap: 7px; background: var(--page); border: 1px solid var(--line); border-radius: 10px; padding: 8px 11px; flex: 1; min-width: 160px; }
+    .tbl-search input { flex: 1; background: none; border: none; outline: none; color: var(--ink); font-size: 13px; }
+    table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.data th { text-align: left; color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+    table.data td { padding: 11px 10px; border-bottom: 1px solid var(--line); }
+    table.data tr:last-child td { border-bottom: none; }
+    table.data td.num, table.data th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .table-scroll { overflow-x: auto; }
+    .sub { color: var(--muted); font-size: 11px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+    .pill.paid { background: var(--good-dim); color: var(--good); }
+    .pill.pending { background: #3a2e0d; color: #fbbf24; }
+    .pill .pd { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .roas-tag { font-weight: 800; }
+    .roas-tag.good { color: var(--good); } .roas-tag.bad { color: var(--bad); }
+    .wa { color: var(--good); font-weight: 800; white-space: nowrap; }
+    .reveal { color: var(--orange); cursor: pointer; font-size: 11px; font-weight: 700; }
+    .empty { color: var(--muted); text-align: center; padding: 22px 0; font-size: 13px; }
+
+    .section { scroll-margin-top: 74px; }
+    .foot { color: var(--muted); font-size: 11px; text-align: center; padding: 24px 0 8px; }
+
+    @media (max-width: 900px) {
+      #app.on { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .hero-row { grid-template-columns: 1fr; }
+      .two-col, .two-col.even { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
 
+  <!-- ===== Login ===== -->
   <div id="login">
-    <h1>🔒 Painel do Funil</h1>
-    <p>Digite a senha de administrador</p>
-    <input type="password" id="senha" placeholder="Senha" autocomplete="current-password" />
-    <button class="btn" id="entrar" style="width:100%">Entrar</button>
-    <div class="erro" id="login-erro">Senha incorreta.</div>
+    <div class="box">
+      <div class="logo-badge">🔥</div>
+      <h1>Painel do Funil</h1>
+      <p>Acesso restrito — digite a senha</p>
+      <input type="password" id="senha" placeholder="Senha de administrador" autocomplete="current-password" />
+      <button class="btn-o" id="entrar" style="width:100%;padding:13px">Entrar</button>
+      <div class="erro" id="login-erro"></div>
+    </div>
   </div>
 
+  <!-- ===== App ===== -->
   <div id="app">
-    <div class="topbar">
-      <div>
-        <h1>📊 Painel do Funil</h1>
-        <div class="sub" id="atualizado">carregando…</div>
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="mark">🔥</div>
+        <div><b>Funil VIP</b><span>painel de métricas</span></div>
       </div>
-      <div class="row">
-        <button class="chip" data-days="1">Hoje</button>
-        <button class="chip on" data-days="7">7 dias</button>
-        <button class="chip" data-days="30">30 dias</button>
-        <button class="chip" data-days="90">90 dias</button>
-        <button class="btn ghost" id="csv">⬇ CSV</button>
-        <button class="chip" id="sair">Sair</button>
+      <div class="side-search">🔎 <input id="side-search" placeholder="Buscar pedido…" /></div>
+
+      <div class="nav-item active" data-go="sec-overview"><span class="ic">📊</span> Visão geral</div>
+      <div class="nav-item" data-go="sec-chart"><span class="ic">💹</span> Receita</div>
+      <div class="nav-item" data-go="sec-funnel"><span class="ic">🫗</span> Funil</div>
+      <div class="nav-item" data-go="sec-traffic"><span class="ic">📣</span> Tráfego / ROAS</div>
+      <div class="nav-item" data-go="sec-orders"><span class="ic">🧾</span> Pedidos <span class="badge" id="nav-orders">0</span></div>
+      <div class="nav-item" data-go="sec-abandoned"><span class="ic">🔥</span> Abandonados <span class="badge" id="nav-aband">0</span></div>
+
+      <div class="nav-label">Configurar</div>
+      <div class="nav-item" data-go="sec-goal"><span class="ic">🎯</span> Meta do mês</div>
+      <div class="nav-item" data-go="sec-spend"><span class="ic">💸</span> Gasto de tráfego</div>
+
+      <div class="side-foot">
+        <div class="t"><span class="dot"></span><span id="foot-provider">carregando…</span></div>
+        <div class="s" id="foot-storage"></div>
       </div>
-    </div>
+    </aside>
 
-    <div class="wrap">
-      <div class="banner" id="banner"></div>
-
-      <div class="kpis" id="kpis"></div>
-
-      <div class="card">
-        <h2>Evolução diária <span class="hint" id="chart-hint"></span></h2>
-        <div class="row" style="margin-bottom:10px">
-          <button class="chip on" data-metric="revenue">Receita</button>
-          <button class="chip" data-metric="pago">Vendas</button>
-          <button class="chip" data-metric="pix">PIX gerados</button>
-          <button class="chip" data-metric="visits">Visitas</button>
+    <div class="main">
+      <div class="topbar">
+        <div class="crumbs">Funil VIP <span style="opacity:.4">›</span> <b>Painel</b></div>
+        <div class="top-actions">
+          <div class="live"><span class="pulse"></span> ao vivo</div>
+          <button class="icon-btn" id="btn-refresh" title="Atualizar">⟳</button>
+          <button class="icon-btn" id="btn-sair" title="Sair">⏻</button>
         </div>
-        <div class="chart-scroll"><div id="chart"></div></div>
       </div>
 
-      <div class="card">
-        <h2>Funil de conversão</h2>
-        <div id="funnel"></div>
-      </div>
+      <div class="content">
+        <div class="page-head" id="sec-overview">
+          <div>
+            <h1>Visão geral</h1>
+            <p id="head-sub">Resumo do desempenho do funil</p>
+          </div>
+          <div class="top-actions">
+            <div class="seg" id="period">
+              <button data-days="1">Hoje</button>
+              <button data-days="7" class="on">7 dias</button>
+              <button data-days="30">30 dias</button>
+              <button data-days="90">90 dias</button>
+            </div>
+            <button class="btn-ghost" id="btn-csv">⬇ CSV</button>
+          </div>
+        </div>
 
-      <div class="card">
-        <h2>Vendas por produto</h2>
-        <div class="table-scroll"><div id="products"></div></div>
-      </div>
+        <div class="banner" id="banner"></div>
 
-      <div class="card">
-        <h2>Origens de tráfego <span class="hint">(UTM)</span></h2>
-        <div class="table-scroll"><div id="utm"></div></div>
-      </div>
+        <div class="hero-row" id="hero"></div>
+        <div class="mini-row" id="mini"></div>
 
-      <div class="card">
-        <h2>🔥 PIX abandonados <span class="hint">gerou e não pagou — recupere pelo WhatsApp</span></h2>
-        <div class="table-scroll"><div id="abandoned"></div></div>
-      </div>
+        <div class="two-col">
+          <div class="card section" id="sec-goal">
+            <h2>Meta do mês <span class="hint" id="goal-edit" style="cursor:pointer;color:var(--orange)">editar</span></h2>
+            <div id="goal-body"></div>
+          </div>
+          <div class="card section" id="sec-chart">
+            <div class="chart-head">
+              <div>
+                <div class="chart-big" id="chart-big">R$ 0,00</div>
+                <div class="chart-cap" id="chart-cap">receita no período</div>
+              </div>
+              <div class="seg" id="metric">
+                <button data-metric="revenue" class="on">Receita</button>
+                <button data-metric="pago">Vendas</button>
+                <button data-metric="pix">PIX</button>
+                <button data-metric="visits">Visitas</button>
+              </div>
+            </div>
+            <div class="chart-wrap"><div id="chart"></div><div class="tooltip" id="tip"></div></div>
+          </div>
+        </div>
 
-      <div class="card">
-        <h2>Últimos pedidos</h2>
-        <div class="table-scroll"><div id="orders"></div></div>
-      </div>
+        <div class="card section" id="sec-funnel" style="margin-bottom:18px">
+          <h2>Funil de conversão <span class="hint">onde as pessoas param</span></h2>
+          <div class="cap">Do primeiro clique até o pagamento — cada etapa mostra quantos passaram e a % de quem veio da etapa anterior.</div>
+          <div id="funnel"></div>
+        </div>
 
-      <div class="foot">Atualiza sozinho a cada 60s • Horário de Brasília</div>
+        <div class="two-col even">
+          <div class="card section" id="sec-traffic">
+            <h2>Origens de tráfego <span class="hint">ROAS por origem</span></h2>
+            <div class="cap">Marque seus anúncios com <code>?utm_source=…&utm_campaign=…</code>. Lance o gasto abaixo pra ver o retorno.</div>
+            <div class="table-scroll"><div id="utm"></div></div>
+          </div>
+          <div class="card">
+            <h2>Vendas por produto</h2>
+            <div class="cap">Faturamento por oferta no período.</div>
+            <div class="table-scroll"><div id="products"></div></div>
+          </div>
+        </div>
+
+        <div class="card section" style="margin:18px 0" id="sec-heat">
+          <h2>Melhores horários <span class="hint">vendas por dia da semana × hora (Brasília)</span></h2>
+          <div class="cap">Mais escuro = mais vendas. Use pra decidir quando escalar anúncio e postar.</div>
+          <div class="heat" id="heat"></div>
+        </div>
+
+        <div class="card section" style="margin-bottom:18px" id="sec-abandoned">
+          <h2>🔥 PIX abandonados <span class="hint">gerou e não pagou — recupere pelo WhatsApp</span></h2>
+          <div class="table-scroll"><div id="abandoned"></div></div>
+        </div>
+
+        <div class="card section" id="sec-orders">
+          <h2>Pedidos recentes</h2>
+          <div class="tbl-tools">
+            <div class="tbl-search">🔎 <input id="order-search" placeholder="Buscar por nome, e-mail ou ID…" /></div>
+            <div class="seg" id="order-filter">
+              <button data-status="" class="on">Todos</button>
+              <button data-status="paid">Pagos</button>
+              <button data-status="pending">Pendentes</button>
+            </div>
+          </div>
+          <div class="table-scroll"><div id="orders"></div></div>
+        </div>
+
+        <div class="foot" id="foot-updated">—</div>
+      </div>
     </div>
   </div>
 

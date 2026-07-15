@@ -2,275 +2,383 @@
 (function () {
   'use strict';
 
-  var state = { days: 7, metric: 'revenue', data: null, timer: null };
+  var ORANGE = '#ff8a4c', ORANGE2 = '#f0500f', BAR = '#2b2b2b', MUTED = '#6b6b6b';
+  var state = { days: 7, metric: 'revenue', data: null, orders: [], orderStatus: '', orderQuery: '', timer: null, seenPaid: null, audio: null };
 
   var $ = function (id) { return document.getElementById(id); };
-  var brl = function (cents) {
-    return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  };
-  var esc = function (s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  };
+  var el = function (tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+  var brl = function (c) { return (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var todayBRT = function () { return new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 10); };
 
-  function key() { return sessionStorage.getItem('admin_key') || ''; }
-
-  function api(path) {
-    return fetch('/api/admin/' + path, { headers: { 'x-admin-key': key() } }).then(function (r) {
+  // ---------- auth ----------
+  function token() { return sessionStorage.getItem('admin_token') || ''; }
+  function api(path, opts) {
+    opts = opts || {};
+    opts.headers = Object.assign({ 'x-admin-key': token() }, opts.headers || {});
+    return fetch('/api/admin/' + path, opts).then(function (r) {
       if (r.status === 401) { logout(); throw new Error('unauthorized'); }
       return r;
     });
   }
-
   function logout() {
-    sessionStorage.removeItem('admin_key');
+    sessionStorage.removeItem('admin_token');
     if (state.timer) clearInterval(state.timer);
-    $('app').style.display = 'none';
-    $('login').style.display = 'block';
+    $('app').classList.remove('on');
+    $('login').style.display = 'flex';
   }
-
-  // ---------- Login ----------
-  function tryLogin() {
-    var pass = $('senha').value.trim();
+  function doLogin() {
+    var pass = $('senha').value;
     if (!pass) return;
-    fetch('/api/admin/ping', { headers: { 'x-admin-key': pass } }).then(function (r) {
-      if (r.ok) {
-        sessionStorage.setItem('admin_key', pass);
+    initAudio();
+    $('login-erro').textContent = 'Entrando…';
+    fetch('/api/admin/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pass }),
+    }).then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); }).then(function (res) {
+      if (res.s === 200 && res.j.token) {
+        sessionStorage.setItem('admin_token', res.j.token);
         boot();
+      } else if (res.s === 429) {
+        $('login-erro').textContent = 'Muitas tentativas. Aguarde alguns minutos.';
       } else {
-        $('login-erro').style.display = 'block';
+        $('login-erro').textContent = 'Senha incorreta.';
       }
+    }).catch(function () { $('login-erro').textContent = 'Erro de conexão.'; });
+  }
+  $('entrar').addEventListener('click', doLogin);
+  $('senha').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
+  $('btn-sair').addEventListener('click', logout);
+
+  // ---------- alerta sonoro de venda ----------
+  function initAudio() { try { if (!state.audio) state.audio = new (window.AudioContext || window.webkitAudioContext)(); if (state.audio.state === 'suspended') state.audio.resume(); } catch (e) { /* sem áudio */ } }
+  function beep() {
+    if (!state.audio) return;
+    [880, 1320].forEach(function (freq, i) {
+      var o = state.audio.createOscillator(), g = state.audio.createGain();
+      o.type = 'sine'; o.frequency.value = freq;
+      var t = state.audio.currentTime + i * 0.14;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+      o.connect(g); g.connect(state.audio.destination); o.start(t); o.stop(t + 0.14);
     });
   }
-  $('entrar').addEventListener('click', tryLogin);
-  $('senha').addEventListener('keydown', function (e) { if (e.key === 'Enter') tryLogin(); });
-  $('sair').addEventListener('click', logout);
 
-  // ---------- KPIs ----------
-  function delta(curr, prev, invert) {
-    if (!prev) return '<span class="delta flat">—</span>';
+  // ---------- deltas ----------
+  function delta(curr, prev, moneyMode) {
+    if (!prev) return '<span class="delta flat">novo</span>';
     var pct = Math.round(((curr - prev) / prev) * 100);
-    var cls = pct === 0 ? 'flat' : (pct > 0 !== Boolean(invert) ? 'up' : 'down');
+    var cls = pct === 0 ? 'flat' : (pct > 0 ? 'up' : 'down');
     var arrow = pct === 0 ? '•' : (pct > 0 ? '▲' : '▼');
-    return '<span class="delta ' + cls + '">' + arrow + ' ' + Math.abs(pct) + '% vs período anterior</span>';
+    return '<span class="delta ' + cls + '">' + arrow + ' ' + Math.abs(pct) + '%</span>';
   }
 
-  function renderKpis(d) {
+  // ---------- hero + mini ----------
+  function renderHero(d) {
     var k = d.kpis, p = d.prevKpis;
-    $('kpis').innerHTML = [
-      { label: 'Faturamento (bruto)', value: brl(k.gross), d: delta(k.gross, p.gross) },
-      { label: 'Líquido (pós-taxas)', value: brl(k.net), d: delta(k.net, p.net) },
-      { label: 'Vendas pagas', value: k.paidCount, d: delta(k.paidCount, p.paidCount) },
-      { label: 'Ticket médio', value: brl(k.ticket), d: delta(k.ticket, p.ticket) },
-      { label: 'PIX gerados', value: k.pixCount, d: delta(k.pixCount, p.pixCount) },
-      { label: 'Conversão do PIX', value: k.pixConversion + '%', d: delta(k.pixConversion, p.pixConversion) },
-      { label: 'Visitas na página', value: k.visits, d: delta(k.visits, p.visits) },
-      { label: 'Visitantes únicos', value: k.uniques, d: delta(k.uniques, p.uniques) },
-    ].map(function (t) {
-      return '<div class="kpi"><div class="label">' + t.label + '</div>' +
-        '<div class="value">' + t.value + '</div>' + t.d + '</div>';
+    $('hero').innerHTML =
+      heroCard(true, '💰', 'Faturamento', 'bruto no período', brl(k.gross), delta(k.gross, p.gross), 'ticket médio ' + brl(k.ticket)) +
+      heroCard(false, '🏦', 'Líquido', 'após taxas do gateway', brl(k.net), delta(k.net, p.net), 'margem ' + (k.gross ? Math.round(k.net / k.gross * 100) : 0) + '%') +
+      heroCard(false, '🛒', 'Vendas pagas', 'pedidos confirmados', String(k.paidCount), delta(k.paidCount, p.paidCount), 'conversão PIX ' + k.pixConversion + '%');
+
+    var extra = (d.impact.upsell + d.impact.downsell);
+    var mini = [
+      { l: 'Lucro (pós-gasto)', v: brl(k.profit), d: delta(k.profit, p.profit) },
+      { l: 'ROAS', v: k.roas ? k.roas + 'x' : '—', d: k.spend ? delta(k.roas, p.roas) : '' },
+      { l: 'Gasto em tráfego', v: brl(k.spend), d: '' },
+      { l: 'CPA (custo/venda)', v: k.cpa ? brl(k.cpa) : '—', d: '' },
+      { l: 'PIX gerados', v: String(k.pixCount), d: delta(k.pixCount, p.pixCount) },
+      { l: 'Visitas', v: String(k.visits), d: delta(k.visits, p.visits) },
+      { l: 'Visitantes únicos', v: String(k.uniques), d: delta(k.uniques, p.uniques) },
+      { l: 'Tempo até pagar', v: d.avgPayMinutes ? d.avgPayMinutes + ' min' : '—', d: '' },
+      { l: 'Extra upsell/down', v: brl(extra), d: '' },
+    ];
+    $('mini').innerHTML = mini.map(function (m) {
+      return '<div class="mini"><div class="l">' + m.l + '</div><div class="v">' + m.v + '</div>' + (m.d ? '<div class="d">' + m.d + '</div>' : '') + '</div>';
     }).join('');
   }
+  function heroCard(accent, ic, title, sub, val, dl, foot) {
+    return '<div class="hero' + (accent ? ' accent' : '') + '">' +
+      '<div class="h-top"><div class="h-ic">' + ic + '</div><div><div class="h-title">' + title + '</div><div class="h-sub">' + sub + '</div></div></div>' +
+      '<div class="h-val">' + val + '</div>' +
+      '<div class="h-foot"><span>' + foot + '</span>' + dl + '</div></div>';
+  }
 
-  // ---------- Gráfico de colunas (SVG) ----------
-  var METRIC_LABEL = { revenue: 'Receita', pago: 'Vendas', pix: 'PIX gerados', visits: 'Visitas' };
-
-  function renderChart(d) {
-    var rows = d.daily;
-    var isMoney = state.metric === 'revenue';
-    var vals = rows.map(function (r) { return r[state.metric] || 0; });
-    var max = Math.max.apply(null, vals.concat([1]));
-
-    var W = Math.max(560, rows.length * 34), H = 220;
-    var padL = 46, padB = 26, padT = 14;
-    var plotW = W - padL - 10, plotH = H - padT - padB;
-    var bw = Math.min(22, (plotW / rows.length) - 2);
-
-    var css = getComputedStyle(document.documentElement);
-    var accent = css.getPropertyValue('--accent').trim();
-    var grid = css.getPropertyValue('--grid').trim();
-    var muted = css.getPropertyValue('--muted').trim();
-
-    var fmt = function (v) {
-      if (!isMoney) return String(v);
-      return v >= 100000 ? 'R$' + Math.round(v / 100000) / 10 + 'k' : 'R$' + Math.round(v / 100);
-    };
-
-    var svg = '<svg width="' + W + '" height="' + H + '" role="img" aria-label="' + METRIC_LABEL[state.metric] + ' por dia">';
-    for (var g = 0; g <= 3; g++) {
-      var gy = padT + plotH - (plotH * g / 3);
-      svg += '<line x1="' + padL + '" y1="' + gy + '" x2="' + W + '" y2="' + gy + '" stroke="' + grid + '" stroke-width="1"/>';
-      svg += '<text x="' + (padL - 6) + '" y="' + (gy + 4) + '" text-anchor="end" font-size="10" fill="' + muted + '">' + fmt(max * g / 3) + '</text>';
+  // ---------- meta ----------
+  function renderGoal(d) {
+    var g = d.goal;
+    if (!g.amount) {
+      $('goal-body').innerHTML = '<div class="goal-sub">Nenhuma meta definida.</div>' +
+        '<button class="btn-o" id="goal-set" style="margin-top:6px">Definir meta do mês</button>';
+      $('goal-set').addEventListener('click', openGoalModal);
+      return;
     }
+    var pct = Math.min(100, Math.round(g.monthRevenue / g.amount * 100));
+    var onTrack = g.projection >= g.amount;
+    $('goal-body').innerHTML =
+      '<div class="goal-val">' + brl(g.monthRevenue) + '</div>' +
+      '<div class="goal-sub">de ' + brl(g.amount) + ' · ' + pct + '% da meta</div>' +
+      '<div class="track"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="goal-legend"><span>dia ' + g.elapsed + '/' + g.daysInMonth + '</span>' +
+      '<span class="' + (onTrack ? 'roas-tag good' : 'roas-tag bad') + '">projeção ' + brl(g.projection) + '</span></div>' +
+      '<div class="prod-mini" id="goal-prods"></div>';
+    var top = (d.products || []).slice(0, 4);
+    $('goal-prods').innerHTML = top.map(function (p) {
+      return '<div class="prod-cell"><div class="pn">' + esc(p.label) + '</div><div class="pv">' + brl(p.revenue) + '</div><div class="pc">' + p.paid + ' venda(s)</div></div>';
+    }).join('') || '<div class="sub">Sem vendas ainda.</div>';
+  }
+
+  // ---------- gráfico ----------
+  var METRIC = { revenue: { label: 'receita no período', money: true }, pago: { label: 'vendas no período', money: false }, pix: { label: 'PIX gerados no período', money: false }, visits: { label: 'visitas no período', money: false } };
+  function renderChart(d) {
+    var rows = d.daily, m = state.metric, money = METRIC[m].money;
+    var vals = rows.map(function (r) { return r[m] || 0; });
+    var total = vals.reduce(function (a, b) { return a + b; }, 0);
+    var max = Math.max.apply(null, vals.concat([1]));
+    var peak = vals.indexOf(Math.max.apply(null, vals));
+
+    $('chart-big').textContent = money ? brl(total) : total.toLocaleString('pt-BR');
+    $('chart-cap').textContent = METRIC[m].label;
+
+    var W = Math.max(560, rows.length * 40), H = 210, padL = 8, padB = 24, padT = 12;
+    var plotW = W - padL, plotH = H - padT - padB, bw = Math.min(26, (plotW / rows.length) - 6);
+    var fmtY = function (v) { return money ? (v >= 100000 ? 'R$' + Math.round(v / 100000) / 10 + 'k' : 'R$' + Math.round(v / 100)) : String(Math.round(v)); };
+
+    var svg = '<svg width="' + W + '" height="' + H + '" role="img" aria-label="' + METRIC[m].label + '">';
+    svg += '<defs><linearGradient id="og" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + ORANGE + '"/><stop offset="1" stop-color="' + ORANGE2 + '"/></linearGradient></defs>';
     rows.forEach(function (r, i) {
-      var v = r[state.metric] || 0;
-      var h = Math.round(plotH * v / max);
-      var x = padL + (plotW / rows.length) * i + ((plotW / rows.length) - bw) / 2;
-      var y = padT + plotH - h;
-      var title = r.day.slice(8) + '/' + r.day.slice(5, 7) + ': ' + (isMoney ? brl(v) : v);
-      svg += '<g><rect x="' + x + '" y="' + y + '" width="' + bw + '" height="' + Math.max(h, 1) + '" rx="4" fill="' + accent + '">' +
-        '<title>' + title + '</title></rect>';
-      if (rows.length <= 32 && (rows.length <= 14 || i % Math.ceil(rows.length / 14) === 0)) {
-        svg += '<text x="' + (x + bw / 2) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="' + muted + '">' + r.day.slice(8) + '/' + r.day.slice(5, 7) + '</text>';
+      var v = r[m] || 0, h = Math.round(plotH * v / max);
+      var x = padL + (plotW / rows.length) * i + ((plotW / rows.length) - bw) / 2, y = padT + plotH - h;
+      var isPeak = i === peak && v > 0;
+      svg += '<rect class="cbar" data-i="' + i + '" x="' + x + '" y="' + y + '" width="' + bw + '" height="' + Math.max(h, 2) + '" rx="5" fill="' + (isPeak ? 'url(#og)' : BAR) + '"/>';
+      if (rows.length <= 14 || i % Math.ceil(rows.length / 14) === 0) {
+        svg += '<text x="' + (x + bw / 2) + '" y="' + (H - 7) + '" text-anchor="middle" font-size="10" fill="' + MUTED + '">' + r.day.slice(8) + '/' + r.day.slice(5, 7) + '</text>';
       }
-      svg += '</g>';
     });
     svg += '</svg>';
     $('chart').innerHTML = svg;
-    $('chart-hint').textContent = '— ' + METRIC_LABEL[state.metric] + ' por dia';
+
+    var tip = $('tip'), wrap = $('chart').parentNode;
+    $('chart').querySelectorAll('.cbar').forEach(function (rect) {
+      rect.addEventListener('mouseenter', function () {
+        var i = +rect.getAttribute('data-i'), r = rows[i];
+        rect.setAttribute('fill', 'url(#og)');
+        var val = money ? brl(r[m] || 0) : (r[m] || 0);
+        tip.innerHTML = '<b>' + r.day.slice(8) + '/' + r.day.slice(5, 7) + '</b>' + val + (m === 'revenue' ? ' · ' + r.pago + ' venda(s)' : '');
+        var bx = +rect.getAttribute('x'), by = +rect.getAttribute('y');
+        tip.style.opacity = '1';
+        tip.style.left = Math.min(wrap.clientWidth - 120, Math.max(4, bx - 30)) + 'px';
+        tip.style.top = Math.max(0, by - 46) + 'px';
+      });
+      rect.addEventListener('mouseleave', function () {
+        var i = +rect.getAttribute('data-i');
+        rect.setAttribute('fill', i === peak && (rows[i][m] || 0) > 0 ? 'url(#og)' : BAR);
+        tip.style.opacity = '0';
+      });
+    });
   }
 
-  // ---------- Funil ----------
+  // ---------- funil ----------
   function renderFunnel(d) {
     var max = Math.max.apply(null, d.funnel.map(function (f) { return f.count; }).concat([1]));
     $('funnel').innerHTML = d.funnel.map(function (f, i) {
-      var w = Math.round((f.count / max) * 100);
-      return '<div class="funnel-row">' +
-        '<div class="funnel-label">' + esc(f.step) + '</div>' +
-        '<div class="funnel-track"><div class="funnel-bar" style="width:' + w + '%"></div></div>' +
-        '<div class="funnel-num">' + f.count + (i > 0 ? ' <span class="pct">(' + f.rate + '%)</span>' : '') + '</div>' +
-        '</div>';
+      var w = Math.round(f.count / max * 100);
+      return '<div class="fn-row"><div class="fn-label">' + esc(f.step) + '</div>' +
+        '<div class="fn-track"><div class="fn-bar" style="width:' + w + '%"></div></div>' +
+        '<div class="fn-num">' + f.count + (i > 0 ? ' <span class="pct">(' + f.rate + '%)</span>' : '') + '</div></div>';
     }).join('');
   }
 
-  // ---------- Tabelas ----------
-  function table(headers, rows, empty) {
+  // ---------- tabelas ----------
+  function tableHTML(headers, rows, empty) {
     if (!rows.length) return '<div class="empty">' + empty + '</div>';
-    return '<table><thead><tr>' + headers.map(function (h) {
-      return '<th class="' + (h.num ? 'num' : '') + '">' + h.t + '</th>';
-    }).join('') + '</tr></thead><tbody>' + rows.map(function (r) {
-      return '<tr>' + r.map(function (c, i) {
-        return '<td class="' + (headers[i].num ? 'num' : '') + '">' + c + '</td>';
-      }).join('') + '</tr>';
-    }).join('') + '</tbody></table>';
+    return '<table class="data"><thead><tr>' + headers.map(function (h) { return '<th class="' + (h.num ? 'num' : '') + '">' + h.t + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      rows.map(function (r) { return '<tr>' + r.map(function (c, i) { return '<td class="' + (headers[i].num ? 'num' : '') + '">' + c + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>';
   }
-
+  function renderUtm(d) {
+    $('utm').innerHTML = tableHTML(
+      [{ t: 'Origem' }, { t: 'Visitas', num: 1 }, { t: 'Vendas', num: 1 }, { t: 'Receita', num: 1 }, { t: 'Gasto', num: 1 }, { t: 'ROAS', num: 1 }],
+      d.utm.map(function (u) {
+        var roas = u.spend ? '<span class="roas-tag ' + (u.revenue >= u.spend ? 'good' : 'bad') + '">' + u.roas + 'x</span>' : '<span class="sub">—</span>';
+        return [esc(u.source) + (u.campaign ? '<div class="sub">' + esc(u.campaign) + '</div>' : ''), u.views, u.pago, brl(u.revenue), u.spend ? brl(u.spend) : '<span class="sub">—</span>', roas];
+      }),
+      'Sem tráfego registrado ainda.'
+    );
+  }
   function renderProducts(d) {
-    $('products').innerHTML = table(
+    $('products').innerHTML = tableHTML(
       [{ t: 'Produto' }, { t: 'Vendas', num: 1 }, { t: 'Receita', num: 1 }],
       d.products.map(function (p) { return [esc(p.label), p.paid, brl(p.revenue)]; }),
-      'Nenhuma venda no período ainda.'
+      'Nenhuma venda no período.'
     );
   }
 
-  function renderUtm(d) {
-    $('utm').innerHTML = table(
-      [{ t: 'Origem' }, { t: 'Campanha' }, { t: 'Visitas', num: 1 }, { t: 'Vendas', num: 1 }, { t: 'Receita', num: 1 }],
-      d.utm.map(function (u) {
-        return [esc(u.source), esc(u.campaign || '—'), u.views, u.pago, brl(u.revenue)];
-      }),
-      'Sem tráfego registrado ainda — os dados aparecem conforme as visitas chegam.'
-    );
+  // ---------- heatmap ----------
+  var WD = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  function renderHeat(d) {
+    var heat = d.heatmap, max = 1;
+    heat.forEach(function (row) { row.forEach(function (c) { if (c > max) max = c; }); });
+    var html = '<table><thead><tr><th></th>';
+    for (var h = 0; h < 24; h++) html += '<th>' + (h % 3 === 0 ? h : '') + '</th>';
+    html += '</tr></thead><tbody>';
+    heat.forEach(function (row, wd) {
+      html += '<tr><td class="rowlabel">' + WD[wd] + '</td>';
+      row.forEach(function (c) {
+        var a = c ? (0.18 + 0.82 * c / max) : 0;
+        var bg = c ? 'rgba(255,106,43,' + a.toFixed(2) + ')' : BAR;
+        html += '<td><div class="cell" style="background:' + bg + '" title="' + WD[wd] + ' ' + '"></div></td>';
+      });
+      html += '</tr>';
+    });
+    $('heat').innerHTML = html + '</tbody></table>';
   }
 
-  var fmtDataHora = function (ts) {
-    return ts ? new Date(ts).toLocaleString('pt-BR', {
-      timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
-    }) : '—';
-  };
+  // ---------- pedidos / abandonados ----------
+  var fmtDH = function (ts) { return ts ? new Date(ts).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; };
+  var maskEmail = function (e) { e = String(e || ''); var at = e.indexOf('@'); return at < 2 ? e : e.slice(0, 2) + '***' + e.slice(at); };
+  var maskPhone = function (p) { p = String(p || '').replace(/\D/g, ''); return p.length < 6 ? p : p.slice(0, 2) + '*****' + p.slice(-2); };
 
   function renderOrders() {
-    api('orders?days=' + state.days).then(function (r) { return r.json(); }).then(function (j) {
-      $('orders').innerHTML = table(
-        [{ t: 'Quando' }, { t: 'Cliente' }, { t: 'Produto' }, { t: 'Valor', num: 1 }, { t: 'Status' }],
-        (j.orders || []).slice(0, 50).map(function (o) {
-          var pill = o.status === 'paid'
-            ? '<span class="pill paid">PAGO</span>'
-            : '<span class="pill pending">PENDENTE</span>';
-          return [fmtDataHora(o.createdAt), esc(o.nome) + '<br><span style="color:var(--muted);font-size:11px">' + esc(o.email) + '</span>', esc(o.label), o.price, pill];
-        }),
-        'Nenhum pedido no período.'
-      );
-    });
+    var rows = state.orders.filter(function (o) {
+      if (state.orderStatus && o.status !== state.orderStatus) return false;
+      if (state.orderQuery) {
+        var q = state.orderQuery.toLowerCase();
+        if (!((o.nome || '').toLowerCase().indexOf(q) >= 0 || (o.email || '').toLowerCase().indexOf(q) >= 0 || (o.id || '').toLowerCase().indexOf(q) >= 0)) return false;
+      }
+      return true;
+    }).slice(0, 60);
+    $('orders').innerHTML = tableHTML(
+      [{ t: 'Quando' }, { t: 'Cliente' }, { t: 'Produto' }, { t: 'Origem' }, { t: 'Valor', num: 1 }, { t: 'Status' }],
+      rows.map(function (o) {
+        var pill = o.status === 'paid' ? '<span class="pill paid"><span class="pd"></span>PAGO</span>' : '<span class="pill pending"><span class="pd"></span>PENDENTE</span>';
+        return [fmtDH(o.createdAt), esc(o.nome) + '<div class="sub">' + esc(maskEmail(o.email)) + '</div>', esc(o.label), esc(o.utmSource || '—'), o.price, pill];
+      }),
+      'Nenhum pedido no período.'
+    );
+  }
+  function renderAbandoned(list) {
+    $('abandoned').innerHTML = tableHTML(
+      [{ t: 'Quando' }, { t: 'Cliente' }, { t: 'Produto' }, { t: 'Valor', num: 1 }, { t: 'Recuperar' }],
+      list.slice(0, 60).map(function (o) {
+        var phone = String(o.telefone || '').replace(/\D/g, '');
+        var msg = 'Oi ' + (o.nome || '').split(' ')[0] + '! Vi que você gerou o PIX do ' + o.label + ' mas não finalizou. Posso te ajudar a concluir?';
+        var wa = phone ? '<a class="wa" target="_blank" rel="noopener" href="https://wa.me/55' + phone + '?text=' + encodeURIComponent(msg) + '">💬 WhatsApp</a>' : '<span class="sub">sem telefone</span>';
+        return [fmtDH(o.createdAt), esc(o.nome) + '<div class="sub">' + esc(maskPhone(o.telefone)) + '</div>', esc(o.label), o.price, wa];
+      }),
+      'Nenhum PIX abandonado. 🎉'
+    );
   }
 
-  function renderAbandoned() {
-    api('abandoned?days=' + state.days).then(function (r) { return r.json(); }).then(function (j) {
-      $('abandoned').innerHTML = table(
-        [{ t: 'Quando' }, { t: 'Cliente' }, { t: 'Produto' }, { t: 'Valor', num: 1 }, { t: 'Recuperar' }],
-        (j.abandoned || []).slice(0, 50).map(function (o) {
-          var phone = String(o.telefone || '').replace(/\D/g, '');
-          var wa = phone
-            ? '<a class="wa" target="_blank" rel="noopener" href="https://wa.me/55' + phone +
-              '?text=' + encodeURIComponent('Oi ' + (o.nome || '').split(' ')[0] + '! Vi que você gerou o PIX do ' + o.label + ' mas não finalizou. Posso te ajudar?') +
-              '">💬 WhatsApp</a>'
-            : '—';
-          return [fmtDataHora(o.createdAt), esc(o.nome) + '<br><span style="color:var(--muted);font-size:11px">' + esc(o.email) + '</span>', esc(o.label), o.price, wa];
-        }),
-        'Nenhum PIX abandonado. 🎉'
-      );
-    });
-  }
-
-  // ---------- Banner de configuração ----------
+  // ---------- banner ----------
   function renderBanner(d) {
     var msgs = [];
-    if (d.storage === 'memory') msgs.push('⚠️ Armazenamento temporário em uso — métricas podem zerar. (Netlify Blobs indisponível)');
-    if (d.provider === 'stub') msgs.push('⚠️ Gateway em modo simulado — chaves da AssetPay não configuradas.');
-    if (!d.telegram) msgs.push('💡 Notificação de venda no Telegram desativada — configure TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID no Netlify.');
-    var b = $('banner');
-    b.innerHTML = msgs.join('<br>');
-    b.style.display = msgs.length ? 'block' : 'none';
+    if (d.storage === 'memory') msgs.push('⚠️ Armazenamento temporário — métricas podem zerar. (' + (d.storageDetail || 'Blobs indisponível') + ')');
+    if (d.provider === 'stub') msgs.push('⚠️ Gateway em modo simulado (chaves da AssetPay não configuradas).');
+    if (!d.telegram) msgs.push('💡 Notificações no Telegram desativadas — configure TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID.');
+    $('foot-provider').textContent = d.provider === 'assetpay' ? 'AssetPay conectada' : 'Modo simulado';
+    $('foot-storage').textContent = d.storage === 'blobs' ? 'dados persistentes' : 'armazenamento temporário';
+    var b = $('banner'); b.innerHTML = msgs.join('<br>'); b.style.display = msgs.length ? 'block' : 'none';
   }
 
-  // ---------- Carregar tudo ----------
+  // ---------- modais ----------
+  function modal(title, bodyHTML, onOk) {
+    var ov = el('div', 'modal-ov');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px';
+    ov.innerHTML = '<div style="background:#1a1a1a;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:20px;width:100%;max-width:360px">' +
+      '<h2 style="font-size:16px;margin-bottom:14px">' + title + '</h2>' + bodyHTML +
+      '<div style="display:flex;gap:8px;margin-top:16px"><button class="btn-ghost" data-x style="flex:1">Cancelar</button><button class="btn-o" data-ok style="flex:1">Salvar</button></div></div>';
+    document.body.appendChild(ov);
+    ov.querySelector('[data-x]').addEventListener('click', function () { ov.remove(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov) ov.remove(); });
+    ov.querySelector('[data-ok]').addEventListener('click', function () { onOk(ov, function () { ov.remove(); }); });
+    return ov;
+  }
+  var IN = 'width:100%;padding:11px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:#0d0d0d;color:#fff;font-size:14px;margin-bottom:10px;outline:none';
+  function openGoalModal() {
+    var cur = state.data && state.data.goal.amount ? (state.data.goal.amount / 100) : '';
+    modal('Meta do mês', '<label class="sub">Valor da meta (R$)</label><input id="m-goal" type="number" step="1" value="' + cur + '" style="' + IN + '" placeholder="30000">', function (ov, close) {
+      var v = parseFloat(ov.querySelector('#m-goal').value) || 0;
+      api('goal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: v }) }).then(function () { close(); load(); });
+    });
+  }
+  function openSpendModal() {
+    modal('Lançar gasto de tráfego', '<label class="sub">Data</label><input id="m-day" type="date" value="' + todayBRT() + '" style="' + IN + '">' +
+      '<label class="sub">Origem (igual ao utm_source do anúncio)</label><input id="m-src" placeholder="instagram" style="' + IN + '">' +
+      '<label class="sub">Valor gasto no dia (R$)</label><input id="m-amt" type="number" step="0.01" placeholder="150" style="' + IN + '">',
+      function (ov, close) {
+        var body = { day: ov.querySelector('#m-day').value, source: ov.querySelector('#m-src').value || '(geral)', amount: parseFloat(ov.querySelector('#m-amt').value) || 0 };
+        api('spend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function () { close(); load(); });
+      });
+  }
+  $('goal-edit').addEventListener('click', openGoalModal);
+
+  // ---------- carregar ----------
   function load() {
     api('summary?days=' + state.days).then(function (r) { return r.json(); }).then(function (d) {
       if (!d.ok) return;
       state.data = d;
-      renderBanner(d);
-      renderKpis(d);
-      renderChart(d);
-      renderFunnel(d);
-      renderProducts(d);
-      renderUtm(d);
-      $('atualizado').textContent = 'Atualizado às ' + new Date(d.generatedAt).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-    }).catch(function () { /* sessão expirada já tratada */ });
-    renderOrders();
-    renderAbandoned();
+      renderBanner(d); renderHero(d); renderGoal(d); renderChart(d); renderFunnel(d); renderUtm(d); renderProducts(d); renderHeat(d);
+      $('foot-updated').textContent = 'Atualizado às ' + new Date(d.generatedAt).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' }) + ' · atualiza sozinho a cada 60s';
+    }).catch(function () {});
+
+    api('orders?days=' + state.days).then(function (r) { return r.json(); }).then(function (j) {
+      state.orders = j.orders || [];
+      $('nav-orders').textContent = state.orders.length;
+      renderOrders();
+      // alerta de venda nova
+      var paidIds = state.orders.filter(function (o) { return o.status === 'paid'; }).map(function (o) { return o.id; });
+      if (state.seenPaid === null) { state.seenPaid = {}; paidIds.forEach(function (id) { state.seenPaid[id] = 1; }); }
+      else { var novos = paidIds.filter(function (id) { return !state.seenPaid[id]; }); if (novos.length) { beep(); novos.forEach(function (id) { state.seenPaid[id] = 1; }); } }
+    }).catch(function () {});
+
+    api('abandoned?days=' + state.days).then(function (r) { return r.json(); }).then(function (j) {
+      $('nav-aband').textContent = (j.abandoned || []).length;
+      renderAbandoned(j.abandoned || []);
+    }).catch(function () {});
   }
 
-  // ---------- Controles ----------
-  document.querySelectorAll('.chip[data-days]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      document.querySelectorAll('.chip[data-days]').forEach(function (b) { b.classList.remove('on'); });
-      btn.classList.add('on');
-      state.days = parseInt(btn.dataset.days, 10);
-      load();
-    });
+  // ---------- controles ----------
+  $('period').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    $('period').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
+    b.classList.add('on'); state.days = +b.dataset.days; load();
   });
-  document.querySelectorAll('.chip[data-metric]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      document.querySelectorAll('.chip[data-metric]').forEach(function (b) { b.classList.remove('on'); });
-      btn.classList.add('on');
-      state.metric = btn.dataset.metric;
-      if (state.data) renderChart(state.data);
-    });
+  $('metric').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    $('metric').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
+    b.classList.add('on'); state.metric = b.dataset.metric; if (state.data) renderChart(state.data);
   });
-  $('csv').addEventListener('click', function () {
+  $('order-filter').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    $('order-filter').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
+    b.classList.add('on'); state.orderStatus = b.dataset.status; renderOrders();
+  });
+  $('order-search').addEventListener('input', function (e) { state.orderQuery = e.target.value; renderOrders(); });
+  $('side-search').addEventListener('input', function (e) { state.orderQuery = e.target.value; $('order-search').value = e.target.value; renderOrders(); document.getElementById('sec-orders').scrollIntoView({ behavior: 'smooth' }); });
+  $('btn-refresh').addEventListener('click', load);
+  $('btn-csv').addEventListener('click', function () {
     api('export.csv?days=' + state.days).then(function (r) { return r.blob(); }).then(function (blob) {
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'pedidos.csv';
-      a.click();
-      URL.revokeObjectURL(a.href);
+      var a = el('a'); a.href = URL.createObjectURL(blob); a.download = 'pedidos.csv'; a.click(); URL.revokeObjectURL(a.href);
+    });
+  });
+  document.querySelectorAll('.nav-item[data-go]').forEach(function (item) {
+    item.addEventListener('click', function () {
+      document.querySelectorAll('.nav-item').forEach(function (n) { n.classList.remove('active'); });
+      item.classList.add('active');
+      var id = item.dataset.go;
+      if (id === 'sec-spend') { openSpendModal(); return; }
+      var t = document.getElementById(id); if (t) t.scrollIntoView({ behavior: 'smooth' });
     });
   });
 
   function boot() {
     $('login').style.display = 'none';
-    $('login-erro').style.display = 'none';
-    $('app').style.display = 'block';
+    $('app').classList.add('on');
     load();
     if (state.timer) clearInterval(state.timer);
     state.timer = setInterval(load, 60000);
   }
 
-  // Sessão existente? entra direto.
-  if (key()) {
-    fetch('/api/admin/ping', { headers: { 'x-admin-key': key() } }).then(function (r) {
-      if (r.ok) boot(); else logout();
-    });
+  // sessão existente?
+  if (token()) {
+    fetch('/api/admin/ping', { headers: { 'x-admin-key': token() } }).then(function (r) { if (r.ok) boot(); else logout(); }).catch(logout);
   }
 })();
