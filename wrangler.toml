@@ -1,0 +1,9 @@
+name = "funilhot"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Armazenamento do painel (equivalente ao Netlify Blobs)
+[[kv_namespaces]]
+binding = "funil"
+id = "cf0dee975c864b8aae38fdbaddd96db1"

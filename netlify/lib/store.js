@@ -9,6 +9,10 @@ let blobsStore = null;
 let blobsFailed = false;
 let lastError = '';
 
+// Backend Cloudflare Workers KV (injetado pelo adaptador do Pages a cada request).
+let kv = null;
+function useKV(binding) { kv = binding || null; }
+
 // Os entrypoints v2 (.mjs) importam @netlify/blobs estaticamente (garantindo o
 // bundle) e injetam o getStore aqui antes do primeiro uso.
 let injectedGetStore = null;
@@ -53,6 +57,7 @@ async function getBlobs() {
 }
 
 async function setJSON(key, value) {
+  if (kv) { await kv.put(key, JSON.stringify(value)); return; }
   const store = await getBlobs();
   if (store) {
     await store.setJSON(key, value);
@@ -62,6 +67,7 @@ async function setJSON(key, value) {
 }
 
 async function getJSON(key) {
+  if (kv) { return await kv.get(key, 'json'); }
   const store = await getBlobs();
   if (store) {
     return await store.get(key, { type: 'json' });
@@ -71,6 +77,18 @@ async function getJSON(key) {
 }
 
 async function listKeys(prefix) {
+  if (kv) {
+    const out = [];
+    let cursor;
+    let done = false;
+    while (!done) {
+      const r = await kv.list({ prefix, cursor });
+      r.keys.forEach((k) => out.push(k.name));
+      done = r.list_complete;
+      cursor = r.cursor;
+    }
+    return out;
+  }
   const store = await getBlobs();
   if (store) {
     const { blobs } = await store.list({ prefix });
@@ -80,6 +98,7 @@ async function listKeys(prefix) {
 }
 
 async function del(key) {
+  if (kv) { await kv.delete(key); return; }
   const store = await getBlobs();
   if (store) {
     await store.delete(key);
@@ -89,6 +108,7 @@ async function del(key) {
 }
 
 async function storageKind() {
+  if (kv) return 'kv';
   return (await getBlobs()) ? 'blobs' : 'memory';
 }
 
@@ -101,4 +121,4 @@ function dayKey(ts = Date.now()) {
   return new Date(ts - 3 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
-module.exports = { setJSON, getJSON, listKeys, del, storageKind, storageError, dayKey, useGetStore };
+module.exports = { setJSON, getJSON, listKeys, del, storageKind, storageError, dayKey, useGetStore, useKV };
