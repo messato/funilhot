@@ -228,6 +228,9 @@
     .set-in:focus { border-color: var(--orange); }
     textarea.set-in { min-height: 70px; resize: vertical; font-family: inherit; }
     .price-in { max-width: 130px; text-align: right; margin: 0; }
+    .net-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 6px; }
+    .net { display: flex; align-items: center; gap: 7px; padding: 9px 12px; border: 1px solid var(--line-strong); border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; background: var(--page); }
+    .net input { accent-color: var(--orange); width: 16px; height: 16px; }
 
     .view { display: none; }
     .view.on { display: block; }
@@ -269,6 +272,7 @@
       <div class="nav-item active" data-view="overview"><span class="ic">📊</span> Visão geral</div>
       <div class="nav-item" data-view="vendas"><span class="ic">🧾</span> Vendas <span class="badge" id="nav-orders">0</span></div>
       <div class="nav-item" data-view="abandonados"><span class="ic">🔥</span> PIX abandonados <span class="badge" id="nav-aband">0</span></div>
+      <div class="nav-item" data-view="publicacoes"><span class="ic">🎬</span> Publicações</div>
 
       <div class="nav-label">Análise</div>
       <div class="nav-item" data-view="funil"><span class="ic">🫗</span> Funil</div>
@@ -393,6 +397,33 @@
               <div class="cap">Faturamento por oferta no período.</div>
               <div class="table-scroll"><div id="products"></div></div>
             </div>
+          </div>
+        </section>
+
+        <!-- VIEW: Publicações -->
+        <section class="view" data-view="publicacoes">
+          <div class="card" id="sec-social">
+            <h2>Publicar em várias redes <span class="hint">1 vídeo → todas de uma vez</span></h2>
+            <div class="cap">Escolha o vídeo, escreva a legenda, marque as redes e publique. Kwai é manual (não tem API oficial).</div>
+            <label class="sub">Vídeo (MP4 vertical, até 100 MB)</label>
+            <input id="soc-file" type="file" accept="video/*" class="set-in" />
+            <label class="sub">Legenda</label>
+            <textarea id="soc-caption" class="set-in" placeholder="Escreva a legenda do post..."></textarea>
+            <label class="sub">Redes</label>
+            <div class="net-row" id="soc-nets">
+              <label class="net"><input type="checkbox" value="instagram" checked> 📸 Instagram</label>
+              <label class="net"><input type="checkbox" value="tiktok" checked> 🎵 TikTok</label>
+              <label class="net"><input type="checkbox" value="youtube" checked> ▶️ YouTube</label>
+              <label class="net"><input type="checkbox" value="facebook" checked> 👍 Facebook</label>
+              <label class="net"><input type="checkbox" value="x"> ✖️ X <span class="badge-soon">pago</span></label>
+              <label class="net"><input type="checkbox" value="kwai"> 🟠 Kwai <span class="badge-soon">manual</span></label>
+            </div>
+            <div style="margin-top:14px"><button class="btn-o" id="soc-publish">Publicar</button> <span id="soc-status" class="sub" style="margin-left:10px"></span></div>
+            <div id="soc-kwai" style="display:none;margin-top:16px"></div>
+          </div>
+          <div class="card" style="margin-top:14px">
+            <h2>Publicações recentes</h2>
+            <div class="table-scroll"><div id="soc-history"></div></div>
           </div>
         </section>
 

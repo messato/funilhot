@@ -361,6 +361,7 @@
     overview: { t: 'Visão geral', s: 'Os números que importam agora', data: true },
     vendas: { t: 'Vendas', s: 'Pedidos e clientes', data: true },
     abandonados: { t: 'PIX abandonados', s: 'Recupere quem gerou e não pagou', data: true },
+    publicacoes: { t: 'Publicações', s: 'Publique um vídeo em várias redes de uma vez', data: false },
     funil: { t: 'Funil de conversão', s: 'Onde as pessoas param', data: true },
     trafego: { t: 'Tráfego e ROAS', s: 'Retorno por origem de tráfego', data: true },
     metas: { t: 'Metas & produtos', s: 'Progresso do mês', data: true },
@@ -379,6 +380,7 @@
     $('period').style.display = VIEWS[name].data ? '' : 'none';
     setCsv();
     if (name === 'overview' && state.data) renderChart(state.data); // re-mede o container ao exibir
+    if (name === 'publicacoes') loadSocialHistory();
     window.scrollTo(0, 0);
   }
   document.querySelectorAll('.nav-item[data-view]').forEach(function (item) {
@@ -392,6 +394,8 @@
     var show = function (id, on) { var e = $(id); if (e) e.style.display = (on === false) ? 'none' : ''; };
     show('sec-goal', f.card_meta); show('sec-traffic', f.card_roas); show('card-produtos', f.card_produtos);
     show('sec-funnel', f.card_funil); show('sec-heat', f.card_heatmap); show('sec-abandoned', f.card_abandonados);
+    var navPub = document.querySelector('.nav-item[data-view="publicacoes"]');
+    if (navPub) navPub.style.display = (f.social_publisher === false) ? 'none' : '';
     setCsv();
   }
   function renderFeatures() {
@@ -465,6 +469,58 @@
   });
   $('feat-search').addEventListener('input', function (e) { state.featQuery = e.target.value; renderFeatures(); });
   $('set-save').addEventListener('click', saveSettings);
+
+  // ---------- publicações (multi-rede) ----------
+  function setSoc(msg) { $('soc-status').textContent = msg || ''; }
+  function publishSocial() {
+    var file = $('soc-file').files[0];
+    var caption = $('soc-caption').value.trim();
+    var nets = [].slice.call(document.querySelectorAll('#soc-nets input:checked')).map(function (c) { return c.value; });
+    var autoNets = nets.filter(function (n) { return n !== 'kwai'; });
+    if (!nets.length) { setSoc('Marque pelo menos uma rede.'); return; }
+    if (autoNets.length && !file) { setSoc('Selecione o vídeo.'); return; }
+    var fd = new FormData();
+    if (file) fd.append('video', file);
+    fd.append('caption', caption);
+    nets.forEach(function (n) { fd.append('networks', n); });
+    $('soc-publish').disabled = true; setSoc('Publicando…');
+    fetch('/api/admin/social/post', { method: 'POST', headers: { 'x-admin-key': token() }, body: fd })
+      .then(function (r) { if (r.status === 401) { logout(); throw new Error('unauth'); } return r.json(); })
+      .then(function (j) {
+        $('soc-publish').disabled = false;
+        if (!j.ok) { setSoc('Erro: ' + (j.error || 'falhou')); return; }
+        var prov = j.post && j.post.provider;
+        setSoc(prov === 'stub' ? '✅ Registrado (modo simulado — conecte a agregadora pra publicar de verdade)' : '✅ Publicado!');
+        if (nets.indexOf('kwai') >= 0) showKwai(file, caption); else $('soc-kwai').style.display = 'none';
+        loadSocialHistory();
+      })
+      .catch(function () { $('soc-publish').disabled = false; setSoc('Erro de conexão.'); });
+  }
+  function showKwai(file, caption) {
+    var box = $('soc-kwai'); box.style.display = 'block';
+    box.innerHTML = '<div class="cap" style="margin-bottom:8px">🟠 <b>Kwai é manual</b> — poste você mesmo com a legenda abaixo:</div>' +
+      '<div class="pix-code" style="white-space:pre-wrap">' + esc(caption || '(sem legenda)') + '</div>' +
+      '<div style="margin-top:8px">' + (file ? '<a class="btn-ghost" id="soc-kwai-dl">⬇ Baixar vídeo</a> ' : '') +
+      '<button class="btn-ghost" id="soc-kwai-copy">Copiar legenda</button> <button class="btn-o" id="soc-kwai-done">Já postei no Kwai</button></div>';
+    if (file) { var a = $('soc-kwai-dl'); a.href = URL.createObjectURL(file); a.download = file.name || 'video.mp4'; }
+    $('soc-kwai-copy').addEventListener('click', function () { try { navigator.clipboard.writeText(caption || ''); setSoc('Legenda copiada.'); } catch (e) { /* */ } });
+    $('soc-kwai-done').addEventListener('click', function () { box.style.display = 'none'; });
+  }
+  function loadSocialHistory() {
+    api('social/posts?days=30').then(function (r) { return r.json(); }).then(function (j) {
+      var posts = j.posts || [];
+      $('soc-history').innerHTML = tableHTML(
+        [{ t: 'Quando' }, { t: 'Legenda' }, { t: 'Redes' }, { t: 'Kwai' }],
+        posts.map(function (p) {
+          var nets = (p.results || []).map(function (r) { return '<span class="pill ' + (r.status === 'published' ? 'paid' : 'pending') + '"><span class="pd"></span>' + esc(r.network) + '</span>'; }).join(' ') || '<span class="sub">—</span>';
+          var kwai = p.kwai === 'pending' ? '<span class="pill pending">pendente</span>' : (p.kwai === 'done' ? '<span class="pill paid">feito</span>' : '<span class="sub">—</span>');
+          return [fmtDH(p.createdAt), '<span class="sub">' + esc((p.caption || '').slice(0, 40)) + '</span>', nets, kwai];
+        }),
+        'Nenhuma publicação ainda.'
+      );
+    }).catch(function () {});
+  }
+  $('soc-publish').addEventListener('click', publishSocial);
 
   function boot() {
     $('login').style.display = 'none';

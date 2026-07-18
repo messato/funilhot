@@ -24,6 +24,9 @@ const FEATURES = [
   { id: 'coorte_retencao', cat: 'Painel & métricas', label: 'Coorte de retenção', desc: 'Quantos renovam mês a mês.', status: 'em_breve', def: false },
   { id: 'modo_coach', cat: 'Painel & métricas', label: 'Modo coach', desc: 'Sugere a próxima ação do dia.', status: 'em_breve', def: false },
 
+  // ---------- Publicações ----------
+  { id: 'social_publisher', cat: 'Publicações', label: 'Postador multi-rede', desc: 'Publicar vídeo em Instagram, TikTok, YouTube, Facebook e X de uma vez (Kwai manual).', status: 'ativo', def: true },
+
   // ---------- Telegram & acesso ----------
   { id: 'telegram_venda', cat: 'Telegram & acesso', label: 'Notificar venda no Telegram', desc: 'Mensagem a cada venda paga.', status: 'ativo', def: true },
   { id: 'telegram_resumo', cat: 'Telegram & acesso', label: 'Resumo diário no Telegram', desc: 'Resumo automático às 21h.', status: 'ativo', def: true },
