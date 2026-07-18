@@ -377,8 +377,7 @@
     funil: { t: 'Funil de conversão', s: 'Onde as pessoas param', data: true },
     trafego: { t: 'Tráfego e ROAS', s: 'Retorno por origem de tráfego', data: true },
     metas: { t: 'Metas & produtos', s: 'Progresso do mês', data: true },
-    pagina: { t: 'Página', s: 'Edite a página de vendas (textos e imagens)', data: false },
-    config: { t: 'Configurações', s: 'Preços, links e textos — valem na hora', data: false },
+    config: { t: 'Página & Configurações', s: 'Sua página de vendas, preços, links e textos', data: false },
     recursos: { t: 'Recursos', s: 'Ligue e desligue funcionalidades', data: false },
   };
   function csvVisible() { return (state.view === 'vendas' || state.view === 'overview') && !(state.flags && state.flags.export_csv === false); }
@@ -395,7 +394,7 @@
     if (name === 'overview' && state.data) renderChart(state.data); // re-mede o container ao exibir
     if (name === 'overview' && window.__globeResize) window.__globeResize();
     if (name === 'publicacoes') loadSocialHistory();
-    if (name === 'pagina') renderPagina();
+    if (name === 'config') renderPagina();
     window.scrollTo(0, 0);
   }
   document.querySelectorAll('.nav-item[data-view]').forEach(function (item) {
@@ -411,8 +410,8 @@
     show('sec-funnel', f.card_funil); show('sec-heat', f.card_heatmap); show('sec-abandoned', f.card_abandonados);
     var navPub = document.querySelector('.nav-item[data-view="publicacoes"]');
     if (navPub) navPub.style.display = (f.social_publisher === false) ? 'none' : '';
-    var navPg = document.querySelector('.nav-item[data-view="pagina"]');
-    if (navPg) navPg.style.display = (f.page_editor === false) ? 'none' : '';
+    var pgCard = $('sec-pagina');
+    if (pgCard) pgCard.style.display = (f.page_editor === false) ? 'none' : '';
     setCsv();
   }
   function renderFeatures() {
