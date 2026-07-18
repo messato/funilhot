@@ -377,6 +377,7 @@
     funil: { t: 'Funil de conversão', s: 'Onde as pessoas param', data: true },
     trafego: { t: 'Tráfego e ROAS', s: 'Retorno por origem de tráfego', data: true },
     metas: { t: 'Metas & produtos', s: 'Progresso do mês', data: true },
+    pagina: { t: 'Página', s: 'Edite a página de vendas (textos e imagens)', data: false },
     config: { t: 'Configurações', s: 'Preços, links e textos — valem na hora', data: false },
     recursos: { t: 'Recursos', s: 'Ligue e desligue funcionalidades', data: false },
   };
@@ -394,6 +395,7 @@
     if (name === 'overview' && state.data) renderChart(state.data); // re-mede o container ao exibir
     if (name === 'overview' && window.__globeResize) window.__globeResize();
     if (name === 'publicacoes') loadSocialHistory();
+    if (name === 'pagina') renderPagina();
     window.scrollTo(0, 0);
   }
   document.querySelectorAll('.nav-item[data-view]').forEach(function (item) {
@@ -409,6 +411,8 @@
     show('sec-funnel', f.card_funil); show('sec-heat', f.card_heatmap); show('sec-abandoned', f.card_abandonados);
     var navPub = document.querySelector('.nav-item[data-view="publicacoes"]');
     if (navPub) navPub.style.display = (f.social_publisher === false) ? 'none' : '';
+    var navPg = document.querySelector('.nav-item[data-view="pagina"]');
+    if (navPg) navPg.style.display = (f.page_editor === false) ? 'none' : '';
     setCsv();
   }
   function renderFeatures() {
@@ -534,6 +538,43 @@
     }).catch(function () {});
   }
   $('soc-publish').addEventListener('click', publishSocial);
+
+  // ---------- editor da página (landing) ----------
+  function renderPagina() {
+    var s = state.settings; if (!s) return;
+    $('pg-name').value = s.siteName || '';
+    $('pg-user').value = s.siteUser || '';
+    $('pg-biotitle').value = s.siteBioTitle || '';
+    $('pg-biotext').value = s.siteBioText || '';
+    $('pg-stats').value = s.siteStats || '';
+    var av = $('pg-avatar-preview'); av.style.display = s.avatarVer ? '' : 'none'; if (s.avatarVer) av.src = '/img/avatar?v=' + s.avatarVer;
+    var cp = $('pg-capa-preview'); cp.style.display = s.capaVer ? '' : 'none'; if (s.capaVer) cp.src = '/img/capa?v=' + s.capaVer;
+  }
+  function uploadImg(name, file) {
+    var fd = new FormData(); fd.append('file', file);
+    return fetch('/api/admin/media/' + name, { method: 'POST', headers: { 'x-admin-key': token() }, body: fd }).then(function (r) { return r.json(); });
+  }
+  function savePagina() {
+    var patch = {
+      siteName: $('pg-name').value, siteUser: $('pg-user').value,
+      siteBioTitle: $('pg-biotitle').value, siteBioText: $('pg-biotext').value, siteStats: $('pg-stats').value,
+    };
+    var avatarFile = $('pg-avatar').files[0], capaFile = $('pg-capa').files[0];
+    $('pg-save').disabled = true; $('pg-status').textContent = 'salvando…';
+    var jobs = [api('settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) }).then(function (r) { return r.json(); })];
+    if (avatarFile) jobs.push(uploadImg('avatar', avatarFile));
+    if (capaFile) jobs.push(uploadImg('capa', capaFile));
+    Promise.all(jobs).then(function (res) {
+      var bad = res.filter(function (x) { return !x || !x.ok; });
+      $('pg-save').disabled = false;
+      if (bad.length) { $('pg-status').textContent = 'erro ao salvar (' + (bad[0] && bad[0].error || 'falhou') + ')'; return; }
+      $('pg-status').textContent = '✅ página atualizada';
+      $('pg-avatar').value = ''; $('pg-capa').value = '';
+      api('settings').then(function (r) { return r.json(); }).then(function (j) { if (j.ok) { state.settings = j.settings; renderPagina(); } });
+      setTimeout(function () { $('pg-status').textContent = ''; }, 3000);
+    }).catch(function () { $('pg-save').disabled = false; $('pg-status').textContent = 'erro de conexão'; });
+  }
+  $('pg-save').addEventListener('click', savePagina);
 
   function boot() {
     $('login').style.display = 'none';

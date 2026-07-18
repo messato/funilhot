@@ -279,6 +279,9 @@
     .net-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 6px; }
     .net { display: flex; align-items: center; gap: 7px; padding: 9px 12px; border: 1px solid var(--line-strong); border-radius: 11px; font-size: 13px; font-weight: 600; cursor: pointer; background: rgba(255,255,255,.04); }
     .net input { accent-color: var(--violet); width: 16px; height: 16px; }
+    .pg-img { display: flex; align-items: center; gap: 12px; }
+    .pg-thumb { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; border: 1px solid var(--line); background: var(--bar); flex-shrink: 0; }
+    .pg-thumb.wide { width: 100px; height: 56px; }
 
     .view { display: none; }
     .view.on { display: block; }
@@ -316,6 +319,7 @@
     <symbol id="ic-money" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2.5"/><circle cx="12" cy="12" r="3"/><path d="M6 9v6M18 9v6"/></symbol>
     <symbol id="ic-bank" viewBox="0 0 24 24"><path d="M3 10l9-6 9 6"/><path d="M5 10v9M9 10v9M15 10v9M19 10v9"/><path d="M3 21h18"/></symbol>
     <symbol id="ic-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="20" r="1.4" fill="currentColor" stroke="none"/><path d="M2 3h3l2.4 12.4a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L21 7H6"/></symbol>
+    <symbol id="ic-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M4 17l5-5 4 4 3-3 4 4"/></symbol>
   </svg>
 
   <!-- ===== Login ===== -->
@@ -351,6 +355,7 @@
       <div class="nav-item" data-view="metas"><svg class="ic"><use href="#ic-target"></use></svg> Metas &amp; produtos</div>
 
       <div class="nav-label">Configurar</div>
+      <div class="nav-item" data-view="pagina"><svg class="ic"><use href="#ic-image"></use></svg> Página</div>
       <div class="nav-item" data-view="config"><svg class="ic"><use href="#ic-gear"></use></svg> Configurações</div>
       <div class="nav-item" data-view="recursos"><svg class="ic"><use href="#ic-layers"></use></svg> Recursos</div>
 
@@ -507,6 +512,31 @@
           <div class="card" style="margin-top:14px">
             <h2>Publicações recentes</h2>
             <div class="table-scroll"><div id="soc-history"></div></div>
+          </div>
+        </section>
+
+        <!-- VIEW: Página (editor da landing) -->
+        <section class="view" data-view="pagina">
+          <div class="card" id="sec-pagina">
+            <h2>Editor da página de vendas <span class="hint">reflete na landing</span></h2>
+            <div class="cap">Edite os textos e as imagens da sua página — salva na hora. <a href="/" target="_blank" rel="noopener" style="color:var(--violet-2);font-weight:700">abrir a página ↗</a></div>
+            <div class="feat-cat">Textos</div>
+            <label class="sub">Nome</label>
+            <input id="pg-name" class="set-in" placeholder="Agatha Luisa" />
+            <label class="sub">@usuário</label>
+            <input id="pg-user" class="set-in" placeholder="@eu_agathaluisa" />
+            <label class="sub">Título da bio</label>
+            <input id="pg-biotitle" class="set-in" />
+            <label class="sub">Descrição</label>
+            <textarea id="pg-biotext" class="set-in"></textarea>
+            <label class="sub">Números (ex: 243 posts • 4,8k likes)</label>
+            <input id="pg-stats" class="set-in" />
+            <div class="feat-cat">Imagens</div>
+            <label class="sub">Foto de perfil</label>
+            <div class="pg-img"><img id="pg-avatar-preview" class="pg-thumb" alt="" /><input id="pg-avatar" type="file" accept="image/*" class="set-in" style="margin:0" /></div>
+            <label class="sub" style="margin-top:12px;display:block">Capa / banner</label>
+            <div class="pg-img"><img id="pg-capa-preview" class="pg-thumb wide" alt="" /><input id="pg-capa" type="file" accept="image/*" class="set-in" style="margin:0" /></div>
+            <div style="margin-top:16px"><button class="btn-o" id="pg-save">Salvar página</button> <span id="pg-status" class="sub" style="margin-left:10px"></span></div>
           </div>
         </section>
 

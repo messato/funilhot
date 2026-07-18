@@ -18,17 +18,34 @@ const DEFAULTS = {
   supportLink: 'https://t.me/suporte_agatha',
   recoveryMsg: 'Oi {nome}! Vi que você gerou o PIX do {produto} mas não finalizou. Posso te ajudar a concluir?',
   abandonMinutes: 10,
+  // Conteúdo editável da landing (vazio = mantém o que está no HTML).
+  siteName: '',
+  siteUser: '',
+  siteBioTitle: '',
+  siteBioText: '',
+  siteStats: '',
+  // Versões das imagens enviadas (0 = usar a imagem padrão do HTML). Servem de cache-buster.
+  avatarVer: 0,
+  capaVer: 0,
+  logoVer: 0,
 };
+
+const TEXT_FIELDS = ['siteName', 'siteUser', 'siteBioTitle', 'siteBioText', 'siteStats'];
+const VER_FIELDS = ['avatarVer', 'capaVer', 'logoVer'];
+function cleanText(v, max) { return String(v == null ? '' : v).replace(/[<>]/g, '').slice(0, max || 200); }
 
 async function getSettings() {
   const saved = (await getJSON('config/settings.json')) || {};
-  return {
+  const out = {
     prices: Object.assign({}, DEFAULTS.prices, saved.prices || {}),
     vipLink: saved.vipLink || DEFAULTS.vipLink,
     supportLink: saved.supportLink || DEFAULTS.supportLink,
     recoveryMsg: saved.recoveryMsg || DEFAULTS.recoveryMsg,
     abandonMinutes: typeof saved.abandonMinutes === 'number' ? saved.abandonMinutes : DEFAULTS.abandonMinutes,
   };
+  TEXT_FIELDS.forEach((f) => { out[f] = typeof saved[f] === 'string' ? saved[f] : DEFAULTS[f]; });
+  VER_FIELDS.forEach((f) => { out[f] = typeof saved[f] === 'number' ? saved[f] : DEFAULTS[f]; });
+  return out;
 }
 
 function safeUrl(v, fallback) {
@@ -55,14 +72,31 @@ async function saveSettings(patch) {
     const m = Math.round(Number(patch.abandonMinutes));
     if (Number.isFinite(m) && m >= 1 && m <= 1440) next.abandonMinutes = m;
   }
+  TEXT_FIELDS.forEach((f) => {
+    if (f in patch) next[f] = cleanText(patch[f], f === 'siteBioText' ? 600 : 160);
+  });
+  VER_FIELDS.forEach((f) => {
+    if (f in patch) { const n = Math.round(Number(patch[f])); if (Number.isFinite(n) && n >= 0) next[f] = n; }
+  });
 
   await setJSON('config/settings.json', next);
   return getSettings();
 }
 
-// Só o que é seguro expor publicamente (usado pelas páginas do funil).
-function publicView(s) {
-  return { prices: s.prices, vipLink: s.vipLink, supportLink: s.supportLink };
+// Marca uma imagem como atualizada (novo cache-buster). name: avatar|capa|logo.
+async function bumpMedia(name, ts) {
+  const field = name + 'Ver';
+  if (VER_FIELDS.indexOf(field) < 0) return null;
+  const patch = {}; patch[field] = ts || 1;
+  return saveSettings(patch);
 }
 
-module.exports = { DEFAULTS, getSettings, saveSettings, publicView };
+// Só o que é seguro expor publicamente (usado pelas páginas do funil).
+function publicView(s) {
+  const out = { prices: s.prices, vipLink: s.vipLink, supportLink: s.supportLink };
+  TEXT_FIELDS.forEach((f) => { out[f] = s[f]; });
+  VER_FIELDS.forEach((f) => { out[f] = s[f]; });
+  return out;
+}
+
+module.exports = { DEFAULTS, getSettings, saveSettings, publicView, bumpMedia };

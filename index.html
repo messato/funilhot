@@ -200,7 +200,7 @@
 
   <div class="capa-wrap">
     <img class="capa" src="https://i.imgur.com/ZNnVDZJ.png" alt="Capa Agatha" />
-    <div class="stats-badge">243 posts • 4,8k likes</div>
+    <div class="stats-badge" data-field="siteStats">243 posts • 4,8k likes</div>
     <div class="perfil-wrap">
       <img class="avatar" src="https://i.imgur.com/vGKSqLm.png" alt="Agatha" />
     </div>
@@ -208,14 +208,14 @@
 
   <div class="perfil-wrap">
     <div class="nome-wrap">
-      <div class="nome">Agatha Luisa <span class="badge-verificado"></span></div>
-      <div class="username">@eu_agathaluisa</div>
+      <div class="nome"><span data-field="siteName">Agatha Luisa</span> <span class="badge-verificado"></span></div>
+      <div class="username" data-field="siteUser">@eu_agathaluisa</div>
     </div>
   </div>
 
   <div class="secao">
-    <p class="bio-titulo">Conteúdos exclusivos para Adultos 🔞</p>
-    <p class="bio-texto">Não publicados nas redes sociais</p>
+    <p class="bio-titulo" data-field="siteBioTitle">Conteúdos exclusivos para Adultos 🔞</p>
+    <p class="bio-texto" data-field="siteBioText">Não publicados nas redes sociais</p>
     <ul class="bio-lista bio-texto">
       <li>🔥 Fotos inéditas</li>
       <li>🔥 Vídeos exclusivos</li>
@@ -362,6 +362,7 @@
       if (e.target === this) fecharPopup();
     });
   </script>
+  <script src="front-sync.js" defer></script>
   <script src="price-sync.js" defer></script>
   <script src="funnel-track.js" defer></script>
 </body>

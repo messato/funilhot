@@ -5,6 +5,6 @@ cd "$(dirname "$0")"
 rm -rf dist
 mkdir -p dist
 cp ./*.html dist/
-cp checkout.js upsell-checkout.js obrigado.js admin-app.js funnel-track.js price-sync.js dist/
+cp checkout.js upsell-checkout.js obrigado.js admin-app.js funnel-track.js price-sync.js front-sync.js dist/
 cp three.min.js globe-land.js globe.js dist/
 echo "dist pronto: $(ls dist | wc -l) arquivos"
