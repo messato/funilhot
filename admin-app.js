@@ -392,6 +392,7 @@
     $('period').style.display = VIEWS[name].data ? '' : 'none';
     setCsv();
     if (name === 'overview' && state.data) renderChart(state.data); // re-mede o container ao exibir
+    if (name === 'overview' && window.__globeResize) window.__globeResize();
     if (name === 'publicacoes') loadSocialHistory();
     window.scrollTo(0, 0);
   }
