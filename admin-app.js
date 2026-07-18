@@ -2,10 +2,11 @@
 (function () {
   'use strict';
 
-  var ORANGE = '#ff8a4c', ORANGE2 = '#f0500f', BAR = '#2b2b2b', MUTED = '#6b6b6b';
+  var ORANGE = '#7c5cff', ORANGE2 = '#22d3ee', BAR = 'rgba(255,255,255,0.09)', MUTED = '#6f6f97';
   var state = { days: 7, metric: 'revenue', data: null, orders: [], orderStatus: '', orderQuery: '', timer: null, seenPaid: null, audio: null };
 
   var $ = function (id) { return document.getElementById(id); };
+  var svgIcon = function (id) { return '<svg class="ic"><use href="#ic-' + id + '"></use></svg>'; };
   var el = function (tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
   var brl = function (c) { return (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -75,9 +76,9 @@
   function renderHero(d) {
     var k = d.kpis, p = d.prevKpis;
     $('hero').innerHTML =
-      heroCard(true, '💰', 'Faturamento', 'bruto no período', brl(k.gross), delta(k.gross, p.gross), 'ticket médio ' + brl(k.ticket)) +
-      heroCard(false, '🏦', 'Líquido', 'após taxas do gateway', brl(k.net), delta(k.net, p.net), 'margem ' + (k.gross ? Math.round(k.net / k.gross * 100) : 0) + '%') +
-      heroCard(false, '🛒', 'Vendas pagas', 'pedidos confirmados', String(k.paidCount), delta(k.paidCount, p.paidCount), 'conversão PIX ' + k.pixConversion + '%');
+      heroCard(true, 'money', 'Faturamento', 'bruto no período', brl(k.gross), delta(k.gross, p.gross), 'ticket médio ' + brl(k.ticket)) +
+      heroCard(false, 'bank', 'Líquido', 'após taxas do gateway', brl(k.net), delta(k.net, p.net), 'margem ' + (k.gross ? Math.round(k.net / k.gross * 100) : 0) + '%') +
+      heroCard(false, 'cart', 'Vendas pagas', 'pedidos confirmados', String(k.paidCount), delta(k.paidCount, p.paidCount), 'conversão PIX ' + k.pixConversion + '%');
 
     var mini = [
       { l: 'Lucro (pós-gasto)', v: brl(k.profit), d: delta(k.profit, p.profit) },
@@ -93,12 +94,20 @@
   }
   function heroCard(accent, ic, title, sub, val, dl, foot) {
     return '<div class="hero' + (accent ? ' accent' : '') + '">' +
-      '<div class="h-top"><div class="h-ic">' + ic + '</div><div><div class="h-title">' + title + '</div><div class="h-sub">' + sub + '</div></div></div>' +
+      '<div class="h-top"><div class="h-ic">' + svgIcon(ic) + '</div><div><div class="h-title">' + title + '</div><div class="h-sub">' + sub + '</div></div></div>' +
       '<div class="h-val">' + val + '</div>' +
       '<div class="h-foot"><span>' + foot + '</span>' + dl + '</div></div>';
   }
 
   // ---------- meta ----------
+  function donut(pct) {
+    var r = 34, c = 2 * Math.PI * r, off = c * (1 - Math.min(100, Math.max(0, pct)) / 100);
+    return '<svg class="gauge" viewBox="0 0 92 92">' +
+      '<defs><linearGradient id="gg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs>' +
+      '<circle cx="46" cy="46" r="' + r + '" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="8"/>' +
+      '<circle cx="46" cy="46" r="' + r + '" fill="none" stroke="url(#gg)" stroke-width="8" stroke-linecap="round" stroke-dasharray="' + c + '" stroke-dashoffset="' + off + '" transform="rotate(-90 46 46)"/>' +
+      '<text x="46" y="47" text-anchor="middle" dominant-baseline="middle">' + pct + '%</text></svg>';
+  }
   function renderGoal(d) {
     var g = d.goal;
     if (!g.amount) {
@@ -110,8 +119,9 @@
     var pct = Math.min(100, Math.round(g.monthRevenue / g.amount * 100));
     var onTrack = g.projection >= g.amount;
     $('goal-body').innerHTML =
-      '<div class="goal-val">' + brl(g.monthRevenue) + '</div>' +
-      '<div class="goal-sub">de ' + brl(g.amount) + ' · ' + pct + '% da meta</div>' +
+      '<div class="goal-head">' + donut(pct) +
+      '<div><div class="goal-val">' + brl(g.monthRevenue) + '</div>' +
+      '<div class="goal-sub">de ' + brl(g.amount) + ' · meta do mês</div></div></div>' +
       '<div class="track"><i style="width:' + pct + '%"></i></div>' +
       '<div class="goal-legend"><span>dia ' + g.elapsed + '/' + g.daysInMonth + '</span>' +
       '<span class="' + (onTrack ? 'roas-tag good' : 'roas-tag bad') + '">projeção ' + brl(g.projection) + '</span></div>' +
@@ -139,12 +149,13 @@
     var fmtY = function (v) { return money ? (v >= 100000 ? 'R$' + Math.round(v / 100000) / 10 + 'k' : 'R$' + Math.round(v / 100)) : String(Math.round(v)); };
 
     var svg = '<svg width="' + W + '" height="' + H + '" role="img" aria-label="' + METRIC[m].label + '">';
-    svg += '<defs><linearGradient id="og" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + ORANGE + '"/><stop offset="1" stop-color="' + ORANGE2 + '"/></linearGradient></defs>';
+    svg += '<defs><linearGradient id="og" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + ORANGE + '"/><stop offset="1" stop-color="' + ORANGE2 + '"/></linearGradient>' +
+      '<filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
     rows.forEach(function (r, i) {
       var v = r[m] || 0, h = Math.round(plotH * v / max);
       var x = padL + (plotW / rows.length) * i + ((plotW / rows.length) - bw) / 2, y = padT + plotH - h;
       var isPeak = i === peak && v > 0;
-      svg += '<rect class="cbar" data-i="' + i + '" x="' + x + '" y="' + y + '" width="' + bw + '" height="' + Math.max(h, 2) + '" rx="5" fill="' + (isPeak ? 'url(#og)' : BAR) + '"/>';
+      svg += '<rect class="cbar" data-i="' + i + '" x="' + x + '" y="' + y + '" width="' + bw + '" height="' + Math.max(h, 2) + '" rx="5" fill="' + (isPeak ? 'url(#og)' : BAR) + '"' + (isPeak ? ' filter="url(#glow)"' : '') + '/>';
       if (rows.length <= 14 || i % Math.ceil(rows.length / 14) === 0) {
         svg += '<text x="' + (x + bw / 2) + '" y="' + (H - 7) + '" text-anchor="middle" font-size="10" fill="' + MUTED + '">' + r.day.slice(8) + '/' + r.day.slice(5, 7) + '</text>';
       }

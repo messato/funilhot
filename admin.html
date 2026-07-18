@@ -5,142 +5,162 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex,nofollow" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" />
-  <title>Funil — Painel</title>
+  <title>Agatha VIP — Painel</title>
   <style>
     :root {
-      --page: #0d0d0d;
-      --sidebar: #141414;
-      --card: #1a1a1a;
-      --card-2: #202020;
-      --line: rgba(255,255,255,.07);
-      --line-strong: rgba(255,255,255,.12);
-      --ink: #ffffff;
-      --ink-2: #a0a0a0;
-      --muted: #6b6b6b;
-      --orange: #ff6a2b;
-      --orange-2: #f0500f;
-      --orange-soft: rgba(255,106,43,.14);
-      --good: #34d399;
-      --good-dim: #1c3a2c;
-      --bad: #f87171;
-      --grid: #262626;
-      --bar: #2b2b2b;
+      --page: #080812;
+      --sidebar: rgba(12,12,26,.6);
+      --surface: rgba(22,22,44,.55);
+      --surface-2: rgba(30,30,56,.6);
+      --line: rgba(255,255,255,.08);
+      --line-strong: rgba(255,255,255,.15);
+      --ink: #f3f3ff;
+      --ink-2: #aeaed0;
+      --muted: #6f6f97;
+      --violet: #7c5cff;
+      --violet-2: #9d82ff;
+      --cyan: #22d3ee;
+      --magenta: #e451ff;
+      --grad: linear-gradient(135deg, #7c5cff 0%, #22d3ee 100%);
+      --grad-soft: linear-gradient(135deg, rgba(124,92,255,.22), rgba(34,211,238,.16));
+      --good: #34e5b0;
+      --good-dim: rgba(52,229,176,.14);
+      --bad: #ff5d8f;
+      --bar: rgba(255,255,255,.07);
+      --glow: 0 8px 30px rgba(124,92,255,.35);
     }
 
     * , *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
     body {
       font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-      background: var(--page);
       color: var(--ink);
       font-size: 14px;
       -webkit-font-smoothing: antialiased;
+      background:
+        radial-gradient(900px 520px at 8% -8%, rgba(124,92,255,.20), transparent 60%),
+        radial-gradient(820px 520px at 102% -4%, rgba(34,211,238,.14), transparent 55%),
+        radial-gradient(700px 700px at 100% 108%, rgba(228,81,255,.10), transparent 60%),
+        var(--page);
+      background-attachment: fixed;
     }
     a { color: inherit; text-decoration: none; }
+    .ic { width: 18px; height: 18px; display: inline-block; vertical-align: middle; flex-shrink: 0;
+      fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .ic-sm { width: 15px; height: 15px; }
+    .grad-text { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
     /* ---------- Login ---------- */
     #login {
-      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-      background: radial-gradient(1200px 600px at 70% -10%, rgba(255,106,43,.10), transparent), var(--page);
-      padding: 20px;
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 20px;
+      background:
+        radial-gradient(700px 400px at 50% -10%, rgba(124,92,255,.25), transparent 60%),
+        radial-gradient(600px 400px at 80% 110%, rgba(34,211,238,.15), transparent 55%),
+        var(--page);
     }
     #login .box {
-      width: 100%; max-width: 360px; background: var(--card); border: 1px solid var(--line);
-      border-radius: 20px; padding: 28px; text-align: center;
+      width: 100%; max-width: 360px; background: var(--surface); border: 1px solid var(--line);
+      border-radius: 22px; padding: 30px 28px; text-align: center; backdrop-filter: blur(16px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
     }
-    #login .logo-badge { width: 44px; height: 44px; border-radius: 12px; margin: 0 auto 14px;
-      background: linear-gradient(135deg, var(--orange), var(--orange-2)); display: grid; place-items: center; font-size: 22px; }
-    #login h1 { font-size: 19px; margin-bottom: 4px; }
-    #login p { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+    #login .logo-badge { width: 52px; height: 52px; border-radius: 16px; margin: 0 auto 16px;
+      background: var(--grad); display: grid; place-items: center; color: #fff; box-shadow: var(--glow); }
+    #login .logo-badge .ic { width: 26px; height: 26px; }
+    #login h1 { font-size: 20px; margin-bottom: 4px; letter-spacing: -.3px; }
+    #login p { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
     #login input {
       width: 100%; padding: 13px 14px; border: 1px solid var(--line-strong); border-radius: 12px;
-      background: var(--page); color: var(--ink); font-size: 15px; margin-bottom: 12px; outline: none;
+      background: rgba(255,255,255,.04); color: var(--ink); font-size: 15px; margin-bottom: 12px; outline: none;
     }
-    #login input:focus { border-color: var(--orange); }
+    #login input:focus { border-color: var(--violet); box-shadow: 0 0 0 3px rgba(124,92,255,.18); }
     #login .erro { color: var(--bad); font-size: 13px; margin-top: 10px; min-height: 18px; }
 
     /* ---------- App shell ---------- */
-    #app { display: none; min-height: 100vh; grid-template-columns: 248px 1fr; }
+    #app { display: none; min-height: 100vh; grid-template-columns: 250px 1fr; }
     #app.on { display: grid; }
 
     .sidebar {
-      background: var(--sidebar); border-right: 1px solid var(--line);
-      padding: 18px 14px; display: flex; flex-direction: column; gap: 6px;
+      background: var(--sidebar); border-right: 1px solid var(--line); backdrop-filter: blur(16px);
+      padding: 18px 14px; display: flex; flex-direction: column; gap: 5px;
       position: sticky; top: 0; height: 100vh; overflow-y: auto;
     }
-    .brand { display: flex; align-items: center; gap: 10px; padding: 4px 6px 14px; }
-    .brand .mark { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--orange), var(--orange-2)); display: grid; place-items: center; font-size: 18px; }
+    .brand { display: flex; align-items: center; gap: 11px; padding: 4px 6px 16px; }
+    .brand .mark { width: 38px; height: 38px; border-radius: 12px; background: var(--grad); display: grid; place-items: center; color: #fff; box-shadow: var(--glow); }
+    .brand .mark .ic { width: 20px; height: 20px; }
     .brand b { font-size: 16px; letter-spacing: -.2px; }
     .brand span { color: var(--muted); font-size: 11px; display: block; font-weight: 500; }
 
-    .side-search { display: flex; align-items: center; gap: 8px; background: var(--page); border: 1px solid var(--line);
-      border-radius: 10px; padding: 9px 11px; color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+    .side-search { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.04); border: 1px solid var(--line);
+      border-radius: 11px; padding: 9px 11px; color: var(--muted); font-size: 13px; margin-bottom: 8px; }
     .side-search input { flex: 1; background: none; border: none; outline: none; color: var(--ink); font-size: 13px; }
 
-    .nav-label { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; padding: 14px 8px 6px; }
-    .nav-item { display: flex; align-items: center; gap: 11px; padding: 10px 11px; border-radius: 10px; color: var(--ink-2);
-      font-weight: 600; cursor: pointer; font-size: 13.5px; border: 1px solid transparent; }
-    .nav-item:hover { background: var(--card); color: var(--ink); }
-    .nav-item.active { background: var(--card); color: var(--ink); border-color: var(--line); }
-    .nav-item .ic { width: 18px; height: 18px; flex-shrink: 0; opacity: .9; }
-    .nav-item .badge { margin-left: auto; background: var(--orange-soft); color: var(--orange); font-size: 11px; font-weight: 800; padding: 1px 8px; border-radius: 999px; }
+    .nav-label { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; padding: 15px 8px 6px; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 11px; color: var(--ink-2);
+      font-weight: 600; cursor: pointer; font-size: 13.5px; border: 1px solid transparent; transition: background .15s, color .15s; }
+    .nav-item:hover { background: rgba(255,255,255,.05); color: var(--ink); }
+    .nav-item.active { background: var(--grad-soft); color: #fff; border-color: rgba(124,92,255,.35); box-shadow: 0 0 20px rgba(124,92,255,.14) inset; }
+    .nav-item.active .ic { color: var(--cyan); }
+    .nav-item .badge { margin-left: auto; background: rgba(124,92,255,.18); color: var(--violet-2); font-size: 11px; font-weight: 800; padding: 1px 8px; border-radius: 999px; }
 
-    .side-foot { margin-top: auto; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
-    .side-foot .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); display: inline-block; margin-right: 6px; box-shadow: 0 0 0 3px var(--good-dim); }
+    .side-foot { margin-top: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+    .side-foot .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); display: inline-block; margin-right: 6px; box-shadow: 0 0 10px var(--good); }
     .side-foot .t { font-size: 12.5px; font-weight: 700; }
     .side-foot .s { color: var(--muted); font-size: 11px; margin-top: 3px; }
 
     /* ---------- Main ---------- */
     .main { min-width: 0; }
     .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      padding: 14px 22px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: rgba(13,13,13,.85);
-      backdrop-filter: blur(8px); z-index: 20; }
+      padding: 14px 22px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: rgba(8,8,18,.7);
+      backdrop-filter: blur(12px); z-index: 20; }
     .crumbs { color: var(--muted); font-size: 13px; font-weight: 600; }
     .crumbs b { color: var(--ink); }
     .top-actions { display: flex; align-items: center; gap: 8px; }
-    .icon-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--card);
+    .icon-btn { width: 38px; height: 38px; border-radius: 11px; border: 1px solid var(--line); background: var(--surface);
       display: grid; place-items: center; cursor: pointer; color: var(--ink-2); }
-    .icon-btn:hover { color: var(--ink); border-color: var(--line-strong); }
-    .live { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); background: var(--card);
-      border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
-    .live .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--good); animation: pulse 1.6s infinite; }
+    .icon-btn:hover { color: var(--ink); border-color: var(--violet); box-shadow: 0 0 16px rgba(124,92,255,.25); }
+    .live { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-2); background: var(--surface);
+      border: 1px solid var(--line); border-radius: 11px; padding: 8px 12px; }
+    .live .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 8px var(--good); animation: pulse 1.6s infinite; }
     @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
 
-    .content { padding: 22px; max-width: 1240px; }
+    .content { padding: 22px; max-width: 1260px; }
 
     .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
-    .page-head h1 { font-size: 22px; letter-spacing: -.4px; }
+    .page-head h1 { font-size: 23px; letter-spacing: -.4px; }
     .page-head p { color: var(--muted); font-size: 13px; margin-top: 3px; }
-    .seg { display: inline-flex; background: var(--card); border: 1px solid var(--line); border-radius: 11px; padding: 3px; gap: 2px; }
-    .seg button { border: none; background: none; color: var(--ink-2); font-weight: 700; font-size: 12.5px; padding: 7px 13px; border-radius: 8px; cursor: pointer; }
-    .seg button.on { background: var(--orange); color: #fff; }
-    .btn-o { background: linear-gradient(135deg, var(--orange), var(--orange-2)); color: #fff; border: none; border-radius: 11px; padding: 9px 15px; font-weight: 800; font-size: 13px; cursor: pointer; }
-    .btn-ghost { background: var(--card); border: 1px solid var(--line); color: var(--ink-2); border-radius: 11px; padding: 9px 13px; font-weight: 700; font-size: 13px; cursor: pointer; }
-    .btn-ghost:hover { color: var(--ink); }
+    .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 2px; }
+    .seg button { border: none; background: none; color: var(--ink-2); font-weight: 700; font-size: 12.5px; padding: 7px 13px; border-radius: 9px; cursor: pointer; }
+    .seg button.on { background: var(--grad); color: #fff; box-shadow: 0 4px 14px rgba(124,92,255,.3); }
+    .btn-o { display: inline-flex; align-items: center; gap: 7px; background: var(--grad); color: #fff; border: none; border-radius: 12px; padding: 10px 16px; font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 0 6px 20px rgba(124,92,255,.35); }
+    .btn-o:active { transform: translateY(1px); }
+    .btn-ghost { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line); color: var(--ink-2); border-radius: 12px; padding: 9px 13px; font-weight: 700; font-size: 13px; cursor: pointer; }
+    .btn-ghost:hover { color: var(--ink); border-color: var(--line-strong); }
 
-    .banner { margin-bottom: 16px; padding: 12px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5;
-      background: rgba(255,106,43,.08); color: #ffb98f; border: 1px solid rgba(255,106,43,.25); display: none; }
+    .banner { margin-bottom: 16px; padding: 12px 14px; border-radius: 14px; font-size: 13px; line-height: 1.5;
+      background: rgba(124,92,255,.10); color: #cfc4ff; border: 1px solid rgba(124,92,255,.3); display: none; }
 
     /* Hero KPI cards */
     .hero-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 14px; }
-    .hero { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; position: relative; overflow: hidden; }
-    .hero.accent { background: linear-gradient(135deg, var(--orange) 0%, var(--orange-2) 100%); border-color: transparent; }
-    .hero .h-top { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-    .hero .h-ic { width: 38px; height: 38px; border-radius: 11px; background: rgba(255,255,255,.10); display: grid; place-items: center; font-size: 18px; }
-    .hero.accent .h-ic { background: rgba(255,255,255,.22); }
+    .hero { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 18px; position: relative; overflow: hidden; backdrop-filter: blur(14px); box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+    .hero.accent { background: linear-gradient(135deg, #7c5cff 0%, #6d4bff 45%, #22d3ee 130%); border-color: transparent; box-shadow: 0 14px 44px rgba(124,92,255,.45); }
+    .hero.accent::after { content: ''; position: absolute; width: 180px; height: 180px; right: -50px; top: -60px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.25), transparent 70%); }
+    .hero .h-top { display: flex; align-items: center; gap: 11px; margin-bottom: 20px; }
+    .hero .h-ic { width: 40px; height: 40px; border-radius: 12px; background: var(--grad-soft); display: grid; place-items: center; color: var(--violet-2); }
+    .hero .h-ic .ic { width: 21px; height: 21px; }
+    .hero.accent .h-ic { background: rgba(255,255,255,.22); color: #fff; }
     .hero .h-title { font-weight: 800; font-size: 14px; }
     .hero .h-sub { font-size: 11.5px; color: var(--muted); }
-    .hero.accent .h-sub { color: rgba(255,255,255,.8); }
-    .hero .h-val { font-size: 30px; font-weight: 900; letter-spacing: -.6px; }
+    .hero.accent .h-sub { color: rgba(255,255,255,.85); }
+    .hero .h-val { font-size: 31px; font-weight: 900; letter-spacing: -.6px; }
     .hero .h-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--ink-2); }
-    .hero.accent .h-foot { border-top-color: rgba(255,255,255,.22); color: rgba(255,255,255,.9); }
+    .hero.accent .h-foot { border-top-color: rgba(255,255,255,.25); color: rgba(255,255,255,.92); }
     .delta { font-weight: 800; font-size: 12px; }
     .delta.up { color: var(--good); } .delta.down { color: var(--bad); } .delta.flat { color: var(--muted); }
     .hero.accent .delta.up, .hero.accent .delta.down, .hero.accent .delta.flat { color: #fff; }
 
     /* mini KPI strip */
-    .mini-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 12px; margin-bottom: 18px; }
-    .mini { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+    .mini-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .mini { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; backdrop-filter: blur(10px); }
     .mini .l { color: var(--muted); font-size: 11.5px; font-weight: 700; margin-bottom: 6px; }
     .mini .v { font-size: 20px; font-weight: 900; letter-spacing: -.3px; }
     .mini .d { font-size: 11px; font-weight: 700; margin-top: 3px; }
@@ -148,37 +168,40 @@
     .two-col { display: grid; grid-template-columns: 380px 1fr; gap: 14px; margin-bottom: 18px; }
     .two-col.even { grid-template-columns: 1fr 1fr; }
 
-    .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; }
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 18px; backdrop-filter: blur(14px); box-shadow: 0 10px 40px rgba(0,0,0,.28); }
     .card h2 { font-size: 15px; font-weight: 800; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
     .card h2 .hint { color: var(--muted); font-weight: 600; font-size: 11.5px; }
     .card .cap { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
 
     /* Meta / progresso */
+    .goal-head { display: flex; align-items: center; gap: 16px; margin-bottom: 6px; }
     .goal-val { font-size: 26px; font-weight: 900; letter-spacing: -.5px; }
     .goal-sub { color: var(--muted); font-size: 12px; margin: 2px 0 14px; }
     .track { height: 12px; border-radius: 999px; background: var(--bar); overflow: hidden; }
-    .track > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--orange), var(--orange-2)); }
+    .track > i { display: block; height: 100%; border-radius: 999px; background: var(--grad); box-shadow: 0 0 16px rgba(124,92,255,.55); }
     .goal-legend { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--ink-2); }
+    .gauge { width: 92px; height: 92px; flex-shrink: 0; }
+    .gauge text { fill: var(--ink); font-weight: 900; font-size: 20px; }
     .prod-mini { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .prod-cell { background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 11px; }
+    .prod-cell { background: var(--surface-2); border: 1px solid var(--line); border-radius: 13px; padding: 11px; }
     .prod-cell .pn { font-size: 12px; color: var(--ink-2); font-weight: 700; }
     .prod-cell .pv { font-size: 16px; font-weight: 900; margin-top: 3px; }
     .prod-cell .pc { font-size: 11px; color: var(--muted); margin-top: 1px; }
 
     /* Chart */
     .chart-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
-    .chart-big { font-size: 28px; font-weight: 900; letter-spacing: -.6px; }
+    .chart-big { font-size: 30px; font-weight: 900; letter-spacing: -.6px; }
     .chart-cap { color: var(--muted); font-size: 12px; }
     .chart-wrap { position: relative; overflow-x: auto; }
-    .tooltip { position: absolute; pointer-events: none; background: #000; border: 1px solid var(--line-strong);
-      border-radius: 10px; padding: 8px 10px; font-size: 12px; opacity: 0; transition: opacity .12s; white-space: nowrap; z-index: 5; }
+    .tooltip { position: absolute; pointer-events: none; background: rgba(14,14,30,.92); border: 1px solid var(--line-strong);
+      border-radius: 11px; padding: 8px 10px; font-size: 12px; opacity: 0; transition: opacity .12s; white-space: nowrap; z-index: 5; backdrop-filter: blur(6px); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
     .tooltip b { display: block; color: var(--muted); font-weight: 700; font-size: 10.5px; margin-bottom: 2px; }
 
     /* Funil */
     .fn-row { display: flex; align-items: center; gap: 12px; margin-bottom: 9px; }
     .fn-label { width: 210px; min-width: 150px; font-size: 13px; color: var(--ink-2); }
-    .fn-track { flex: 1; height: 26px; background: var(--bar); border-radius: 8px; overflow: hidden; }
-    .fn-bar { height: 100%; background: linear-gradient(90deg, var(--orange), var(--orange-2)); border-radius: 8px; min-width: 3px; transition: width .5s; }
+    .fn-track { flex: 1; height: 26px; background: var(--bar); border-radius: 9px; overflow: hidden; }
+    .fn-bar { height: 100%; background: var(--grad); border-radius: 9px; min-width: 3px; transition: width .5s; box-shadow: 0 0 14px rgba(124,92,255,.4); }
     .fn-num { width: 120px; text-align: right; font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
     .fn-num .pct { color: var(--muted); font-weight: 600; font-size: 11.5px; }
 
@@ -187,12 +210,12 @@
     .heat table { border-collapse: separate; border-spacing: 3px; }
     .heat td, .heat th { text-align: center; }
     .heat th { color: var(--muted); font-size: 10px; font-weight: 700; padding: 2px; }
-    .heat .cell { width: 100%; min-width: 20px; height: 20px; border-radius: 4px; background: var(--bar); }
+    .heat .cell { width: 100%; min-width: 20px; height: 20px; border-radius: 5px; background: var(--bar); }
     .heat .rowlabel { color: var(--muted); font-size: 11px; font-weight: 700; padding-right: 6px; text-align: right; white-space: nowrap; }
 
     /* Tables */
     .tbl-tools { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-    .tbl-search { display: flex; align-items: center; gap: 7px; background: var(--page); border: 1px solid var(--line); border-radius: 10px; padding: 8px 11px; flex: 1; min-width: 160px; }
+    .tbl-search { display: flex; align-items: center; gap: 7px; background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 11px; padding: 8px 11px; flex: 1; min-width: 160px; color: var(--muted); }
     .tbl-search input { flex: 1; background: none; border: none; outline: none; color: var(--ink); font-size: 13px; }
     table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
     table.data th { text-align: left; color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; padding: 9px 10px; border-bottom: 1px solid var(--line); }
@@ -203,12 +226,12 @@
     .sub { color: var(--muted); font-size: 11px; }
     .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; }
     .pill.paid { background: var(--good-dim); color: var(--good); }
-    .pill.pending { background: #3a2e0d; color: #fbbf24; }
-    .pill .pd { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .pill.pending { background: rgba(255,196,0,.12); color: #ffce54; }
+    .pill .pd { width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; }
     .roas-tag { font-weight: 800; }
     .roas-tag.good { color: var(--good); } .roas-tag.bad { color: var(--bad); }
     .wa { color: var(--good); font-weight: 800; white-space: nowrap; }
-    .reveal { color: var(--orange); cursor: pointer; font-size: 11px; font-weight: 700; }
+    .reveal { color: var(--violet-2); cursor: pointer; font-size: 11px; font-weight: 700; }
     .empty { color: var(--muted); text-align: center; padding: 22px 0; font-size: 13px; }
 
     /* toggles de recursos */
@@ -218,19 +241,19 @@
     .feat-row .fl { font-weight: 700; font-size: 13.5px; }
     .feat-row .fd { color: var(--muted); font-size: 12px; margin-top: 2px; }
     .sw { position: relative; width: 44px; height: 25px; border-radius: 999px; background: var(--bar); cursor: pointer; transition: background .15s; flex-shrink: 0; border: 1px solid var(--line); }
-    .sw.on { background: var(--orange); border-color: transparent; }
+    .sw.on { background: var(--grad); border-color: transparent; box-shadow: 0 0 14px rgba(124,92,255,.4); }
     .sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 17px; height: 17px; border-radius: 50%; background: #fff; transition: left .15s; }
     .sw.on::after { left: 22px; }
     .sw.dis { opacity: .35; cursor: not-allowed; }
     .badge-soon { background: var(--bar); color: var(--ink-2); font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 999px; margin-left: 6px; }
     .badge-on { background: var(--good-dim); color: var(--good); font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 999px; margin-left: 6px; }
-    .set-in { width: 100%; padding: 11px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--page); color: var(--ink); font-size: 14px; margin: 4px 0 12px; outline: none; }
-    .set-in:focus { border-color: var(--orange); }
+    .set-in { width: 100%; padding: 11px; border: 1px solid var(--line-strong); border-radius: 11px; background: rgba(255,255,255,.04); color: var(--ink); font-size: 14px; margin: 4px 0 12px; outline: none; }
+    .set-in:focus { border-color: var(--violet); box-shadow: 0 0 0 3px rgba(124,92,255,.15); }
     textarea.set-in { min-height: 70px; resize: vertical; font-family: inherit; }
     .price-in { max-width: 130px; text-align: right; margin: 0; }
     .net-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 6px; }
-    .net { display: flex; align-items: center; gap: 7px; padding: 9px 12px; border: 1px solid var(--line-strong); border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; background: var(--page); }
-    .net input { accent-color: var(--orange); width: 16px; height: 16px; }
+    .net { display: flex; align-items: center; gap: 7px; padding: 9px 12px; border: 1px solid var(--line-strong); border-radius: 11px; font-size: 13px; font-weight: 600; cursor: pointer; background: rgba(255,255,255,.04); }
+    .net input { accent-color: var(--violet); width: 16px; height: 16px; }
 
     .view { display: none; }
     .view.on { display: block; }
@@ -247,14 +270,37 @@
 </head>
 <body>
 
+  <!-- ===== Sprite de ícones (SVG) ===== -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="ic-gem" viewBox="0 0 24 24"><path d="M6 3h12l3 6-9 12L3 9l3-6z"/><path d="M3 9h18M9 3l3 6 3-6M12 21 9 9M12 21l3-12"/></symbol>
+    <symbol id="ic-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></symbol>
+    <symbol id="ic-sales" viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z"/><path d="M9 7h6M9 11h6M9 15h3"/></symbol>
+    <symbol id="ic-flame" viewBox="0 0 24 24"><path d="M12 22a6 6 0 0 0 6-6c0-4-3-6-3.5-9 0 0-2.2 1.8-3 4-1-1-1.2-3-1-5-3 2-4.5 5-4.5 10a6 6 0 0 0 6 6z"/></symbol>
+    <symbol id="ic-video" viewBox="0 0 24 24"><rect x="2" y="5" width="14" height="14" rx="3"/><path d="M16 10l6-3v10l-6-3z"/></symbol>
+    <symbol id="ic-funnel" viewBox="0 0 24 24"><path d="M3 4h18l-7 8v7l-4 2v-9L3 4z"/></symbol>
+    <symbol id="ic-megaphone" viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h2l9 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M18 8a4 4 0 0 1 0 8"/></symbol>
+    <symbol id="ic-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="ic-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></symbol>
+    <symbol id="ic-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></symbol>
+    <symbol id="ic-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></symbol>
+    <symbol id="ic-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 4v5h-5"/></symbol>
+    <symbol id="ic-power" viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.4 6.4a8 8 0 1 0 11.2 0"/></symbol>
+    <symbol id="ic-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M4 21h16"/></symbol>
+    <symbol id="ic-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="ic-edit" viewBox="0 0 24 24"><path d="M4 20h4L18 10l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></symbol>
+    <symbol id="ic-money" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2.5"/><circle cx="12" cy="12" r="3"/><path d="M6 9v6M18 9v6"/></symbol>
+    <symbol id="ic-bank" viewBox="0 0 24 24"><path d="M3 10l9-6 9 6"/><path d="M5 10v9M9 10v9M15 10v9M19 10v9"/><path d="M3 21h18"/></symbol>
+    <symbol id="ic-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="20" r="1.4" fill="currentColor" stroke="none"/><path d="M2 3h3l2.4 12.4a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L21 7H6"/></symbol>
+  </svg>
+
   <!-- ===== Login ===== -->
   <div id="login">
     <div class="box">
-      <div class="logo-badge">🔥</div>
-      <h1>Painel do Funil</h1>
+      <div class="logo-badge"><svg class="ic"><use href="#ic-gem"></use></svg></div>
+      <h1>Agatha VIP</h1>
       <p>Acesso restrito — digite a senha</p>
       <input type="password" id="senha" placeholder="Senha de administrador" autocomplete="current-password" />
-      <button class="btn-o" id="entrar" style="width:100%;padding:13px">Entrar</button>
+      <button class="btn-o" id="entrar" style="width:100%;justify-content:center;padding:13px">Entrar</button>
       <div class="erro" id="login-erro"></div>
     </div>
   </div>
@@ -263,25 +309,25 @@
   <div id="app">
     <aside class="sidebar">
       <div class="brand">
-        <div class="mark">🔥</div>
-        <div><b>Funil VIP</b><span>painel de métricas</span></div>
+        <div class="mark"><svg class="ic"><use href="#ic-gem"></use></svg></div>
+        <div><b>Agatha VIP</b><span>painel</span></div>
       </div>
-      <div class="side-search">🔎 <input id="side-search" placeholder="Buscar pedido…" /></div>
+      <div class="side-search"><svg class="ic ic-sm"><use href="#ic-search"></use></svg> <input id="side-search" placeholder="Buscar pedido…" /></div>
 
       <div class="nav-label">Principal</div>
-      <div class="nav-item active" data-view="overview"><span class="ic">📊</span> Visão geral</div>
-      <div class="nav-item" data-view="vendas"><span class="ic">🧾</span> Vendas <span class="badge" id="nav-orders">0</span></div>
-      <div class="nav-item" data-view="abandonados"><span class="ic">🔥</span> PIX abandonados <span class="badge" id="nav-aband">0</span></div>
-      <div class="nav-item" data-view="publicacoes"><span class="ic">🎬</span> Publicações</div>
+      <div class="nav-item active" data-view="overview"><svg class="ic"><use href="#ic-overview"></use></svg> Visão geral</div>
+      <div class="nav-item" data-view="vendas"><svg class="ic"><use href="#ic-sales"></use></svg> Vendas <span class="badge" id="nav-orders">0</span></div>
+      <div class="nav-item" data-view="abandonados"><svg class="ic"><use href="#ic-flame"></use></svg> PIX abandonados <span class="badge" id="nav-aband">0</span></div>
+      <div class="nav-item" data-view="publicacoes"><svg class="ic"><use href="#ic-video"></use></svg> Publicações</div>
 
       <div class="nav-label">Análise</div>
-      <div class="nav-item" data-view="funil"><span class="ic">🫗</span> Funil</div>
-      <div class="nav-item" data-view="trafego"><span class="ic">📣</span> Tráfego / ROAS</div>
-      <div class="nav-item" data-view="metas"><span class="ic">🎯</span> Metas &amp; produtos</div>
+      <div class="nav-item" data-view="funil"><svg class="ic"><use href="#ic-funnel"></use></svg> Funil</div>
+      <div class="nav-item" data-view="trafego"><svg class="ic"><use href="#ic-megaphone"></use></svg> Tráfego / ROAS</div>
+      <div class="nav-item" data-view="metas"><svg class="ic"><use href="#ic-target"></use></svg> Metas &amp; produtos</div>
 
       <div class="nav-label">Configurar</div>
-      <div class="nav-item" data-view="config"><span class="ic">⚙️</span> Configurações</div>
-      <div class="nav-item" data-view="recursos"><span class="ic">🧩</span> Recursos</div>
+      <div class="nav-item" data-view="config"><svg class="ic"><use href="#ic-gear"></use></svg> Configurações</div>
+      <div class="nav-item" data-view="recursos"><svg class="ic"><use href="#ic-layers"></use></svg> Recursos</div>
 
       <div class="side-foot">
         <div class="t"><span class="dot"></span><span id="foot-provider">carregando…</span></div>
@@ -291,11 +337,11 @@
 
     <div class="main">
       <div class="topbar">
-        <div class="crumbs">Funil VIP <span style="opacity:.4">›</span> <b>Painel</b></div>
+        <div class="crumbs">Agatha VIP <span style="opacity:.4">›</span> <b>Painel</b></div>
         <div class="top-actions">
           <div class="live"><span class="pulse"></span> ao vivo</div>
-          <button class="icon-btn" id="btn-refresh" title="Atualizar">⟳</button>
-          <button class="icon-btn" id="btn-sair" title="Sair">⏻</button>
+          <button class="icon-btn" id="btn-refresh" title="Atualizar"><svg class="ic ic-sm"><use href="#ic-refresh"></use></svg></button>
+          <button class="icon-btn" id="btn-sair" title="Sair"><svg class="ic ic-sm"><use href="#ic-power"></use></svg></button>
         </div>
       </div>
 
@@ -312,7 +358,7 @@
               <button data-days="30">30 dias</button>
               <button data-days="90">90 dias</button>
             </div>
-            <button class="btn-ghost" id="btn-csv">⬇ CSV</button>
+            <button class="btn-ghost" id="btn-csv"><svg class="ic ic-sm"><use href="#ic-download"></use></svg> CSV</button>
           </div>
         </div>
 
@@ -325,7 +371,7 @@
           <div class="card">
             <div class="chart-head">
               <div>
-                <div class="chart-big" id="chart-big">R$ 0,00</div>
+                <div class="chart-big grad-text" id="chart-big">R$ 0,00</div>
                 <div class="chart-cap" id="chart-cap">receita no período</div>
               </div>
               <div class="seg" id="metric">
@@ -343,7 +389,7 @@
         <section class="view" data-view="vendas">
           <div class="card" id="sec-orders">
             <div class="tbl-tools">
-              <div class="tbl-search">🔎 <input id="order-search" placeholder="Buscar por nome, e-mail ou ID…" /></div>
+              <div class="tbl-search"><svg class="ic ic-sm"><use href="#ic-search"></use></svg> <input id="order-search" placeholder="Buscar por nome, e-mail ou ID…" /></div>
               <div class="seg" id="order-filter">
                 <button data-status="" class="on">Todos</button>
                 <button data-status="paid">Pagos</button>
@@ -357,7 +403,7 @@
         <!-- VIEW: PIX abandonados -->
         <section class="view" data-view="abandonados">
           <div class="card" id="sec-abandoned">
-            <h2>🔥 PIX abandonados <span class="hint">gerou e não pagou — recupere pelo WhatsApp</span></h2>
+            <h2>PIX abandonados <span class="hint">gerou e não pagou — recupere pelo WhatsApp</span></h2>
             <div class="table-scroll"><div id="abandoned"></div></div>
           </div>
         </section>
@@ -371,7 +417,7 @@
           </div>
           <div class="card" id="sec-heat">
             <h2>Melhores horários <span class="hint">vendas por dia × hora (Brasília)</span></h2>
-            <div class="cap">Mais escuro = mais vendas. Use pra decidir quando escalar anúncio e postar.</div>
+            <div class="cap">Mais forte = mais vendas. Use pra decidir quando escalar anúncio e postar.</div>
             <div class="heat" id="heat"></div>
           </div>
         </section>
@@ -379,7 +425,7 @@
         <!-- VIEW: Tráfego / ROAS -->
         <section class="view" data-view="trafego">
           <div class="card" id="sec-traffic">
-            <h2><span>Origens de tráfego <span class="hint">ROAS por origem</span></span><button class="btn-ghost" id="btn-spend">＋ Lançar gasto</button></h2>
+            <h2><span>Origens de tráfego <span class="hint">ROAS por origem</span></span><button class="btn-ghost" id="btn-spend"><svg class="ic ic-sm"><use href="#ic-plus"></use></svg> Lançar gasto</button></h2>
             <div class="cap">Marque seus anúncios com <code>?utm_source=…&utm_campaign=…</code> e lance o gasto pra ver o retorno.</div>
             <div class="table-scroll"><div id="utm"></div></div>
           </div>
@@ -389,7 +435,7 @@
         <section class="view" data-view="metas">
           <div class="two-col">
             <div class="card" id="sec-goal">
-              <h2>Meta do mês <span class="hint" id="goal-edit" style="cursor:pointer;color:var(--orange)">editar</span></h2>
+              <h2>Meta do mês <span class="hint" id="goal-edit" style="cursor:pointer;color:var(--violet-2)">editar</span></h2>
               <div id="goal-body"></div>
             </div>
             <div class="card" id="card-produtos">
@@ -411,12 +457,12 @@
             <textarea id="soc-caption" class="set-in" placeholder="Escreva a legenda do post..."></textarea>
             <label class="sub">Redes</label>
             <div class="net-row" id="soc-nets">
-              <label class="net"><input type="checkbox" value="instagram" checked> 📸 Instagram</label>
-              <label class="net"><input type="checkbox" value="tiktok" checked> 🎵 TikTok</label>
-              <label class="net"><input type="checkbox" value="youtube" checked> ▶️ YouTube</label>
-              <label class="net"><input type="checkbox" value="facebook" checked> 👍 Facebook</label>
-              <label class="net"><input type="checkbox" value="x"> ✖️ X <span class="badge-soon">pago</span></label>
-              <label class="net"><input type="checkbox" value="kwai"> 🟠 Kwai <span class="badge-soon">manual</span></label>
+              <label class="net"><input type="checkbox" value="instagram" checked> Instagram</label>
+              <label class="net"><input type="checkbox" value="tiktok" checked> TikTok</label>
+              <label class="net"><input type="checkbox" value="youtube" checked> YouTube</label>
+              <label class="net"><input type="checkbox" value="facebook" checked> Facebook</label>
+              <label class="net"><input type="checkbox" value="x"> X <span class="badge-soon">pago</span></label>
+              <label class="net"><input type="checkbox" value="kwai"> Kwai <span class="badge-soon">manual</span></label>
             </div>
             <div style="margin-top:14px"><button class="btn-o" id="soc-publish">Publicar</button> <span id="soc-status" class="sub" style="margin-left:10px"></span></div>
             <div id="soc-kwai" style="display:none;margin-top:16px"></div>
@@ -453,7 +499,7 @@
           <div class="card" id="sec-config">
             <h2>Recursos <span class="hint" id="feat-count"></span></h2>
             <div class="cap">Ative e desative cada funcionalidade. Os marcados “em breve” entram nas próximas fases.</div>
-            <div class="tbl-search" style="margin-bottom:6px">🔎 <input id="feat-search" placeholder="Buscar recurso…" /></div>
+            <div class="tbl-search" style="margin-bottom:6px"><svg class="ic ic-sm"><use href="#ic-search"></use></svg> <input id="feat-search" placeholder="Buscar recurso…" /></div>
             <div id="features-list"></div>
           </div>
         </section>
