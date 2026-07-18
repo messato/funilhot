@@ -75,6 +75,7 @@
   // ---------- hero + mini ----------
   function renderHero(d) {
     var k = d.kpis, p = d.prevKpis;
+    if ($('globe-visits')) { $('globe-visits').textContent = String(k.visits); $('globe-uniques').textContent = String(k.uniques); }
     $('hero').innerHTML =
       heroCard(true, 'money', 'Faturamento', 'bruto no período', brl(k.gross), delta(k.gross, p.gross), 'ticket médio ' + brl(k.ticket)) +
       heroCard(false, 'bank', 'Líquido', 'após taxas do gateway', brl(k.net), delta(k.net, p.net), 'margem ' + (k.gross ? Math.round(k.net / k.gross * 100) : 0) + '%') +
