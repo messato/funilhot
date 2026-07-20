@@ -283,6 +283,33 @@
     .pg-thumb { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; border: 1px solid var(--line); background: var(--bar); flex-shrink: 0; }
     .pg-thumb.wide { width: 100px; height: 56px; }
 
+    /* DRE / linhas financeiras */
+    .dre-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+    .dre-row:last-child { border-bottom: none; }
+    .dre-row .dl { color: var(--ink-2); }
+    .dre-row .dv { font-weight: 800; font-variant-numeric: tabular-nums; }
+    .dre-row.neg .dv { color: var(--bad); }
+    .dre-row.total { margin-top: 6px; border-top: 2px solid var(--line-strong); padding-top: 14px; font-size: 15px; }
+    .dre-row.total .dl { color: var(--ink); font-weight: 800; }
+    .dre-row.total .dv { font-size: 20px; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .chip { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 800; background: var(--grad-soft); color: var(--violet-2); }
+
+    /* IA / insights */
+    .ia-text { font-size: 14.5px; line-height: 1.62; color: var(--ink); }
+    .ia-text b { color: #fff; }
+    .coach-item { display: flex; gap: 11px; padding: 12px; border: 1px solid var(--line); border-radius: 13px; margin-bottom: 9px; background: var(--surface-2); }
+    .coach-item .ci-ic { width: 30px; height: 30px; border-radius: 9px; background: var(--grad-soft); display: grid; place-items: center; color: var(--violet-2); flex-shrink: 0; }
+    .coach-item .ci-ic .ic { width: 16px; height: 16px; }
+    .coach-item .ci-t { font-weight: 800; font-size: 13.5px; }
+    .coach-item .ci-d { color: var(--ink-2); font-size: 12.5px; margin-top: 2px; }
+    .coach-item.warn .ci-ic { background: rgba(255,93,143,.14); color: var(--bad); }
+    .coach-item.good .ci-ic { background: var(--good-dim); color: var(--good); }
+    .fc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .fc-box { background: var(--surface-2); border: 1px solid var(--line); border-radius: 13px; padding: 13px; }
+    .fc-box .l { color: var(--muted); font-size: 11.5px; font-weight: 700; }
+    .fc-box .v { font-size: 19px; font-weight: 900; margin-top: 4px; letter-spacing: -.3px; }
+    .anomaly { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 8px 0; border-top: 1px solid var(--line); }
+
     .view { display: none; }
     .view.on { display: block; }
     .section { scroll-margin-top: 74px; }
@@ -320,6 +347,17 @@
     <symbol id="ic-bank" viewBox="0 0 24 24"><path d="M3 10l9-6 9 6"/><path d="M5 10v9M9 10v9M15 10v9M19 10v9"/><path d="M3 21h18"/></symbol>
     <symbol id="ic-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="20" r="1.4" fill="currentColor" stroke="none"/><path d="M2 3h3l2.4 12.4a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L21 7H6"/></symbol>
     <symbol id="ic-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M4 17l5-5 4 4 3-3 4 4"/></symbol>
+    <symbol id="ic-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/><path d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z"/></symbol>
+    <symbol id="ic-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3.2 3.2 0 0 1 0 6.2"/><path d="M17.5 14.5a5.5 5.5 0 0 1 3 5"/></symbol>
+    <symbol id="ic-map" viewBox="0 0 24 24"><path d="M9 3 3 5.5v15L9 18l6 3 6-2.5v-15L15 6 9 3z"/><path d="M9 3v15M15 6v15"/></symbol>
+    <symbol id="ic-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v9h14v-9M12 8v13"/><path d="M12 8S10.5 3.5 8 4.2 8 8 8 8zM12 8s1.5-4.5 4-3.8S16 8 16 8z"/></symbol>
+    <symbol id="ic-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/></symbol>
+    <symbol id="ic-ticket" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 8 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-8z"/><path d="M14 6v12"/></symbol>
+    <symbol id="ic-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></symbol>
+    <symbol id="ic-plug" viewBox="0 0 24 24"><path d="M9 2v6M15 2v6"/><path d="M7 8h10v3a5 5 0 0 1-10 0V8z"/><path d="M12 16v6"/></symbol>
+    <symbol id="ic-star" viewBox="0 0 24 24"><path d="M12 3l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 18l-5.9 3 1.2-6.5L2.5 9.9 9 9l3-6z"/></symbol>
+    <symbol id="ic-tv" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="13" rx="2"/><path d="M8 21h8M12 18v3"/></symbol>
+    <symbol id="ic-file" viewBox="0 0 24 24"><path d="M6 2h8l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 2v6h5M8 13h8M8 17h6"/></symbol>
   </svg>
 
   <!-- ===== Login ===== -->
@@ -353,6 +391,8 @@
       <div class="nav-item" data-view="funil"><svg class="ic"><use href="#ic-funnel"></use></svg> Funil</div>
       <div class="nav-item" data-view="trafego"><svg class="ic"><use href="#ic-megaphone"></use></svg> Tráfego / ROAS</div>
       <div class="nav-item" data-view="metas"><svg class="ic"><use href="#ic-target"></use></svg> Metas &amp; produtos</div>
+      <div class="nav-item" data-view="financeiro"><svg class="ic"><use href="#ic-money"></use></svg> Financeiro</div>
+      <div class="nav-item" data-view="insights"><svg class="ic"><use href="#ic-spark"></use></svg> IA &amp; Insights</div>
 
       <div class="nav-label">Configurar</div>
       <div class="nav-item" data-view="config"><svg class="ic"><use href="#ic-image"></use></svg> Página &amp; Config</div>
@@ -487,6 +527,43 @@
           </div>
         </section>
 
+        <!-- VIEW: Financeiro -->
+        <section class="view" data-view="financeiro">
+          <div class="two-col even">
+            <div class="card" id="sec-dre">
+              <h2>DRE — lucro real <span class="hint">o que sobra no bolso</span></h2>
+              <div class="cap">Do faturamento bruto, tira taxas do gateway, tráfego e imposto estimado. Período selecionado acima.</div>
+              <div id="dre-body"></div>
+            </div>
+            <div class="card" id="sec-recebiveis">
+              <h2>Recebíveis <span class="hint">quando cada venda libera</span></h2>
+              <div class="cap">PIX costuma liberar em D+<span id="rec-days">1</span> (ajuste em Configurações). Mostra o que já está disponível e o que ainda vai cair.</div>
+              <div id="recebiveis-body"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW: IA & Insights -->
+        <section class="view" data-view="insights">
+          <div class="card" id="sec-ia-resumo" style="margin-bottom:14px">
+            <h2>Resumo do período <span class="hint">em português, automático</span></h2>
+            <div class="cap">Leitura rápida dos números — atualiza junto com o painel.</div>
+            <div id="ia-resumo-body" class="ia-text"></div>
+          </div>
+          <div class="two-col even">
+            <div class="card" id="sec-coach">
+              <h2>Próximas ações <span class="hint">o que fazer agora</span></h2>
+              <div class="cap">Sugestões priorizadas a partir dos seus dados.</div>
+              <div id="coach-body"></div>
+            </div>
+            <div class="card" id="sec-forecast">
+              <h2>Previsão &amp; anomalias <span class="hint">projeção do mês</span></h2>
+              <div class="cap">Projeção pelo ritmo atual e destaque de dias fora da curva.</div>
+              <div id="forecast-body"></div>
+            </div>
+          </div>
+        </section>
+
         <!-- VIEW: Publicações -->
         <section class="view" data-view="publicacoes">
           <div class="card" id="sec-social">
@@ -553,6 +630,11 @@
             <textarea id="set-recovery" class="set-in"></textarea>
             <label class="sub">Considerar PIX abandonado após (minutos)</label>
             <input id="set-abandon" type="number" class="set-in" style="max-width:130px" />
+            <div class="feat-cat">Financeiro (DRE & recebíveis)</div>
+            <label class="sub">Imposto estimado sobre o faturamento (%)</label>
+            <input id="set-tax" type="number" step="0.5" class="set-in" style="max-width:130px" />
+            <label class="sub">PIX libera em D+ (dias)</label>
+            <input id="set-release" type="number" step="1" class="set-in" style="max-width:130px" />
             <div><button class="btn-o" id="set-save">Salvar configurações</button> <span id="set-status" class="sub" style="margin-left:10px"></span></div>
           </div>
         </section>

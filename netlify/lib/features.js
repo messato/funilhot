@@ -22,7 +22,7 @@ const FEATURES = [
   { id: 'modo_tv', cat: 'Painel & métricas', label: 'Modo TV / telão', desc: 'Tela cheia pra deixar num monitor.', status: 'em_breve', def: false },
   { id: 'mapa_estado', cat: 'Painel & métricas', label: 'Mapa por estado', desc: 'Vendas por região (via DDD).', status: 'em_breve', def: false },
   { id: 'coorte_retencao', cat: 'Painel & métricas', label: 'Coorte de retenção', desc: 'Quantos renovam mês a mês.', status: 'em_breve', def: false },
-  { id: 'modo_coach', cat: 'Painel & métricas', label: 'Modo coach', desc: 'Sugere a próxima ação do dia.', status: 'em_breve', def: false },
+  { id: 'modo_coach', cat: 'Painel & métricas', label: 'Modo coach', desc: 'Sugere a próxima ação do dia.', status: 'ativo', def: true },
 
   // ---------- Publicações ----------
   { id: 'social_publisher', cat: 'Publicações', label: 'Postador multi-rede', desc: 'Publicar vídeo em Instagram, TikTok, YouTube, Facebook e X de uma vez (Kwai manual).', status: 'ativo', def: true },
@@ -79,16 +79,16 @@ const FEATURES = [
 
   // ---------- IA ----------
   { id: 'ia_assistente', cat: 'Inteligência artificial', label: 'Assistente “por que caiu?”', desc: 'Pergunte e a IA analisa seus dados.', status: 'em_breve', def: false },
-  { id: 'ia_resumo', cat: 'Inteligência artificial', label: 'Resumo em linguagem natural', desc: 'Um parágrafo explicando o dia.', status: 'em_breve', def: false },
+  { id: 'ia_resumo', cat: 'Inteligência artificial', label: 'Resumo em linguagem natural', desc: 'Um parágrafo explicando o período.', status: 'ativo', def: true },
   { id: 'ia_sdr', cat: 'Inteligência artificial', label: 'SDR virtual (bot de vendas)', desc: 'IA fecha no WhatsApp/Telegram.', status: 'em_breve', def: false },
-  { id: 'ia_forecast', cat: 'Inteligência artificial', label: 'Previsão de faturamento', desc: 'Forecast + detecção de anomalia.', status: 'em_breve', def: false },
+  { id: 'ia_forecast', cat: 'Inteligência artificial', label: 'Previsão de faturamento', desc: 'Projeção do mês + detecção de anomalia.', status: 'ativo', def: true },
 
   // ---------- Financeiro ----------
-  { id: 'dre', cat: 'Financeiro', label: 'DRE / lucro real', desc: 'Receita − taxas − tráfego − imposto.', status: 'em_breve', def: false },
+  { id: 'dre', cat: 'Financeiro', label: 'DRE / lucro real', desc: 'Receita − taxas − tráfego − imposto.', status: 'ativo', def: true },
   { id: 'saldo_assetpay', cat: 'Financeiro', label: 'Saldo AssetPay ao vivo', desc: 'A receber, disponível e reserva.', status: 'em_breve', def: false },
-  { id: 'recebiveis', cat: 'Financeiro', label: 'Previsão de recebíveis', desc: 'Quando cada venda libera.', status: 'em_breve', def: false },
+  { id: 'recebiveis', cat: 'Financeiro', label: 'Previsão de recebíveis', desc: 'Quando cada venda libera.', status: 'ativo', def: true },
   { id: 'nota_fiscal', cat: 'Financeiro', label: 'Nota fiscal automática', desc: 'Emissão a cada venda.', status: 'em_breve', def: false },
-  { id: 'imposto', cat: 'Financeiro', label: 'Estimativa de imposto', desc: 'DAS/Simples sobre o faturamento.', status: 'em_breve', def: false },
+  { id: 'imposto', cat: 'Financeiro', label: 'Estimativa de imposto', desc: 'DAS/Simples sobre o faturamento.', status: 'ativo', def: true },
 
   // ---------- Integrações ----------
   { id: 'planilha_google', cat: 'Integrações', label: 'Planilha Google', desc: 'Cada venda vira uma linha.', status: 'em_breve', def: false },

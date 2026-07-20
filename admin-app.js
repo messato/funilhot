@@ -324,14 +324,14 @@
     api('summary?days=' + state.days).then(function (r) { return r.json(); }).then(function (d) {
       if (!d.ok) return;
       state.data = d;
-      renderBanner(d); renderHero(d); renderGoal(d); renderChart(d); renderFunnel(d); renderUtm(d); renderProducts(d); renderHeat(d);
+      renderBanner(d); renderHero(d); renderGoal(d); renderChart(d); renderFunnel(d); renderUtm(d); renderProducts(d); renderHeat(d); renderComputed();
       $('foot-updated').textContent = 'Atualizado às ' + new Date(d.generatedAt).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' }) + ' · atualiza sozinho a cada 60s';
     }).catch(function () {});
 
     api('orders?days=' + state.days).then(function (r) { return r.json(); }).then(function (j) {
       state.orders = j.orders || [];
       $('nav-orders').textContent = state.orders.length;
-      renderOrders();
+      renderOrders(); renderComputed();
       // alerta de venda nova
       var paidIds = state.orders.filter(function (o) { return o.status === 'paid'; }).map(function (o) { return o.id; });
       if (state.seenPaid === null) { state.seenPaid = {}; paidIds.forEach(function (id) { state.seenPaid[id] = 1; }); }
@@ -339,8 +339,9 @@
     }).catch(function () {});
 
     api('abandoned?days=' + state.days).then(function (r) { return r.json(); }).then(function (j) {
-      $('nav-aband').textContent = (j.abandoned || []).length;
-      renderAbandoned(j.abandoned || []);
+      state.abandonedCount = (j.abandoned || []).length;
+      $('nav-aband').textContent = state.abandonedCount;
+      renderAbandoned(j.abandoned || []); renderCoach();
     }).catch(function () {});
   }
 
@@ -377,6 +378,8 @@
     funil: { t: 'Funil de conversão', s: 'Onde as pessoas param', data: true },
     trafego: { t: 'Tráfego e ROAS', s: 'Retorno por origem de tráfego', data: true },
     metas: { t: 'Metas & produtos', s: 'Progresso do mês', data: true },
+    financeiro: { t: 'Financeiro', s: 'Lucro real, impostos e recebíveis', data: true },
+    insights: { t: 'IA & Insights', s: 'Resumo, próximas ações e previsão', data: true },
     config: { t: 'Página & Configurações', s: 'Sua página de vendas, preços, links e textos', data: false },
     recursos: { t: 'Recursos', s: 'Ligue e desligue funcionalidades', data: false },
   };
@@ -412,6 +415,13 @@
     if (navPub) navPub.style.display = (f.social_publisher === false) ? 'none' : '';
     var pgCard = $('sec-pagina');
     if (pgCard) pgCard.style.display = (f.page_editor === false) ? 'none' : '';
+    var showNav = function (view, on) { var n = document.querySelector('.nav-item[data-view="' + view + '"]'); if (n) n.style.display = on ? '' : 'none'; };
+    // Financeiro
+    show('sec-dre', f.dre); show('sec-recebiveis', f.recebiveis);
+    showNav('financeiro', (f.dre !== false) || (f.recebiveis !== false));
+    // IA & Insights
+    show('sec-ia-resumo', f.ia_resumo); show('sec-coach', f.modo_coach); show('sec-forecast', f.ia_forecast);
+    showNav('insights', (f.ia_resumo !== false) || (f.modo_coach !== false) || (f.ia_forecast !== false));
     setCsv();
   }
   function renderFeatures() {
@@ -451,6 +461,8 @@
     }).join('');
     $('set-vip').value = s.vipLink || ''; $('set-support').value = s.supportLink || '';
     $('set-recovery').value = s.recoveryMsg || ''; $('set-abandon').value = s.abandonMinutes || 10;
+    if ($('set-tax')) $('set-tax').value = (typeof s.taxRatePct === 'number' ? s.taxRatePct : 6);
+    if ($('set-release')) $('set-release').value = (typeof s.pixReleaseDays === 'number' ? s.pixReleaseDays : 1);
   }
   function saveSettings() {
     var prices = {};
@@ -459,11 +471,12 @@
       prices: prices,
       vipLink: $('set-vip').value, supportLink: $('set-support').value,
       recoveryMsg: $('set-recovery').value, abandonMinutes: parseInt($('set-abandon').value, 10) || 10,
+      taxRatePct: parseFloat($('set-tax').value), pixReleaseDays: parseInt($('set-release').value, 10),
     };
     $('set-status').textContent = 'salvando…';
     api('settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) })
       .then(function (r) { return r.json(); }).then(function (j) {
-        if (j.ok) { state.settings = j.settings; renderSettings(); $('set-status').textContent = '✅ salvo'; setTimeout(function () { $('set-status').textContent = ''; }, 2500); }
+        if (j.ok) { state.settings = j.settings; renderSettings(); renderComputed(); $('set-status').textContent = '✅ salvo'; setTimeout(function () { $('set-status').textContent = ''; }, 2500); }
       }).catch(function () { $('set-status').textContent = 'erro ao salvar'; });
   }
 
@@ -472,7 +485,7 @@
       if (!j.ok) return; state.features = j.features; state.flags = j.flags; renderFeatures(); applyFlags();
     }).catch(function () {});
     api('settings').then(function (r) { return r.json(); }).then(function (j) {
-      if (!j.ok) return; state.settings = j.settings; renderSettings();
+      if (!j.ok) return; state.settings = j.settings; renderSettings(); renderComputed();
     }).catch(function () {});
   }
 
@@ -481,7 +494,7 @@
     var id = sw.dataset.fid, on = !state.flags[id];
     state.flags[id] = on; sw.classList.toggle('on', on);
     api('features', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, on: on }) })
-      .then(function () { renderFeatures(); applyFlags(); });
+      .then(function () { renderFeatures(); applyFlags(); renderComputed(); });
   });
   $('feat-search').addEventListener('input', function (e) { state.featQuery = e.target.value; renderFeatures(); });
   $('set-save').addEventListener('click', saveSettings);
@@ -574,6 +587,134 @@
     }).catch(function () { $('pg-save').disabled = false; $('pg-status').textContent = 'erro de conexão'; });
   }
   $('pg-save').addEventListener('click', savePagina);
+
+  // ---------- Financeiro (DRE, imposto, recebíveis) ----------
+  var fmtDayOnly = function (ts) { return new Date(ts).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' }); };
+  function dreRow(label, cents, neg, hint) {
+    return '<div class="dre-row' + (neg ? ' neg' : '') + '"><div><div class="dl">' + esc(label) + '</div>' +
+      (hint ? '<div class="sub">' + esc(hint) + '</div>' : '') + '</div><div class="dv">' + brl(cents) + '</div></div>';
+  }
+  function renderFinance() {
+    var d = state.data; if (!d) return;
+    var s = state.settings || {};
+    var k = d.kpis;
+    var taxPct = (typeof s.taxRatePct === 'number') ? s.taxRatePct : 6;
+    var releaseDays = (typeof s.pixReleaseDays === 'number') ? s.pixReleaseDays : 1;
+    var showTax = !(state.flags && state.flags.imposto === false);
+    var gross = k.gross, net = k.net, fees = Math.max(0, gross - net), traffic = k.spend || 0;
+    var tax = showTax ? Math.round(gross * taxPct / 100) : 0;
+    var profit = net - traffic - tax;
+    var margin = gross ? Math.round(profit / gross * 100) : 0;
+    var body = $('dre-body');
+    if (body) {
+      body.innerHTML =
+        dreRow('Faturamento bruto', gross, false, k.paidCount + ' venda(s) paga(s)') +
+        dreRow('(−) Taxas do gateway', -fees, true, fees ? (gross ? (Math.round(fees / gross * 1000) / 10) + '% do bruto' : '') : 'sem dado (modo simulado)') +
+        dreRow('(−) Tráfego pago', -traffic, true, traffic ? '' : 'nenhum gasto lançado') +
+        (showTax ? dreRow('(−) Imposto estimado', -tax, true, taxPct + '% do bruto') : '') +
+        '<div class="dre-row total"><div><div class="dl">= Lucro líquido</div><div class="sub">margem ' + margin + '%</div></div><div class="dv">' + brl(profit) + '</div></div>';
+    }
+    var recDays = $('rec-days'); if (recDays) recDays.textContent = releaseDays;
+    renderRecebiveis(releaseDays);
+  }
+  function renderRecebiveis(releaseDays) {
+    var body = $('recebiveis-body'); if (!body) return;
+    var paid = (state.orders || []).filter(function (o) { return o.status === 'paid' && o.paidAt; });
+    var now = Date.now(), DAY = 86400000, available = 0, pending = 0, upcoming = [];
+    paid.forEach(function (o) {
+      var releaseAt = o.paidAt + releaseDays * DAY;
+      var amt = (o.netAmount != null ? o.netAmount : o.amount);
+      if (releaseAt <= now) available += amt;
+      else { pending += amt; upcoming.push({ at: releaseAt, amt: amt, label: o.label }); }
+    });
+    upcoming.sort(function (a, b) { return a.at - b.at; });
+    var head = '<div class="fc-grid">' +
+      '<div class="fc-box"><div class="l">Disponível</div><div class="v">' + brl(available) + '</div></div>' +
+      '<div class="fc-box"><div class="l">A receber</div><div class="v">' + brl(pending) + '</div></div></div>';
+    var list = upcoming.length
+      ? tableHTML([{ t: 'Libera em' }, { t: 'Produto' }, { t: 'Valor', num: 1 }],
+          upcoming.slice(0, 12).map(function (u) { return [fmtDayOnly(u.at), esc(u.label), brl(u.amt)]; }), '')
+      : '<div class="sub" style="margin-top:6px">Tudo já liberado no período. 🎉</div>';
+    body.innerHTML = head + list;
+  }
+
+  // ---------- IA & Insights (resumo, coach, previsão) ----------
+  function periodLabel() { return state.days === 1 ? 'últimas 24h' : ('últimos ' + state.days + ' dias'); }
+  function renderResumo() {
+    var body = $('ia-resumo-body'); if (!body) return;
+    var d = state.data; if (!d) { body.textContent = ''; return; }
+    var k = d.kpis, p = d.prevKpis, parts = [];
+    parts.push('Nos <b>' + periodLabel() + '</b> você faturou <b>' + brl(k.gross) + '</b> em <b>' + k.paidCount + '</b> venda(s)' +
+      (k.pixCount ? ', com conversão de PIX de <b>' + k.pixConversion + '%</b>' : '') + '.');
+    if (p && p.gross) {
+      var pct = Math.round((k.gross - p.gross) / p.gross * 100);
+      if (pct > 3) parts.push('Isso é <b>' + pct + '% a mais</b> que o período anterior — ritmo de alta. 📈');
+      else if (pct < -3) parts.push('Isso é <b>' + Math.abs(pct) + '% a menos</b> que o período anterior — vale investigar. 📉');
+      else parts.push('Praticamente estável frente ao período anterior.');
+    }
+    if (k.paidCount) parts.push('Ticket médio de <b>' + brl(k.ticket) + '</b>' +
+      (d.avgPayMinutes ? ' e ~<b>' + d.avgPayMinutes + ' min</b> entre gerar o PIX e pagar' : '') + '.');
+    var topSrc = (d.utm || []).filter(function (u) { return u.pago > 0; }).sort(function (a, b) { return b.revenue - a.revenue; })[0];
+    if (topSrc) parts.push('Principal origem: <b>' + esc(topSrc.source) + '</b> (' + topSrc.pago + ' venda(s), ' + brl(topSrc.revenue) + ')' +
+      (topSrc.spend ? ' com ROAS de <b>' + topSrc.roas + 'x</b>' : '') + '.');
+    if (k.spend) parts.push('No geral, cada R$1 de anúncio trouxe <b>R$' + (k.roas || 0) + '</b>' + (k.roas >= 1 ? ' — no lucro. ✅' : ' — abaixo do ponto de equilíbrio. ⚠️') + '.');
+    var topProd = (d.products || [])[0];
+    if (topProd) parts.push('Carro-chefe: <b>' + esc(topProd.label) + '</b> (' + brl(topProd.revenue) + ').');
+    body.innerHTML = parts.join(' ');
+  }
+  function bestHeat(heat) {
+    if (!heat) return null;
+    var best = null;
+    for (var wd = 0; wd < 7; wd++) for (var h = 0; h < 24; h++) { var c = heat[wd][h]; if (c > 0 && (!best || c > best.c)) best = { wd: wd, h: h, c: c }; }
+    return best;
+  }
+  function renderCoach() {
+    var body = $('coach-body'); if (!body) return;
+    var d = state.data; if (!d) { body.innerHTML = ''; return; }
+    var k = d.kpis, items = [], ab = state.abandonedCount || 0;
+    if (ab > 0) items.push({ tone: 'warn', icon: 'flame', w: 90 + ab, t: ab + ' PIX abandonado(s)', d: 'Chame no WhatsApp na aba “PIX abandonados” — é a recuperação mais barata que existe.' });
+    if (k.pixCount >= 5 && k.pixConversion < 45) items.push({ tone: 'warn', icon: 'target', w: 80, t: 'Conversão de PIX baixa (' + k.pixConversion + '%)', d: 'Muita gente gera e não paga. Reforce urgência no checkout e o lembrete de pagamento.' });
+    var badSrc = (d.utm || []).filter(function (u) { return u.spend > 0 && u.revenue < u.spend; }).sort(function (a, b) { return (a.revenue - a.spend) - (b.revenue - b.spend); })[0];
+    if (badSrc) items.push({ tone: 'warn', icon: 'megaphone', w: 75, t: 'Origem no prejuízo: ' + badSrc.source, d: 'ROAS ' + badSrc.roas + 'x (gastou ' + brl(badSrc.spend) + ', voltou ' + brl(badSrc.revenue) + '). Revise o criativo ou pause.' });
+    if (!d.goal || !d.goal.amount) items.push({ tone: '', icon: 'target', w: 60, t: 'Defina a meta do mês', d: 'Sem meta não há projeção. Configure em Metas & produtos.' });
+    else if (d.goal.projection < d.goal.amount) items.push({ tone: 'warn', icon: 'target', w: 65, t: 'Projeção abaixo da meta', d: 'No ritmo atual você fecha ' + brl(d.goal.projection) + ' de ' + brl(d.goal.amount) + '. Acelere aquisição ou ticket.' });
+    var best = bestHeat(d.heatmap);
+    if (best) items.push({ tone: 'good', icon: 'flame', w: 40, t: 'Melhor horário: ' + WD[best.wd] + ' às ' + best.h + 'h', d: 'Foi quando mais vendeu. Programe posts e escale anúncio nesse horário.' });
+    var goodSrc = (d.utm || []).filter(function (u) { return u.spend > 0 && u.roas >= 2; }).sort(function (a, b) { return b.roas - a.roas; })[0];
+    if (goodSrc) items.push({ tone: 'good', icon: 'megaphone', w: 50, t: 'Escale ' + goodSrc.source, d: 'ROAS de ' + goodSrc.roas + 'x — está pagando bem. Aumente o orçamento com calma.' });
+    if (!k.paidCount) items.push({ tone: '', icon: 'cart', w: 30, t: 'Sem vendas no período', d: 'Confira se página e checkout estão no ar e traga tráfego pra testar o funil.' });
+    items.sort(function (a, b) { return b.w - a.w; });
+    if (!items.length) { body.innerHTML = '<div class="empty">Tudo em ordem por aqui. 👌</div>'; return; }
+    body.innerHTML = items.slice(0, 5).map(function (it) {
+      return '<div class="coach-item ' + it.tone + '"><div class="ci-ic">' + svgIcon(it.icon) + '</div><div><div class="ci-t">' + esc(it.t) + '</div><div class="ci-d">' + esc(it.d) + '</div></div></div>';
+    }).join('');
+  }
+  function renderForecast() {
+    var body = $('forecast-body'); if (!body) return;
+    var d = state.data; if (!d) { body.innerHTML = ''; return; }
+    var g = d.goal || {}, daily = (d.daily || []).map(function (r) { return r.revenue || 0; });
+    var html = '<div class="fc-grid">' +
+      '<div class="fc-box"><div class="l">Projeção do mês</div><div class="v grad-text">' + brl(g.projection || 0) + '</div></div>' +
+      '<div class="fc-box"><div class="l">Já faturado no mês</div><div class="v">' + brl(g.monthRevenue || 0) + '</div></div></div>';
+    var total = daily.reduce(function (a, b) { return a + b; }, 0), avg = daily.length ? total / daily.length : 0;
+    html += '<div class="sub" style="margin:4px 0 10px">Média de <b>' + brl(Math.round(avg)) + '</b>/dia no período · a projeção assume o ritmo atual até fechar o mês (' + (g.daysInMonth || 30) + ' dias).</div>';
+    var variance = daily.length ? daily.reduce(function (a, b) { return a + Math.pow(b - avg, 2); }, 0) / daily.length : 0;
+    var sd = Math.sqrt(variance), anomalies = [];
+    if (sd > 0) (d.daily || []).forEach(function (r) { var z = (r.revenue - avg) / sd; if (Math.abs(z) >= 1.8) anomalies.push({ day: r.day, rev: r.revenue, up: z > 0 }); });
+    var anHtml;
+    if (!daily.length || sd === 0) anHtml = '<div class="sub">Dados insuficientes pra detectar anomalias.</div>';
+    else if (!anomalies.length) anHtml = '<div class="anomaly" style="border-top:none"><span class="chip">estável</span> Nenhum dia fora da curva no período.</div>';
+    else anHtml = anomalies.map(function (a) {
+      return '<div class="anomaly"><span style="color:' + (a.up ? 'var(--good)' : 'var(--bad)') + ';font-weight:800">' + (a.up ? '▲' : '▼') + '</span> <b>' + a.day.slice(8) + '/' + a.day.slice(5, 7) + '</b> — ' + brl(a.rev) + (a.up ? ' (pico atípico)' : ' (queda atípica)') + '</div>';
+    }).join('');
+    body.innerHTML = html + '<div class="feat-cat" style="margin-top:4px">Dias fora da curva</div>' + anHtml;
+  }
+
+  function renderComputed() {
+    if (!state.data) return;
+    try { renderFinance(); } catch (e) { /* */ }
+    try { renderResumo(); renderCoach(); renderForecast(); } catch (e) { /* */ }
+  }
 
   function boot() {
     $('login').style.display = 'none';

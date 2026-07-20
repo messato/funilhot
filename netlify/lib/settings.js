@@ -18,6 +18,9 @@ const DEFAULTS = {
   supportLink: 'https://t.me/suporte_agatha',
   recoveryMsg: 'Oi {nome}! Vi que você gerou o PIX do {produto} mas não finalizou. Posso te ajudar a concluir?',
   abandonMinutes: 10,
+  // Financeiro (DRE / recebíveis)
+  taxRatePct: 6,       // alíquota estimada sobre o faturamento (Simples)
+  pixReleaseDays: 1,   // D+ em que o PIX é liberado pelo gateway
   // Conteúdo editável da landing (vazio = mantém o que está no HTML).
   siteName: '',
   siteUser: '',
@@ -32,6 +35,8 @@ const DEFAULTS = {
 
 const TEXT_FIELDS = ['siteName', 'siteUser', 'siteBioTitle', 'siteBioText', 'siteStats'];
 const VER_FIELDS = ['avatarVer', 'capaVer', 'logoVer'];
+// Campos numéricos com faixa própria: [min, max].
+const NUM_FIELDS = { taxRatePct: [0, 60], pixReleaseDays: [0, 90] };
 function cleanText(v, max) { return String(v == null ? '' : v).replace(/[<>]/g, '').slice(0, max || 200); }
 
 async function getSettings() {
@@ -45,6 +50,7 @@ async function getSettings() {
   };
   TEXT_FIELDS.forEach((f) => { out[f] = typeof saved[f] === 'string' ? saved[f] : DEFAULTS[f]; });
   VER_FIELDS.forEach((f) => { out[f] = typeof saved[f] === 'number' ? saved[f] : DEFAULTS[f]; });
+  Object.keys(NUM_FIELDS).forEach((f) => { out[f] = typeof saved[f] === 'number' ? saved[f] : DEFAULTS[f]; });
   return out;
 }
 
@@ -77,6 +83,13 @@ async function saveSettings(patch) {
   });
   VER_FIELDS.forEach((f) => {
     if (f in patch) { const n = Math.round(Number(patch[f])); if (Number.isFinite(n) && n >= 0) next[f] = n; }
+  });
+  Object.keys(NUM_FIELDS).forEach((f) => {
+    if (f in patch) {
+      const [min, max] = NUM_FIELDS[f];
+      const n = Number(patch[f]);
+      if (Number.isFinite(n) && n >= min && n <= max) next[f] = Math.round(n * 100) / 100;
+    }
   });
 
   await setJSON('config/settings.json', next);
