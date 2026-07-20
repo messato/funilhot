@@ -359,9 +359,11 @@
     }).catch(function () {});
 
     api('abandoned?days=' + state.days).then(function (r) { return r.json(); }).then(function (j) {
-      state.abandonedCount = (j.abandoned || []).length;
+      state.abandonedList = j.abandoned || [];
+      state.abandonedCount = state.abandonedList.length;
       $('nav-aband').textContent = state.abandonedCount;
-      renderAbandoned(j.abandoned || []); renderCoach();
+      renderAbandoned(state.abandonedList); renderCoach();
+      if (state.view === 'remarketing') renderRemarketing();
     }).catch(function () {});
   }
 
@@ -395,6 +397,7 @@
     vendas: { t: 'Vendas', s: 'Pedidos e clientes', data: true },
     abandonados: { t: 'PIX abandonados', s: 'Recupere quem gerou e não pagou', data: true },
     membros: { t: 'Membros', s: 'Sua base de assinantes e recorrência', data: false },
+    remarketing: { t: 'Remarketing', s: 'Dispare mensagens segmentadas no WhatsApp', data: false },
     publicacoes: { t: 'Publicações', s: 'Publique um vídeo em várias redes de uma vez', data: false },
     funil: { t: 'Funil de conversão', s: 'Onde as pessoas param', data: true },
     trafego: { t: 'Tráfego e ROAS', s: 'Retorno por origem de tráfego', data: true },
@@ -422,6 +425,7 @@
     if (name === 'overview' && window.__globeResize) window.__globeResize();
     if (name === 'publicacoes') loadSocialHistory();
     if (name === 'membros') { loadMembers(); renderNiveis(); }
+    if (name === 'remarketing') renderRemarketing();
     if (name === 'crescimento') renderCrescimento();
     if (name === 'ofertas') renderOfertas();
     if (name === 'integracoes') renderIntegracoes();
@@ -454,6 +458,7 @@
     show('sec-mrr', f.renovacao_mrr); show('sec-membros', f.aba_membros);
     show('sec-gamificacao', f.gamificacao_membros); show('sec-coorte', f.coorte_retencao); show('sec-niveis', f.niveis_vip);
     showNav('membros', (f.aba_membros !== false) || (f.renovacao_mrr !== false) || (f.gamificacao_membros !== false) || (f.coorte_retencao !== false) || (f.niveis_vip !== false));
+    showNav('remarketing', (f.recuperacao_auto !== false) || (f.winback !== false) || (f.central_disparos !== false) || (f.boas_vindas !== false) || (f.reativacao_inativo !== false));
     // Insights de tráfego
     show('sec-criativos', f.ranking_criativos); show('sec-mapa', f.mapa_estado);
     show('sec-funil-origem', f.funil_por_origem); show('sec-antifraude', f.antifraude); show('sec-comparar', f.comparar_periodos);
@@ -931,6 +936,7 @@
       state.membersData = j;
       if ($('nav-members')) $('nav-members').textContent = j.stats.active;
       renderMrr(); renderMembersTable(); renderGamificacao(); renderCoorte();
+      if (state.view === 'remarketing') renderRemList();
     }).catch(function () {});
   }
   // Níveis VIP (editor)
@@ -1306,6 +1312,61 @@
     api('backup').then(function (r) { return r.blob(); }).then(function (blob) { var a = el('a'); a.href = URL.createObjectURL(blob); a.download = 'backup-funilhot.json'; a.click(); URL.revokeObjectURL(a.href); });
   });
   function renderIntegracoes() { renderWebhooks(); }
+
+  // ---------- Central de remarketing (WhatsApp por segmento) ----------
+  var REM_TPL = { abandonado: 'recoveryMsg', vencendo: 'expiringMsg', expirado: 'winbackMsg', novo: 'welcomeMsg' };
+  function remRecipients(seg) {
+    var now = Date.now(), DAY = 86400000, out = [];
+    if (seg === 'abandonado') {
+      (state.abandonedList || []).forEach(function (o) { if (o.telefone) out.push({ name: o.nome, telefone: o.telefone, info: o.label }); });
+    } else {
+      var m = (state.membersData && state.membersData.members) || [];
+      m.forEach(function (x) {
+        if (!x.telefone) return;
+        if (seg === 'vencendo' && x.active && x.daysLeft <= 7) out.push({ name: x.name, telefone: x.telefone, info: 'vence em ' + x.daysLeft + 'd' });
+        else if (seg === 'expirado' && !x.active) out.push({ name: x.name, telefone: x.telefone, info: 'acesso expirado' });
+        else if (seg === 'novo' && x.startAt >= now - 7 * DAY) out.push({ name: x.name, telefone: x.telefone, info: 'novo membro' });
+      });
+    }
+    return out;
+  }
+  function renderRemList() {
+    var seg = state.remSegment || 'abandonado';
+    var list = remRecipients(seg);
+    if ($('rem-count')) $('rem-count').textContent = 'Destinatários (' + list.length + ')';
+    if (!$('rem-list')) return;
+    var tpl = ($('rem-msg') && $('rem-msg').value) || '';
+    $('rem-list').innerHTML = tableHTML(
+      [{ t: 'Cliente' }, { t: 'Situação' }, { t: 'Enviar' }],
+      list.slice(0, 200).map(function (r) {
+        var phone = String(r.telefone).replace(/\D/g, '');
+        var msg = tpl.replace(/{nome}/g, (r.name || '').split(' ')[0]).replace(/{produto}/g, r.info || '');
+        var wa = phone ? '<a class="wa" target="_blank" rel="noopener" href="https://wa.me/55' + phone + '?text=' + encodeURIComponent(msg) + '">💬 WhatsApp</a>' : '<span class="sub">sem telefone</span>';
+        return [esc(r.name) + '<div class="sub">' + esc(maskPhone(r.telefone)) + '</div>', esc(r.info || ''), wa];
+      }),
+      'Ninguém neste segmento agora.'
+    );
+  }
+  function renderRemarketing() {
+    if (!state.membersData) loadMembers();
+    var seg = state.remSegment || 'abandonado';
+    if ($('rem-msg')) $('rem-msg').value = (state.settings && state.settings[REM_TPL[seg]]) || '';
+    renderRemList();
+  }
+  if ($('rem-seg')) $('rem-seg').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    $('rem-seg').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
+    b.classList.add('on'); state.remSegment = b.dataset.seg; renderRemarketing();
+  });
+  if ($('rem-msg')) $('rem-msg').addEventListener('input', renderRemList);
+  if ($('rem-save')) $('rem-save').addEventListener('click', function () {
+    var seg = state.remSegment || 'abandonado', patch = {};
+    patch[REM_TPL[seg]] = $('rem-msg').value;
+    $('rem-status').textContent = 'salvando…';
+    api('settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.ok) { state.settings = j.settings; $('rem-status').textContent = '✅ salvo'; setTimeout(function () { $('rem-status').textContent = ''; }, 2500); } else $('rem-status').textContent = 'erro';
+    }).catch(function () { $('rem-status').textContent = 'erro'; });
+  });
 
   function boot() {
     $('login').style.display = 'none';

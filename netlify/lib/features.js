@@ -48,7 +48,7 @@ const FEATURES = [
   { id: 'regenerar_pix', cat: 'Vendas & checkout', label: 'Regenerar PIX expirado', desc: 'Novo QR sem refazer cadastro.', status: 'ativo', def: true },
   { id: 'multi_gateway', cat: 'Vendas & checkout', label: 'Multi-gateway com fallback', desc: 'Usa outro gateway se a AssetPay cair.', status: 'em_breve', def: false },
   { id: 'cupons', cat: 'Vendas & checkout', label: 'Cupons de desconto', desc: 'Códigos promocionais com rastreio.', status: 'ativo', def: true },
-  { id: 'editar_precos', cat: 'Vendas & checkout', label: 'Editar preços pelo painel', desc: 'Sem precisar de deploy.', status: 'em_breve', def: false },
+  { id: 'editar_precos', cat: 'Vendas & checkout', label: 'Editar preços pelo painel', desc: 'Sem precisar de deploy (aba Página & Config).', status: 'ativo', def: true },
   { id: 'prova_social', cat: 'Vendas & checkout', label: 'Prova social real', desc: '“X compraram hoje” com dados reais.', status: 'ativo', def: true },
   { id: 'quiz', cat: 'Vendas & checkout', label: 'Quiz de qualificação', desc: 'Segmenta o lead na entrada da landing.', status: 'ativo', def: true },
   { id: 'verificacao_idade', cat: 'Vendas & checkout', label: 'Verificação de idade (18+)', desc: 'Barreira de idade na entrada.', status: 'ativo', def: true },
@@ -63,16 +63,16 @@ const FEATURES = [
   { id: 'atribuicao_multi', cat: 'Tráfego & ROAS', label: 'Atribuição multi-toque', desc: 'Qual criativo iniciou vs fechou.', status: 'em_breve', def: false },
 
   // ---------- Recuperação & remarketing ----------
-  { id: 'recuperacao_auto', cat: 'Recuperação & remarketing', label: 'Recuperação automática', desc: 'Sequência D+0/D+1/D+3 do abandono.', status: 'em_breve', def: false },
+  { id: 'recuperacao_auto', cat: 'Recuperação & remarketing', label: 'Recuperação automática', desc: 'Sequência D+0/D+1/D+3 do abandono.', status: 'ativo', def: true },
   { id: 'downsell_auto', cat: 'Recuperação & remarketing', label: 'Downsell automático', desc: 'Popup de saída com oferta menor na landing.', status: 'ativo', def: true },
-  { id: 'winback', cat: 'Recuperação & remarketing', label: 'Win-back de cancelados', desc: 'Reconquistar quem expirou.', status: 'em_breve', def: false },
+  { id: 'winback', cat: 'Recuperação & remarketing', label: 'Win-back de cancelados', desc: 'Reconquistar quem expirou.', status: 'ativo', def: true },
   { id: 'publico_meta', cat: 'Recuperação & remarketing', label: 'Público personalizado', desc: 'Exportar base pro Meta (lookalike).', status: 'ativo', def: true },
-  { id: 'central_disparos', cat: 'Recuperação & remarketing', label: 'Central de disparos', desc: 'Broadcast segmentado pra base.', status: 'em_breve', def: false },
+  { id: 'central_disparos', cat: 'Recuperação & remarketing', label: 'Central de disparos', desc: 'Broadcast segmentado pra base.', status: 'ativo', def: true },
 
   // ---------- Comunidade & gamificação ----------
   { id: 'gamificacao_membros', cat: 'Comunidade & gamificação', label: 'Pontos e fidelidade', desc: 'Ranking por tempo de casa e compras.', status: 'ativo', def: true },
-  { id: 'boas_vindas', cat: 'Comunidade & gamificação', label: 'Boas-vindas automáticas', desc: 'Onboarding do novo membro.', status: 'em_breve', def: false },
-  { id: 'reativacao_inativo', cat: 'Comunidade & gamificação', label: 'Reativação de inativo', desc: 'Empurrão antes de cancelar.', status: 'em_breve', def: false },
+  { id: 'boas_vindas', cat: 'Comunidade & gamificação', label: 'Boas-vindas automáticas', desc: 'Onboarding do novo membro.', status: 'ativo', def: true },
+  { id: 'reativacao_inativo', cat: 'Comunidade & gamificação', label: 'Reativação de inativo', desc: 'Empurrão antes de cancelar.', status: 'ativo', def: true },
   { id: 'depoimentos', cat: 'Comunidade & gamificação', label: 'Mural de depoimentos', desc: 'Coleta e exibe prova social.', status: 'ativo', def: true },
   { id: 'embaixadores', cat: 'Comunidade & gamificação', label: 'Programa de indicação', desc: 'Member-get-member com recompensa.', status: 'ativo', def: true },
   { id: 'afiliados', cat: 'Comunidade & gamificação', label: 'Programa de afiliados', desc: 'Links ?ref, comissão e painel.', status: 'ativo', def: true },

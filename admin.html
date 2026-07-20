@@ -444,6 +444,7 @@
       <div class="nav-item" data-view="vendas"><svg class="ic"><use href="#ic-sales"></use></svg> Vendas <span class="badge" id="nav-orders">0</span></div>
       <div class="nav-item" data-view="abandonados"><svg class="ic"><use href="#ic-flame"></use></svg> PIX abandonados <span class="badge" id="nav-aband">0</span></div>
       <div class="nav-item" data-view="membros"><svg class="ic"><use href="#ic-people"></use></svg> Membros <span class="badge" id="nav-members">0</span></div>
+      <div class="nav-item" data-view="remarketing"><svg class="ic"><use href="#ic-megaphone"></use></svg> Remarketing</div>
       <div class="nav-item" data-view="publicacoes"><svg class="ic"><use href="#ic-video"></use></svg> Publicações</div>
 
       <div class="nav-label">Análise</div>
@@ -747,6 +748,25 @@
             <div id="niveis-list"></div>
             <div style="margin-top:10px"><button class="btn-ghost" id="niveis-add"><svg class="ic ic-sm"><use href="#ic-plus"></use></svg> Adicionar nível</button>
               <button class="btn-o" id="niveis-save" style="margin-left:6px">Salvar níveis</button> <span id="niveis-status" class="sub" style="margin-left:8px"></span></div>
+          </div>
+        </section>
+
+        <!-- VIEW: Remarketing -->
+        <section class="view" data-view="remarketing">
+          <div class="card" id="sec-remarketing">
+            <h2>Central de remarketing <span class="hint">dispare no WhatsApp por segmento</span></h2>
+            <div class="cap">Escolha um público, ajuste a mensagem e envie no WhatsApp de cada cliente (um clique por pessoa). <code>{nome}</code> vira o primeiro nome. Envio manual — sem risco de bloqueio de API.</div>
+            <div class="seg" id="rem-seg" style="margin-bottom:12px;flex-wrap:wrap">
+              <button data-seg="abandonado" class="on">PIX abandonado</button>
+              <button data-seg="vencendo">Vencendo (≤7d)</button>
+              <button data-seg="expirado">Win-back (expirados)</button>
+              <button data-seg="novo">Boas-vindas (novos)</button>
+            </div>
+            <label class="sub">Mensagem (use {nome})</label>
+            <textarea id="rem-msg" class="set-in"></textarea>
+            <div style="margin:0 0 14px"><button class="btn-ghost" id="rem-save">Salvar mensagem</button> <span id="rem-status" class="sub" style="margin-left:8px"></span></div>
+            <div class="feat-cat" id="rem-count">Destinatários</div>
+            <div class="table-scroll"><div id="rem-list"></div></div>
           </div>
         </section>
 

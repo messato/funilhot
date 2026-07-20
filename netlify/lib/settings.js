@@ -17,6 +17,9 @@ const DEFAULTS = {
   vipLink: 'https://t.me/+LINK_DO_GRUPO_VIP',
   supportLink: 'https://t.me/suporte_agatha',
   recoveryMsg: 'Oi {nome}! Vi que você gerou o PIX do {produto} mas não finalizou. Posso te ajudar a concluir?',
+  winbackMsg: 'Oi {nome}! Seu acesso VIP expirou — voltei com uma condição especial pra você retornar. Quer ver? 🔥',
+  welcomeMsg: 'Oi {nome}! Seja muito bem-vindo(a) ao VIP 🔥 Qualquer dúvida, é só me chamar por aqui.',
+  expiringMsg: 'Oi {nome}! Seu acesso VIP vence em breve. Bora renovar pra não perder o conteúdo novo? 😉',
   abandonMinutes: 10,
   // Financeiro (DRE / recebíveis)
   taxRatePct: 6,       // alíquota estimada sobre o faturamento (Simples)
@@ -73,6 +76,9 @@ async function getSettings() {
     vipLink: saved.vipLink || DEFAULTS.vipLink,
     supportLink: saved.supportLink || DEFAULTS.supportLink,
     recoveryMsg: saved.recoveryMsg || DEFAULTS.recoveryMsg,
+    winbackMsg: saved.winbackMsg || DEFAULTS.winbackMsg,
+    welcomeMsg: saved.welcomeMsg || DEFAULTS.welcomeMsg,
+    expiringMsg: saved.expiringMsg || DEFAULTS.expiringMsg,
     abandonMinutes: typeof saved.abandonMinutes === 'number' ? saved.abandonMinutes : DEFAULTS.abandonMinutes,
   };
   TEXT_FIELDS.forEach((f) => { out[f] = typeof saved[f] === 'string' ? saved[f] : DEFAULTS[f]; });
@@ -205,6 +211,9 @@ async function saveSettings(patch) {
   if ('vipLink' in patch) next.vipLink = safeUrl(patch.vipLink, DEFAULTS.vipLink);
   if ('supportLink' in patch) next.supportLink = safeUrl(patch.supportLink, DEFAULTS.supportLink);
   if ('recoveryMsg' in patch) next.recoveryMsg = String(patch.recoveryMsg || '').slice(0, 500);
+  if ('winbackMsg' in patch) next.winbackMsg = String(patch.winbackMsg || '').slice(0, 500);
+  if ('welcomeMsg' in patch) next.welcomeMsg = String(patch.welcomeMsg || '').slice(0, 500);
+  if ('expiringMsg' in patch) next.expiringMsg = String(patch.expiringMsg || '').slice(0, 500);
   if ('abandonMinutes' in patch) {
     const m = Math.round(Number(patch.abandonMinutes));
     if (Number.isFinite(m) && m >= 1 && m <= 1440) next.abandonMinutes = m;
