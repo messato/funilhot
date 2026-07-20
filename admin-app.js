@@ -428,6 +428,9 @@
     show('sec-mrr', f.renovacao_mrr); show('sec-membros', f.aba_membros);
     show('sec-gamificacao', f.gamificacao_membros); show('sec-coorte', f.coorte_retencao); show('sec-niveis', f.niveis_vip);
     showNav('membros', (f.aba_membros !== false) || (f.renovacao_mrr !== false) || (f.gamificacao_membros !== false) || (f.coorte_retencao !== false) || (f.niveis_vip !== false));
+    // Insights de tráfego
+    show('sec-criativos', f.ranking_criativos); show('sec-mapa', f.mapa_estado);
+    show('sec-funil-origem', f.funil_por_origem); show('sec-antifraude', f.antifraude); show('sec-comparar', f.comparar_periodos);
     setCsv();
   }
   function renderFeatures() {
@@ -716,10 +719,107 @@
     body.innerHTML = html + '<div class="feat-cat" style="margin-top:4px">Dias fora da curva</div>' + anHtml;
   }
 
+  // ---------- Insights de tráfego (mapa, criativos, funil por origem, antifraude, comparar) ----------
+  var DDD_UF = { 11: 'SP', 12: 'SP', 13: 'SP', 14: 'SP', 15: 'SP', 16: 'SP', 17: 'SP', 18: 'SP', 19: 'SP', 21: 'RJ', 22: 'RJ', 24: 'RJ', 27: 'ES', 28: 'ES', 31: 'MG', 32: 'MG', 33: 'MG', 34: 'MG', 35: 'MG', 37: 'MG', 38: 'MG', 41: 'PR', 42: 'PR', 43: 'PR', 44: 'PR', 45: 'PR', 46: 'PR', 47: 'SC', 48: 'SC', 49: 'SC', 51: 'RS', 53: 'RS', 54: 'RS', 55: 'RS', 61: 'DF', 62: 'GO', 63: 'TO', 64: 'GO', 65: 'MT', 66: 'MT', 67: 'MS', 68: 'AC', 69: 'RO', 71: 'BA', 73: 'BA', 74: 'BA', 75: 'BA', 77: 'BA', 79: 'SE', 81: 'PE', 82: 'AL', 83: 'PB', 84: 'RN', 85: 'CE', 86: 'PI', 87: 'PE', 88: 'CE', 89: 'PI', 91: 'PA', 92: 'AM', 93: 'PA', 94: 'PA', 95: 'RR', 96: 'AP', 97: 'AM', 98: 'MA', 99: 'MA' };
+  function ufFromPhone(p) {
+    p = String(p || '').replace(/\D/g, '');
+    if (p.length >= 12 && p.slice(0, 2) === '55') p = p.slice(2);
+    if (p.length < 10) return null;
+    return DDD_UF[+p.slice(0, 2)] || null;
+  }
+  function renderMapa() {
+    var box = $('mapa'); if (!box) return;
+    var paid = (state.orders || []).filter(function (o) { return o.status === 'paid'; });
+    var by = {};
+    paid.forEach(function (o) { var uf = ufFromPhone(o.telefone) || '?'; by[uf] = by[uf] || { c: 0, rev: 0 }; by[uf].c++; by[uf].rev += o.amount; });
+    var arr = Object.keys(by).map(function (uf) { return { uf: uf, c: by[uf].c, rev: by[uf].rev }; }).sort(function (a, b) { return b.rev - a.rev; });
+    if (!arr.length) { box.innerHTML = '<div class="empty">Sem vendas com telefone no período.</div>'; return; }
+    var max = Math.max.apply(null, arr.map(function (a) { return a.rev; }).concat([1]));
+    box.innerHTML = arr.slice(0, 15).map(function (a) {
+      return '<div class="fn-row"><div class="fn-label" style="width:52px;min-width:52px">' + esc(a.uf) + '</div>' +
+        '<div class="fn-track"><div class="fn-bar" style="width:' + Math.round(a.rev / max * 100) + '%"></div></div>' +
+        '<div class="fn-num">' + brl(a.rev) + ' <span class="pct">(' + a.c + ')</span></div></div>';
+    }).join('');
+  }
+  function renderCriativos() {
+    var box = $('criativos'); if (!box) return;
+    var d = state.data; if (!d) return;
+    var withSpend = (d.utm || []).filter(function (u) { return u.spend > 0; });
+    var list = (withSpend.length ? withSpend : (d.utm || []).filter(function (u) { return u.pago > 0; })).slice();
+    list.sort(function (a, b) { return (b.roas || 0) - (a.roas || 0) || b.revenue - a.revenue; });
+    if (!list.length) { box.innerHTML = '<div class="empty">Marque campanhas com utm e lance gastos pra rankear.</div>'; return; }
+    box.innerHTML = list.slice(0, 8).map(function (u) {
+      var label = esc(u.source) + (u.campaign ? ' · ' + esc(u.campaign) : '');
+      var badge = u.spend ? (u.roas >= 2 ? '<span class="roas-tag good">' + u.roas + 'x 🔥</span>' : (u.roas >= 1 ? '<span class="roas-tag good">' + u.roas + 'x</span>' : '<span class="roas-tag bad">' + u.roas + 'x ⚠️</span>')) : '<span class="sub">sem gasto</span>';
+      return '<div class="rank-row"><div class="rk-main"><div class="rk-name">' + label + '</div>' +
+        '<div class="rk-sub">' + u.pago + ' venda(s) · ' + brl(u.revenue) + (u.spend ? ' · gasto ' + brl(u.spend) : '') + (u.cpa ? ' · CPA ' + brl(u.cpa) : '') + '</div></div>' +
+        '<div class="rk-pts">' + badge + '</div></div>';
+    }).join('');
+  }
+  function renderFunilOrigem() {
+    var box = $('funil-origem'); if (!box) return;
+    var d = state.data; if (!d) return;
+    var srcs = (d.utm || []).filter(function (u) { return (u.landingViews || u.views || 0) > 0; })
+      .sort(function (a, b) { return (b.landingViews || b.views) - (a.landingViews || a.views); }).slice(0, 5);
+    if (!srcs.length) { box.innerHTML = '<div class="empty">Sem tráfego com origem no período.</div>'; return; }
+    box.innerHTML = srcs.map(function (u) {
+      var steps = [{ l: 'Visitas', v: u.landingViews || 0 }, { l: 'Checkout', v: u.checkoutViews || 0 }, { l: 'PIX', v: u.pix || 0 }, { l: 'Pago', v: u.pago || 0 }];
+      var base = steps[0].v || 1;
+      var chips = steps.map(function (s, i) {
+        return '<div class="fo-step"><div class="fo-v">' + s.v + '</div><div class="fo-l">' + s.l + '</div><div class="fo-p">' + (i === 0 ? 100 : Math.round(s.v / base * 100)) + '%</div></div>';
+      }).join('<div class="fo-arrow">›</div>');
+      return '<div class="fo-block"><div class="fo-src">' + esc(u.source) + (u.campaign ? ' · ' + esc(u.campaign) : '') + '</div><div class="fo-row">' + chips + '</div></div>';
+    }).join('');
+  }
+  function renderAntifraude() {
+    var box = $('antifraude'); if (!box) return;
+    var by = {};
+    (state.orders || []).forEach(function (o) {
+      var key = (o.email || '').toLowerCase() || String(o.telefone || '').replace(/\D/g, '');
+      if (!key) return;
+      by[key] = by[key] || { name: o.nome, email: o.email, telefone: o.telefone, total: 0, paid: 0, pend: 0 };
+      by[key].total++; if (o.status === 'paid') by[key].paid++; else by[key].pend++;
+    });
+    var flagged = Object.keys(by).map(function (k) { return by[k]; }).filter(function (x) { return x.total >= 3; }).sort(function (a, b) { return b.total - a.total; });
+    if (!flagged.length) { box.innerHTML = '<div class="empty">Nenhum padrão suspeito no período. ✅</div>'; return; }
+    box.innerHTML = tableHTML(
+      [{ t: 'Cliente' }, { t: 'Pedidos', num: 1 }, { t: 'Pagos', num: 1 }, { t: 'Pendentes', num: 1 }],
+      flagged.slice(0, 20).map(function (x) {
+        return [esc(x.name) + '<div class="sub">' + esc(maskEmail(x.email)) + ' · ' + esc(maskPhone(x.telefone)) + '</div>', x.total, x.paid, (x.pend >= 3 ? '<span class="roas-tag bad">' + x.pend + '</span>' : x.pend)];
+      }), '');
+  }
+  function deltaCompare(curr, prev) {
+    if (!prev) return curr ? '<span class="roas-tag good">novo</span>' : '<span class="sub">—</span>';
+    var pct = Math.round((curr - prev) / prev * 100);
+    if (pct === 0) return '<span class="sub">0%</span>';
+    return '<span class="roas-tag ' + (pct > 0 ? 'good' : 'bad') + '">' + (pct > 0 ? '▲' : '▼') + ' ' + Math.abs(pct) + '%</span>';
+  }
+  function renderComparar() {
+    var box = $('comparar'); if (!box) return;
+    var d = state.data; if (!d) return;
+    var k = d.kpis, p = d.prevKpis;
+    var rows = [
+      { l: 'Faturamento', c: k.gross, pv: p.gross, money: true },
+      { l: 'Líquido', c: k.net, pv: p.net, money: true },
+      { l: 'Vendas pagas', c: k.paidCount, pv: p.paidCount },
+      { l: 'Conversão PIX (%)', c: k.pixConversion, pv: p.pixConversion },
+      { l: 'Ticket médio', c: k.ticket, pv: p.ticket, money: true },
+      { l: 'Visitas', c: k.visits, pv: p.visits },
+      { l: 'ROAS', c: k.roas, pv: p.roas, x: true },
+    ];
+    box.innerHTML = tableHTML(
+      [{ t: 'Métrica' }, { t: 'Anterior', num: 1 }, { t: 'Agora', num: 1 }, { t: 'Variação', num: 1 }],
+      rows.map(function (r) {
+        var fmt = function (v) { return r.money ? brl(v) : (r.x ? (v ? v + 'x' : '—') : String(v)); };
+        return [r.l, fmt(r.pv), '<b>' + fmt(r.c) + '</b>', deltaCompare(r.c, r.pv)];
+      }), '');
+  }
+
   function renderComputed() {
     if (!state.data) return;
     try { renderFinance(); } catch (e) { /* */ }
     try { renderResumo(); renderCoach(); renderForecast(); } catch (e) { /* */ }
+    try { renderMapa(); renderCriativos(); renderFunilOrigem(); renderAntifraude(); renderComparar(); } catch (e) { /* */ }
   }
 
   // ---------- Membros (MRR, gamificação, coorte, níveis VIP) ----------

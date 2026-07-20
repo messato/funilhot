@@ -16,11 +16,11 @@ const FEATURES = [
   { id: 'card_abandonados', cat: 'Painel & métricas', label: 'Card PIX abandonados', desc: 'Lista de recuperação por WhatsApp.', status: 'ativo', def: true },
   { id: 'som_venda', cat: 'Painel & métricas', label: 'Alerta sonoro de venda', desc: 'Toca um som quando cai uma venda.', status: 'ativo', def: true },
   { id: 'export_csv', cat: 'Painel & métricas', label: 'Exportar CSV', desc: 'Botão de download dos pedidos.', status: 'ativo', def: true },
-  { id: 'comparar_periodos', cat: 'Painel & métricas', label: 'Comparar dois períodos', desc: 'Semana vs semana lado a lado.', status: 'em_breve', def: false },
+  { id: 'comparar_periodos', cat: 'Painel & métricas', label: 'Comparar dois períodos', desc: 'Período atual vs anterior lado a lado.', status: 'ativo', def: true },
   { id: 'relatorio_pdf', cat: 'Painel & métricas', label: 'Relatório em PDF', desc: 'Exportar o mês em PDF.', status: 'em_breve', def: false },
   { id: 'dashboard_custom', cat: 'Painel & métricas', label: 'Dashboard personalizável', desc: 'Arrastar e esconder cards.', status: 'em_breve', def: false },
   { id: 'modo_tv', cat: 'Painel & métricas', label: 'Modo TV / telão', desc: 'Tela cheia pra deixar num monitor.', status: 'em_breve', def: false },
-  { id: 'mapa_estado', cat: 'Painel & métricas', label: 'Mapa por estado', desc: 'Vendas por região (via DDD).', status: 'em_breve', def: false },
+  { id: 'mapa_estado', cat: 'Painel & métricas', label: 'Mapa por estado', desc: 'Vendas por região (via DDD).', status: 'ativo', def: true },
   { id: 'coorte_retencao', cat: 'Painel & métricas', label: 'Coorte de retenção', desc: 'Quantos seguem ativos por mês de entrada.', status: 'ativo', def: true },
   { id: 'modo_coach', cat: 'Painel & métricas', label: 'Modo coach', desc: 'Sugere a próxima ação do dia.', status: 'ativo', def: true },
 
@@ -57,9 +57,9 @@ const FEATURES = [
   { id: 'meta_capi', cat: 'Tráfego & ROAS', label: 'Meta Conversions API', desc: 'Evento de compra server-side pro Meta.', status: 'em_breve', def: false },
   { id: 'gasto_meta_auto', cat: 'Tráfego & ROAS', label: 'Puxar gasto do Meta', desc: 'ROAS 100% automático (sem digitar).', status: 'em_breve', def: false },
   { id: 'gasto_tiktok', cat: 'Tráfego & ROAS', label: 'Gasto TikTok/Kwai', desc: 'Integração de gasto de outras redes.', status: 'em_breve', def: false },
-  { id: 'ranking_criativos', cat: 'Tráfego & ROAS', label: 'Ranking de criativos', desc: 'Alerta de ROAS baixo por campanha.', status: 'em_breve', def: false },
+  { id: 'ranking_criativos', cat: 'Tráfego & ROAS', label: 'Ranking de criativos', desc: 'Alerta de ROAS baixo por campanha.', status: 'ativo', def: true },
   { id: 'utm_builder', cat: 'Tráfego & ROAS', label: 'Montador de link UTM', desc: 'Gera links de anúncio marcados.', status: 'em_breve', def: false },
-  { id: 'funil_por_origem', cat: 'Tráfego & ROAS', label: 'Funil por origem', desc: 'Funil filtrado por utm_source.', status: 'em_breve', def: false },
+  { id: 'funil_por_origem', cat: 'Tráfego & ROAS', label: 'Funil por origem', desc: 'Da visita à venda, por utm_source.', status: 'ativo', def: true },
   { id: 'atribuicao_multi', cat: 'Tráfego & ROAS', label: 'Atribuição multi-toque', desc: 'Qual criativo iniciou vs fechou.', status: 'em_breve', def: false },
 
   // ---------- Recuperação & remarketing ----------
@@ -102,7 +102,7 @@ const FEATURES = [
   { id: '2fa', cat: 'Segurança', label: '2FA no login', desc: 'Segundo fator de autenticação.', status: 'em_breve', def: false },
   { id: 'auto_logout', cat: 'Segurança', label: 'Auto-logout por inatividade', desc: 'Encerra a sessão parada.', status: 'em_breve', def: false },
   { id: 'multiusuario', cat: 'Segurança', label: 'Multiusuário com papéis', desc: 'Admin e leitura, com log de acesso.', status: 'em_breve', def: false },
-  { id: 'antifraude', cat: 'Segurança', label: 'Detecção de fraude', desc: 'Alerta de CPF/telefone repetido.', status: 'em_breve', def: false },
+  { id: 'antifraude', cat: 'Segurança', label: 'Detecção de fraude', desc: 'Alerta de telefone/e-mail repetido.', status: 'ativo', def: true },
 ];
 
 const DEFAULTS = {};

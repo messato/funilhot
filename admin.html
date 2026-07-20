@@ -329,6 +329,17 @@
     .niv-row .niv-name { width: 110px; } .niv-row .niv-price { width: 100px; } .niv-row .niv-link { flex: 1; min-width: 80px; }
     .niv-row .niv-del { cursor: pointer; color: var(--bad); font-weight: 900; padding: 6px 9px; border-radius: 8px; background: rgba(255,93,143,.1); border: none; }
 
+    /* Funil por origem */
+    .fo-block { padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .fo-block:last-child { border-bottom: none; }
+    .fo-src { font-weight: 800; font-size: 13px; margin-bottom: 8px; }
+    .fo-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+    .fo-step { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; text-align: center; min-width: 66px; }
+    .fo-v { font-size: 16px; font-weight: 900; }
+    .fo-l { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .fo-p { font-size: 11px; color: var(--cyan); font-weight: 800; }
+    .fo-arrow { color: var(--muted); font-size: 18px; }
+
     .view { display: none; }
     .view.on { display: block; }
     .section { scroll-margin-top: 74px; }
@@ -488,6 +499,11 @@
 
         <!-- VIEW: Vendas -->
         <section class="view" data-view="vendas">
+          <div class="card" id="sec-antifraude" style="margin-bottom:14px;display:none">
+            <h2>Alertas de risco <span class="hint">CPF/telefone/e-mail repetido</span></h2>
+            <div class="cap">Clientes com muitos pedidos no período — pode ser abuso, teste ou recompra legítima. Confira antes de liberar acesso.</div>
+            <div id="antifraude"></div>
+          </div>
           <div class="card" id="sec-orders">
             <div class="tbl-tools">
               <div class="tbl-search"><svg class="ic ic-sm"><use href="#ic-search"></use></svg> <input id="order-search" placeholder="Buscar por nome, e-mail ou ID…" /></div>
@@ -516,19 +532,36 @@
             <div class="cap">Cada etapa mostra quantos passaram e a % de quem veio da etapa anterior.</div>
             <div id="funnel"></div>
           </div>
-          <div class="card" id="sec-heat">
+          <div class="card" id="sec-heat" style="margin-bottom:14px">
             <h2>Melhores horários <span class="hint">vendas por dia × hora (Brasília)</span></h2>
             <div class="cap">Mais forte = mais vendas. Use pra decidir quando escalar anúncio e postar.</div>
             <div class="heat" id="heat"></div>
+          </div>
+          <div class="card" id="sec-funil-origem">
+            <h2>Funil por origem <span class="hint">onde cada canal perde gente</span></h2>
+            <div class="cap">Da visita à venda, por origem de tráfego. Compare onde cada canal converte melhor.</div>
+            <div id="funil-origem"></div>
           </div>
         </section>
 
         <!-- VIEW: Tráfego / ROAS -->
         <section class="view" data-view="trafego">
-          <div class="card" id="sec-traffic">
+          <div class="card" id="sec-traffic" style="margin-bottom:14px">
             <h2><span>Origens de tráfego <span class="hint">ROAS por origem</span></span><button class="btn-ghost" id="btn-spend"><svg class="ic ic-sm"><use href="#ic-plus"></use></svg> Lançar gasto</button></h2>
             <div class="cap">Marque seus anúncios com <code>?utm_source=…&utm_campaign=…</code> e lance o gasto pra ver o retorno.</div>
             <div class="table-scroll"><div id="utm"></div></div>
+          </div>
+          <div class="two-col even">
+            <div class="card" id="sec-criativos">
+              <h2>Ranking de criativos <span class="hint">melhores e piores por ROAS</span></h2>
+              <div class="cap">Compara origem/campanha por retorno. Alerta quando o ROAS fica abaixo de 1 (prejuízo).</div>
+              <div id="criativos"></div>
+            </div>
+            <div class="card" id="sec-mapa">
+              <h2>Vendas por estado <span class="hint">pelo DDD do telefone</span></h2>
+              <div class="cap">Distribuição geográfica no período — útil pra segmentar anúncio por região.</div>
+              <div id="mapa"></div>
+            </div>
           </div>
         </section>
 
@@ -569,6 +602,11 @@
             <h2>Resumo do período <span class="hint">em português, automático</span></h2>
             <div class="cap">Leitura rápida dos números — atualiza junto com o painel.</div>
             <div id="ia-resumo-body" class="ia-text"></div>
+          </div>
+          <div class="card" id="sec-comparar" style="margin-bottom:14px">
+            <h2>Comparar períodos <span class="hint">agora × período anterior</span></h2>
+            <div class="cap">Mesma janela de tempo, deslocada pra trás. Verde = melhorou, rosa = piorou.</div>
+            <div class="table-scroll"><div id="comparar"></div></div>
           </div>
           <div class="two-col even">
             <div class="card" id="sec-coach">

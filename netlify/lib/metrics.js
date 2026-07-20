@@ -77,15 +77,18 @@ async function aggregateDay(day) {
   for (const ev of events) {
     if (!ev) continue;
     const source = ev.us || '(direto)';
-    agg.utm[source] = agg.utm[source] || { views: 0, pago: 0, revenue: 0, campaign: ev.uc || '' };
+    agg.utm[source] = agg.utm[source] || { views: 0, pago: 0, revenue: 0, campaign: ev.uc || '', landingViews: 0, checkoutViews: 0, pix: 0 };
 
     if (ev.e === 'view') {
       agg.views[ev.page] = (agg.views[ev.page] || 0) + 1;
       if (ev.vid) vids.add(ev.vid);
       if (ev.m) agg.mobile += 1; else agg.desktop += 1;
       agg.utm[source].views += 1;
+      if (ev.page === 'landing') agg.utm[source].landingViews += 1;
+      else if (ev.page === 'checkout') agg.utm[source].checkoutViews += 1;
     } else if (ev.e === 'pix') {
       agg.pix[ev.offer] = (agg.pix[ev.offer] || 0) + 1;
+      agg.utm[source].pix += 1;
     } else if (ev.e === 'pago') {
       agg.pago[ev.offer] = (agg.pago[ev.offer] || 0) + 1;
       agg.revenue += ev.amount || 0;
@@ -195,19 +198,24 @@ async function summary(days) {
   const utm = {};
   for (const d of currAggs) {
     for (const [source, s] of Object.entries(d.utm)) {
-      utm[source] = utm[source] || { views: 0, pago: 0, revenue: 0, campaign: s.campaign, spend: 0 };
+      utm[source] = utm[source] || { views: 0, pago: 0, revenue: 0, campaign: s.campaign, spend: 0, landingViews: 0, checkoutViews: 0, pix: 0 };
       utm[source].views += s.views;
       utm[source].pago += s.pago;
       utm[source].revenue += s.revenue;
+      utm[source].landingViews += s.landingViews || 0;
+      utm[source].checkoutViews += s.checkoutViews || 0;
+      utm[source].pix += s.pix || 0;
     }
   }
   for (const [src, cents] of Object.entries(currSpend.bySource)) {
-    utm[src] = utm[src] || { views: 0, pago: 0, revenue: 0, campaign: '', spend: 0 };
+    utm[src] = utm[src] || { views: 0, pago: 0, revenue: 0, campaign: '', spend: 0, landingViews: 0, checkoutViews: 0, pix: 0 };
     utm[src].spend += cents;
   }
   const utmArr = Object.entries(utm).map(([source, s]) => ({
     source, ...s,
     roas: s.spend ? Math.round((s.revenue / s.spend) * 100) / 100 : 0,
+    cpa: s.spend && s.pago ? Math.round(s.spend / s.pago) : 0,
+    convRate: s.landingViews ? Math.round((s.pago / s.landingViews) * 1000) / 10 : 0,
     profit: s.revenue - s.spend,
   })).sort((a, b) => (b.revenue - b.spend) - (a.revenue - a.spend) || b.views - a.views).slice(0, 25);
 
