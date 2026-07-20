@@ -374,6 +374,7 @@
     overview: { t: 'Visão geral', s: 'Os números que importam agora', data: true },
     vendas: { t: 'Vendas', s: 'Pedidos e clientes', data: true },
     abandonados: { t: 'PIX abandonados', s: 'Recupere quem gerou e não pagou', data: true },
+    membros: { t: 'Membros', s: 'Sua base de assinantes e recorrência', data: false },
     publicacoes: { t: 'Publicações', s: 'Publique um vídeo em várias redes de uma vez', data: false },
     funil: { t: 'Funil de conversão', s: 'Onde as pessoas param', data: true },
     trafego: { t: 'Tráfego e ROAS', s: 'Retorno por origem de tráfego', data: true },
@@ -397,6 +398,7 @@
     if (name === 'overview' && state.data) renderChart(state.data); // re-mede o container ao exibir
     if (name === 'overview' && window.__globeResize) window.__globeResize();
     if (name === 'publicacoes') loadSocialHistory();
+    if (name === 'membros') { loadMembers(); renderNiveis(); }
     if (name === 'config') renderPagina();
     window.scrollTo(0, 0);
   }
@@ -422,6 +424,10 @@
     // IA & Insights
     show('sec-ia-resumo', f.ia_resumo); show('sec-coach', f.modo_coach); show('sec-forecast', f.ia_forecast);
     showNav('insights', (f.ia_resumo !== false) || (f.modo_coach !== false) || (f.ia_forecast !== false));
+    // Membros
+    show('sec-mrr', f.renovacao_mrr); show('sec-membros', f.aba_membros);
+    show('sec-gamificacao', f.gamificacao_membros); show('sec-coorte', f.coorte_retencao); show('sec-niveis', f.niveis_vip);
+    showNav('membros', (f.aba_membros !== false) || (f.renovacao_mrr !== false) || (f.gamificacao_membros !== false) || (f.coorte_retencao !== false) || (f.niveis_vip !== false));
     setCsv();
   }
   function renderFeatures() {
@@ -485,7 +491,7 @@
       if (!j.ok) return; state.features = j.features; state.flags = j.flags; renderFeatures(); applyFlags();
     }).catch(function () {});
     api('settings').then(function (r) { return r.json(); }).then(function (j) {
-      if (!j.ok) return; state.settings = j.settings; renderSettings(); renderComputed();
+      if (!j.ok) return; state.settings = j.settings; renderSettings(); renderNiveis(); renderComputed();
     }).catch(function () {});
   }
 
@@ -716,12 +722,126 @@
     try { renderResumo(); renderCoach(); renderForecast(); } catch (e) { /* */ }
   }
 
+  // ---------- Membros (MRR, gamificação, coorte, níveis VIP) ----------
+  function memberTier(m) {
+    var s = m.totalSpent;
+    if (s >= 30000) return 'diamante';
+    if (s >= 15000) return 'ouro';
+    if (s >= 6000) return 'prata';
+    return 'bronze';
+  }
+  function memberPoints(m) { return m.purchases * 100 + m.tenureMonths * 50; }
+  function renderMrr() {
+    var st = state.membersData && state.membersData.stats; var box = $('sec-mrr'); if (!box) return;
+    if (!st) { box.innerHTML = ''; return; }
+    var cards = [
+      { l: 'MRR (recorrência)', v: brl(st.mrr) }, { l: 'Membros ativos', v: String(st.active) },
+      { l: 'Vencendo em 7d', v: String(st.expiring7) }, { l: 'ARPU', v: brl(st.arpu) },
+      { l: 'Recompradores', v: String(st.repeat) }, { l: 'ARR (proj. 12m)', v: brl(st.arr) },
+    ];
+    box.innerHTML = cards.map(function (c) { return '<div class="mini"><div class="l">' + c.l + '</div><div class="v">' + c.v + '</div></div>'; }).join('');
+  }
+  function renderMembersTable() {
+    var data = state.membersData; if (!data) return;
+    var q = (state.memQuery || '').toLowerCase(), f = state.memFilter || '';
+    var rows = data.members.filter(function (m) {
+      if (f === 'active' && !m.active) return false;
+      if (f === 'expired' && m.active) return false;
+      if (f === 'expiring' && !(m.active && m.daysLeft <= 7)) return false;
+      if (q && (m.name + ' ' + m.email).toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    }).slice(0, 200);
+    $('members').innerHTML = tableHTML(
+      [{ t: 'Membro' }, { t: 'Plano' }, { t: 'Status' }, { t: 'Compras', num: 1 }, { t: 'Total', num: 1 }],
+      rows.map(function (m) {
+        var status = m.active
+          ? (m.daysLeft <= 7 ? '<span class="pill pending"><span class="pd"></span>vence em ' + m.daysLeft + 'd</span>' : '<span class="pill paid"><span class="pd"></span>ativo · ' + m.daysLeft + 'd</span>')
+          : '<span class="pill" style="background:rgba(255,93,143,.12);color:var(--bad)"><span class="pd"></span>expirado</span>';
+        return [esc(m.name) + '<div class="sub">' + esc(maskEmail(m.email)) + '</div>', esc(m.label || m.plan), status, m.purchases, brl(m.totalSpent)];
+      }),
+      'Nenhum membro ainda.'
+    );
+  }
+  function renderGamificacao() {
+    var data = state.membersData; if (!data) return;
+    var ranked = data.members.map(function (m) { return { m: m, pts: memberPoints(m) }; }).sort(function (a, b) { return b.pts - a.pts; }).slice(0, 10);
+    if (!ranked.length) { $('gamificacao').innerHTML = '<div class="empty">Sem membros ainda.</div>'; return; }
+    $('gamificacao').innerHTML = ranked.map(function (r, i) {
+      var m = r.m, tier = memberTier(m);
+      return '<div class="rank-row"><div class="rank-n">' + (i + 1) + '</div>' +
+        '<div class="rk-main"><div class="rk-name">' + esc(m.name) + ' <span class="tier ' + tier + '">' + tier + '</span></div>' +
+        '<div class="rk-sub">' + m.purchases + ' compra(s) · ' + m.tenureMonths + ' mês(es) · ' + brl(m.totalSpent) + '</div></div>' +
+        '<div class="rk-pts">' + r.pts + ' pts</div></div>';
+    }).join('');
+  }
+  function renderCoorte() {
+    var data = state.membersData; if (!data) return;
+    $('coorte').innerHTML = tableHTML(
+      [{ t: 'Mês de entrada' }, { t: 'Entraram', num: 1 }, { t: 'Ativos', num: 1 }, { t: 'Retenção', num: 1 }],
+      data.cohort.map(function (c) {
+        return [c.cohort, c.size, c.retained, '<span class="roas-tag ' + (c.retentionPct >= 50 ? 'good' : 'bad') + '">' + c.retentionPct + '%</span>'];
+      }),
+      'Sem dados de coorte ainda.'
+    );
+  }
+  function loadMembers() {
+    api('members').then(function (r) { return r.json(); }).then(function (j) {
+      if (!j.ok) return;
+      state.membersData = j;
+      if ($('nav-members')) $('nav-members').textContent = j.stats.active;
+      renderMrr(); renderMembersTable(); renderGamificacao(); renderCoorte();
+    }).catch(function () {});
+  }
+  // Níveis VIP (editor)
+  function collectNiveis() {
+    return [].slice.call(document.querySelectorAll('#niveis-list .niv-row')).map(function (row) {
+      return { name: row.querySelector('.niv-name').value, price: Math.round(parseFloat(row.querySelector('.niv-price').value || '0') * 100), link: row.querySelector('.niv-link').value };
+    });
+  }
+  function nivRow(lv) {
+    return '<div class="niv-row">' +
+      '<input class="niv-name" value="' + esc(lv.name || '') + '" placeholder="Nome">' +
+      '<input class="niv-price" type="number" step="0.01" value="' + ((lv.price || 0) / 100).toFixed(2) + '" placeholder="Preço">' +
+      '<input class="niv-link" value="' + esc(lv.link || '') + '" placeholder="https://t.me/+...">' +
+      '<button class="niv-del" title="Remover">×</button></div>';
+  }
+  function renderNiveis() {
+    var s = state.settings; if (!s || !$('niveis-list')) return;
+    var levels = s.vipLevels || [];
+    $('niveis-list').innerHTML = levels.length ? levels.map(nivRow).join('') : '<div class="sub">Nenhum nível. Adicione um.</div>';
+  }
+  if ($('niveis-add')) $('niveis-add').addEventListener('click', function () {
+    var lv = collectNiveis(); lv.push({ name: '', price: 0, link: '' }); state.settings.vipLevels = lv; renderNiveis();
+  });
+  if ($('niveis-list')) $('niveis-list').addEventListener('click', function (e) {
+    var del = e.target.closest('.niv-del'); if (!del) return;
+    var rows = [].slice.call(document.querySelectorAll('#niveis-list .niv-row'));
+    var i = rows.indexOf(del.closest('.niv-row'));
+    var lv = collectNiveis(); lv.splice(i, 1); state.settings.vipLevels = lv; renderNiveis();
+  });
+  if ($('niveis-save')) $('niveis-save').addEventListener('click', function () {
+    var levels = collectNiveis();
+    $('niveis-status').textContent = 'salvando…';
+    api('settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vipLevels: levels }) })
+      .then(function (r) { return r.json(); }).then(function (j) {
+        if (j.ok) { state.settings = j.settings; renderNiveis(); $('niveis-status').textContent = '✅ salvo'; setTimeout(function () { $('niveis-status').textContent = ''; }, 2500); }
+        else $('niveis-status').textContent = 'erro';
+      }).catch(function () { $('niveis-status').textContent = 'erro'; });
+  });
+  if ($('mem-search')) $('mem-search').addEventListener('input', function (e) { state.memQuery = e.target.value; renderMembersTable(); });
+  if ($('mem-filter')) $('mem-filter').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    $('mem-filter').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
+    b.classList.add('on'); state.memFilter = b.dataset.f; renderMembersTable();
+  });
+
   function boot() {
     $('login').style.display = 'none';
     $('app').classList.add('on');
     showView('overview');
     loadConfig();
     load();
+    loadMembers();
     if (state.timer) clearInterval(state.timer);
     state.timer = setInterval(load, 60000);
   }

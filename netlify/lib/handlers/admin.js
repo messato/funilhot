@@ -8,6 +8,7 @@ const { rateLimit, clientIp } = require('../ratelimit');
 const { summary, setSpend, setGoal, DAY_MS } = require('../metrics');
 const { FEATURES, getFlags, setFlag } = require('../features');
 const { getSettings, saveSettings } = require('../settings');
+const { computeMembers } = require('../members');
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 const reply = (statusCode, payload, headers = JSON_HEADERS) => ({
@@ -89,6 +90,11 @@ exports.handler = async function (event) {
         return reply(200, { ok: true, settings: await saveSettings(body) });
       }
       return reply(200, { ok: true, settings: await getSettings() });
+    }
+
+    if (route === 'members') {
+      const windowDays = Math.min(730, Math.max(30, parseInt(q.window, 10) || 400));
+      return reply(200, { ok: true, ...(await computeMembers(windowDays)) });
     }
 
     if (route === 'abandoned') {

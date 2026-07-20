@@ -21,7 +21,7 @@ const FEATURES = [
   { id: 'dashboard_custom', cat: 'Painel & métricas', label: 'Dashboard personalizável', desc: 'Arrastar e esconder cards.', status: 'em_breve', def: false },
   { id: 'modo_tv', cat: 'Painel & métricas', label: 'Modo TV / telão', desc: 'Tela cheia pra deixar num monitor.', status: 'em_breve', def: false },
   { id: 'mapa_estado', cat: 'Painel & métricas', label: 'Mapa por estado', desc: 'Vendas por região (via DDD).', status: 'em_breve', def: false },
-  { id: 'coorte_retencao', cat: 'Painel & métricas', label: 'Coorte de retenção', desc: 'Quantos renovam mês a mês.', status: 'em_breve', def: false },
+  { id: 'coorte_retencao', cat: 'Painel & métricas', label: 'Coorte de retenção', desc: 'Quantos seguem ativos por mês de entrada.', status: 'ativo', def: true },
   { id: 'modo_coach', cat: 'Painel & métricas', label: 'Modo coach', desc: 'Sugere a próxima ação do dia.', status: 'ativo', def: true },
 
   // ---------- Publicações ----------
@@ -34,9 +34,9 @@ const FEATURES = [
   { id: 'telegram_venda', cat: 'Telegram & acesso', label: 'Notificar venda no Telegram', desc: 'Mensagem a cada venda paga.', status: 'ativo', def: true },
   { id: 'telegram_resumo', cat: 'Telegram & acesso', label: 'Resumo diário no Telegram', desc: 'Resumo automático às 21h.', status: 'ativo', def: true },
   { id: 'acesso_telegram', cat: 'Telegram & acesso', label: 'Convite único + expiração', desc: 'Link único por cliente e remoção ao vencer.', status: 'em_breve', def: false },
-  { id: 'aba_membros', cat: 'Telegram & acesso', label: 'Aba Membros', desc: 'Quem está ativo, entrou e expira.', status: 'em_breve', def: false },
-  { id: 'renovacao_mrr', cat: 'Telegram & acesso', label: 'Renovação e MRR', desc: '“Expira em X dias” + receita recorrente.', status: 'em_breve', def: false },
-  { id: 'niveis_vip', cat: 'Telegram & acesso', label: 'Níveis VIP / VIP+', desc: 'Grupos e preços por nível.', status: 'em_breve', def: false },
+  { id: 'aba_membros', cat: 'Telegram & acesso', label: 'Aba Membros', desc: 'Quem está ativo, entrou e expira.', status: 'ativo', def: true },
+  { id: 'renovacao_mrr', cat: 'Telegram & acesso', label: 'Renovação e MRR', desc: '“Expira em X dias” + receita recorrente.', status: 'ativo', def: true },
+  { id: 'niveis_vip', cat: 'Telegram & acesso', label: 'Níveis VIP / VIP+', desc: 'Grupos e preços por nível.', status: 'ativo', def: true },
   { id: 'reenviar_acesso', cat: 'Telegram & acesso', label: 'Reenviar acesso', desc: '2ª via do link/PIX num clique.', status: 'em_breve', def: false },
 
   // ---------- Vendas & checkout ----------
@@ -70,7 +70,7 @@ const FEATURES = [
   { id: 'central_disparos', cat: 'Recuperação & remarketing', label: 'Central de disparos', desc: 'Broadcast segmentado pra base.', status: 'em_breve', def: false },
 
   // ---------- Comunidade & gamificação ----------
-  { id: 'gamificacao_membros', cat: 'Comunidade & gamificação', label: 'Pontos e fidelidade', desc: 'Recompensa por tempo de casa.', status: 'em_breve', def: false },
+  { id: 'gamificacao_membros', cat: 'Comunidade & gamificação', label: 'Pontos e fidelidade', desc: 'Ranking por tempo de casa e compras.', status: 'ativo', def: true },
   { id: 'boas_vindas', cat: 'Comunidade & gamificação', label: 'Boas-vindas automáticas', desc: 'Onboarding do novo membro.', status: 'em_breve', def: false },
   { id: 'reativacao_inativo', cat: 'Comunidade & gamificação', label: 'Reativação de inativo', desc: 'Empurrão antes de cancelar.', status: 'em_breve', def: false },
   { id: 'depoimentos', cat: 'Comunidade & gamificação', label: 'Mural de depoimentos', desc: 'Coleta e exibe prova social.', status: 'em_breve', def: false },

@@ -310,6 +310,25 @@
     .fc-box .v { font-size: 19px; font-weight: 900; margin-top: 4px; letter-spacing: -.3px; }
     .anomaly { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 8px 0; border-top: 1px solid var(--line); }
 
+    /* Membros */
+    .tier { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 800; letter-spacing: .03em; }
+    .tier.diamante { background: rgba(34,211,238,.16); color: var(--cyan); }
+    .tier.ouro { background: rgba(255,206,84,.16); color: #ffce54; }
+    .tier.prata { background: rgba(255,255,255,.12); color: #cfd0ea; }
+    .tier.bronze { background: rgba(228,146,81,.16); color: #e49251; }
+    .rank-row { display: flex; align-items: center; gap: 11px; padding: 10px 2px; border-bottom: 1px solid var(--line); }
+    .rank-row:last-child { border-bottom: none; }
+    .rank-n { width: 26px; height: 26px; border-radius: 8px; background: var(--surface-2); display: grid; place-items: center; font-weight: 900; font-size: 12px; color: var(--ink-2); flex-shrink: 0; }
+    .rank-row:nth-child(1) .rank-n { background: var(--grad); color: #fff; }
+    .rank-row .rk-main { flex: 1; min-width: 0; }
+    .rank-row .rk-name { font-weight: 700; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rank-row .rk-sub { color: var(--muted); font-size: 11.5px; }
+    .rank-row .rk-pts { font-weight: 900; font-variant-numeric: tabular-nums; }
+    .niv-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .niv-row input { padding: 9px 11px; border: 1px solid var(--line-strong); border-radius: 10px; background: rgba(255,255,255,.04); color: var(--ink); font-size: 13px; outline: none; }
+    .niv-row .niv-name { width: 110px; } .niv-row .niv-price { width: 100px; } .niv-row .niv-link { flex: 1; min-width: 80px; }
+    .niv-row .niv-del { cursor: pointer; color: var(--bad); font-weight: 900; padding: 6px 9px; border-radius: 8px; background: rgba(255,93,143,.1); border: none; }
+
     .view { display: none; }
     .view.on { display: block; }
     .section { scroll-margin-top: 74px; }
@@ -385,6 +404,7 @@
       <div class="nav-item active" data-view="overview"><svg class="ic"><use href="#ic-overview"></use></svg> Visão geral</div>
       <div class="nav-item" data-view="vendas"><svg class="ic"><use href="#ic-sales"></use></svg> Vendas <span class="badge" id="nav-orders">0</span></div>
       <div class="nav-item" data-view="abandonados"><svg class="ic"><use href="#ic-flame"></use></svg> PIX abandonados <span class="badge" id="nav-aband">0</span></div>
+      <div class="nav-item" data-view="membros"><svg class="ic"><use href="#ic-people"></use></svg> Membros <span class="badge" id="nav-members">0</span></div>
       <div class="nav-item" data-view="publicacoes"><svg class="ic"><use href="#ic-video"></use></svg> Publicações</div>
 
       <div class="nav-label">Análise</div>
@@ -561,6 +581,42 @@
               <div class="cap">Projeção pelo ritmo atual e destaque de dias fora da curva.</div>
               <div id="forecast-body"></div>
             </div>
+          </div>
+        </section>
+
+        <!-- VIEW: Membros -->
+        <section class="view" data-view="membros">
+          <div class="mini-row" id="sec-mrr" style="margin-bottom:14px"></div>
+          <div class="card" id="sec-membros" style="margin-bottom:14px">
+            <div class="tbl-tools">
+              <div class="tbl-search"><svg class="ic ic-sm"><use href="#ic-search"></use></svg> <input id="mem-search" placeholder="Buscar membro por nome ou e-mail…" /></div>
+              <div class="seg" id="mem-filter">
+                <button data-f="" class="on">Todos</button>
+                <button data-f="active">Ativos</button>
+                <button data-f="expiring">Vencendo</button>
+                <button data-f="expired">Expirados</button>
+              </div>
+            </div>
+            <div class="table-scroll"><div id="members"></div></div>
+          </div>
+          <div class="two-col even">
+            <div class="card" id="sec-gamificacao">
+              <h2>Ranking de fidelidade <span class="hint">pontos por tempo de casa</span></h2>
+              <div class="cap">Pontos = compras × 100 + meses de casa × 50. Reconheça e recompense os mais fiéis.</div>
+              <div id="gamificacao"></div>
+            </div>
+            <div class="card" id="sec-coorte">
+              <h2>Coorte de retenção <span class="hint">por mês de entrada</span></h2>
+              <div class="cap">De cada turma que entrou no mês, quantos seguem ativos hoje.</div>
+              <div class="table-scroll"><div id="coorte"></div></div>
+            </div>
+          </div>
+          <div class="card" id="sec-niveis" style="margin-top:14px">
+            <h2>Níveis VIP <span class="hint">seus grupos e preços</span></h2>
+            <div class="cap">Defina os níveis de acesso (nome, preço e link do grupo). Serve de referência de planejamento.</div>
+            <div id="niveis-list"></div>
+            <div style="margin-top:10px"><button class="btn-ghost" id="niveis-add"><svg class="ic ic-sm"><use href="#ic-plus"></use></svg> Adicionar nível</button>
+              <button class="btn-o" id="niveis-save" style="margin-left:6px">Salvar níveis</button> <span id="niveis-status" class="sub" style="margin-left:8px"></span></div>
           </div>
         </section>
 

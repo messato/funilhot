@@ -31,6 +31,11 @@ const DEFAULTS = {
   avatarVer: 0,
   capaVer: 0,
   logoVer: 0,
+  // Níveis VIP (planejamento de grupos/preços). price em CENTAVOS.
+  vipLevels: [
+    { name: 'VIP', price: 3990, link: '' },
+    { name: 'VIP+', price: 9790, link: '' },
+  ],
 };
 
 const TEXT_FIELDS = ['siteName', 'siteUser', 'siteBioTitle', 'siteBioText', 'siteStats'];
@@ -51,7 +56,20 @@ async function getSettings() {
   TEXT_FIELDS.forEach((f) => { out[f] = typeof saved[f] === 'string' ? saved[f] : DEFAULTS[f]; });
   VER_FIELDS.forEach((f) => { out[f] = typeof saved[f] === 'number' ? saved[f] : DEFAULTS[f]; });
   Object.keys(NUM_FIELDS).forEach((f) => { out[f] = typeof saved[f] === 'number' ? saved[f] : DEFAULTS[f]; });
+  out.vipLevels = Array.isArray(saved.vipLevels) ? saved.vipLevels : DEFAULTS.vipLevels;
   return out;
+}
+
+function cleanVipLevels(arr) {
+  if (!Array.isArray(arr)) return null;
+  return arr.slice(0, 6).map((lv) => {
+    const price = Math.round(Number(lv && lv.price));
+    return {
+      name: cleanText(lv && lv.name, 40) || 'VIP',
+      price: Number.isFinite(price) && price >= 100 && price <= 5000000 ? price : 0,
+      link: /^https?:\/\//i.test(String(lv && lv.link || '')) ? String(lv.link).slice(0, 300) : '',
+    };
+  }).filter((lv) => lv.price > 0);
 }
 
 function safeUrl(v, fallback) {
@@ -91,6 +109,10 @@ async function saveSettings(patch) {
       if (Number.isFinite(n) && n >= min && n <= max) next[f] = Math.round(n * 100) / 100;
     }
   });
+  if ('vipLevels' in patch) {
+    const lv = cleanVipLevels(patch.vipLevels);
+    if (lv) next.vipLevels = lv;
+  }
 
   await setJSON('config/settings.json', next);
   return getSettings();
