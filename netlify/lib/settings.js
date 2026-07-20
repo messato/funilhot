@@ -40,6 +40,10 @@ const DEFAULTS = {
   testimonials: [],
   // Afiliados/embaixadores: code (slug), commissionPct (%). Interno (não vai ao público).
   affiliates: [],
+  // Cupons de desconto. type: 'pct' (%) ou 'fixed' (centavos). Interno (validado no servidor).
+  coupons: [],
+  // Order bump: adicional opcional no checkout. price em CENTAVOS.
+  orderBump: { enabled: false, label: 'Pack extra de fotos', desc: 'Leve também 30 fotos exclusivas por um precinho.', price: 1990 },
 };
 
 const TEXT_FIELDS = ['siteName', 'siteUser', 'siteBioTitle', 'siteBioText', 'siteStats'];
@@ -63,7 +67,38 @@ async function getSettings() {
   out.vipLevels = Array.isArray(saved.vipLevels) ? saved.vipLevels : DEFAULTS.vipLevels;
   out.testimonials = Array.isArray(saved.testimonials) ? saved.testimonials : DEFAULTS.testimonials;
   out.affiliates = Array.isArray(saved.affiliates) ? saved.affiliates : DEFAULTS.affiliates;
+  out.coupons = Array.isArray(saved.coupons) ? saved.coupons : DEFAULTS.coupons;
+  out.orderBump = Object.assign({}, DEFAULTS.orderBump, saved.orderBump || {});
   return out;
+}
+
+function cleanCoupons(arr) {
+  if (!Array.isArray(arr)) return null;
+  const seen = {};
+  return arr.slice(0, 50).map((c) => {
+    const type = (c && c.type) === 'fixed' ? 'fixed' : 'pct';
+    let value = Math.round(Number(c && c.value));
+    if (!Number.isFinite(value) || value < 0) value = 0;
+    if (type === 'pct') value = Math.min(90, value);        // até 90%
+    else value = Math.min(5000000, value);                   // centavos
+    const maxUses = Math.max(0, Math.round(Number(c && c.maxUses)) || 0); // 0 = ilimitado
+    return {
+      code: String(c && c.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20),
+      type, value,
+      active: c && c.active !== false,
+      maxUses, uses: Math.max(0, Math.round(Number(c && c.uses)) || 0),
+    };
+  }).filter((c) => c.code && c.value > 0 && !seen[c.code] && (seen[c.code] = 1));
+}
+function cleanOrderBump(o) {
+  if (!o || typeof o !== 'object') return null;
+  const price = Math.round(Number(o.price));
+  return {
+    enabled: !!o.enabled,
+    label: cleanText(o.label, 80) || 'Adicional',
+    desc: cleanText(o.desc, 160),
+    price: Number.isFinite(price) && price >= 100 && price <= 5000000 ? price : DEFAULTS.orderBump.price,
+  };
 }
 
 function cleanVipLevels(arr) {
@@ -154,6 +189,14 @@ async function saveSettings(patch) {
     const a = cleanAffiliates(patch.affiliates);
     if (a) next.affiliates = a;
   }
+  if ('coupons' in patch) {
+    const c = cleanCoupons(patch.coupons);
+    if (c) next.coupons = c;
+  }
+  if ('orderBump' in patch) {
+    const ob = cleanOrderBump(patch.orderBump);
+    if (ob) next.orderBump = ob;
+  }
 
   await setJSON('config/settings.json', next);
   return getSettings();
@@ -167,12 +210,48 @@ async function bumpMedia(name, ts) {
   return saveSettings(patch);
 }
 
+// Conta um resgate de cupom (chamado quando o pedido é pago).
+async function incrementCouponUse(code) {
+  const norm = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!norm) return;
+  const cur = (await getJSON('config/settings.json')) || {};
+  if (!Array.isArray(cur.coupons)) return;
+  const c = cur.coupons.find((x) => x.code === norm);
+  if (!c) return;
+  c.uses = (c.uses || 0) + 1;
+  await setJSON('config/settings.json', cur);
+}
+
 // Só o que é seguro expor publicamente (usado pelas páginas do funil).
 function publicView(s) {
-  const out = { prices: s.prices, vipLink: s.vipLink, supportLink: s.supportLink, testimonials: s.testimonials || [] };
+  const out = {
+    prices: s.prices, vipLink: s.vipLink, supportLink: s.supportLink,
+    testimonials: s.testimonials || [],
+    // Order bump é exibido no checkout (sem o preço-base sensível). Cupons NÃO vão ao público.
+    orderBump: s.orderBump && s.orderBump.enabled
+      ? { enabled: true, label: s.orderBump.label, desc: s.orderBump.desc, price: s.orderBump.price }
+      : { enabled: false },
+  };
   TEXT_FIELDS.forEach((f) => { out[f] = s[f]; });
   VER_FIELDS.forEach((f) => { out[f] = s[f]; });
   return out;
 }
 
-module.exports = { DEFAULTS, getSettings, saveSettings, publicView, bumpMedia };
+// Valida um cupom (server-side). Retorna o cupom ou null.
+function findValidCoupon(s, rawCode) {
+  const code = String(rawCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20);
+  if (!code) return null;
+  const c = (s.coupons || []).find((x) => x.code === code && x.active);
+  if (!c) return null;
+  if (c.maxUses && c.uses >= c.maxUses) return null;
+  return c;
+}
+// Aplica o desconto (nunca abaixo de R$1). Retorna { amount, discount }.
+function applyCoupon(amount, coupon) {
+  if (!coupon) return { amount, discount: 0 };
+  let discount = coupon.type === 'fixed' ? coupon.value : Math.round(amount * coupon.value / 100);
+  discount = Math.max(0, Math.min(discount, amount - 100));
+  return { amount: amount - discount, discount };
+}
+
+module.exports = { DEFAULTS, getSettings, saveSettings, publicView, bumpMedia, findValidCoupon, applyCoupon, incrementCouponUse };

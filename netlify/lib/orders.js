@@ -3,6 +3,7 @@
 const { setJSON, getJSON, listKeys, dayKey } = require('./store');
 const { formatBRL } = require('./catalog');
 const { isEnabled } = require('./features');
+const { incrementCouponUse } = require('./settings');
 
 // Pedidos particionados por mês: orders/<yyyy-mm>/<txid>.json
 function monthOf(ts = Date.now()) {
@@ -79,6 +80,10 @@ async function markPaid(id) {
 
   const order = { ...found.order, status: 'paid', paidAt: Date.now() };
   await setJSON(orderKey(found.month, id), order);
+
+  if (order.couponCode) {
+    try { await incrementCouponUse(order.couponCode); } catch { /* não bloqueia a venda */ }
+  }
 
   const ts = Date.now();
   await setJSON(`ev/${dayKey(ts)}/${ts}-${Math.random().toString(16).slice(2, 8)}.json`, {

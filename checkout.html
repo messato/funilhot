@@ -301,6 +301,10 @@
         <strong id="checkout-price">R$ 0,00</strong>
       </div>
       <div class="tag" id="checkout-duration">Acesso imediato após confirmação</div>
+      <label id="bump-box" style="display:none;margin-top:14px;align-items:flex-start;gap:10px;background:rgba(255,255,255,.05);border:1px dashed rgba(255,105,180,.5);border-radius:12px;padding:12px;cursor:pointer">
+        <input type="checkbox" id="bump-check" style="margin-top:3px;width:18px;height:18px;flex-shrink:0" />
+        <span><b id="bump-label"></b> <span id="bump-price" style="color:#ff8ac0;font-weight:800"></span><br><span id="bump-desc" style="font-size:13px;opacity:.85"></span></span>
+      </label>
     </section>
 
     <form id="checkout-form" class="checkout-form">
@@ -324,6 +328,12 @@
         <input id="cpf" name="cpf" required inputmode="numeric" placeholder="000.000.000-00" />
       </div>
 
+      <div class="campo">
+        <label for="cupom">Cupom de desconto (opcional)</label>
+        <input id="cupom" name="cupom" placeholder="Digite seu cupom" autocapitalize="characters" />
+        <span id="cupom-status" style="font-size:12px;font-weight:700"></span>
+      </div>
+
       <div class="metodo-pagamento">
         <div class="metodo ativo">PIX</div>
       </div>
@@ -343,6 +353,7 @@
     </form>
   </main>
 
+  <script src="age-gate.js" defer></script>
   <script src="checkout.js"></script>
   <script src="funnel-track.js" defer></script>
 </body>

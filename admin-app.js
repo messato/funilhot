@@ -382,6 +382,7 @@
     financeiro: { t: 'Financeiro', s: 'Lucro real, impostos e recebíveis', data: true },
     insights: { t: 'IA & Insights', s: 'Resumo, próximas ações e previsão', data: true },
     crescimento: { t: 'Crescimento', s: 'Links, público, prova social, depoimentos e afiliados', data: false },
+    ofertas: { t: 'Ofertas & cupons', s: 'Cupons de desconto e order bump do checkout', data: false },
     config: { t: 'Página & Configurações', s: 'Sua página de vendas, preços, links e textos', data: false },
     recursos: { t: 'Recursos', s: 'Ligue e desligue funcionalidades', data: false },
   };
@@ -401,6 +402,7 @@
     if (name === 'publicacoes') loadSocialHistory();
     if (name === 'membros') { loadMembers(); renderNiveis(); }
     if (name === 'crescimento') renderCrescimento();
+    if (name === 'ofertas') renderOfertas();
     if (name === 'config') renderPagina();
     window.scrollTo(0, 0);
   }
@@ -437,6 +439,9 @@
     show('sec-utm', f.utm_builder); show('sec-publico-meta', f.publico_meta); show('sec-prova', f.prova_social);
     show('sec-depoimentos', f.depoimentos); show('sec-afiliados', f.afiliados); show('sec-embaixadores', f.embaixadores);
     showNav('crescimento', (f.utm_builder !== false) || (f.publico_meta !== false) || (f.prova_social !== false) || (f.depoimentos !== false) || (f.afiliados !== false) || (f.embaixadores !== false));
+    // Ofertas & cupons
+    show('sec-cupons', f.cupons); show('sec-orderbump', f.order_bump);
+    showNav('ofertas', (f.cupons !== false) || (f.order_bump !== false));
     setCsv();
   }
   function renderFeatures() {
@@ -500,7 +505,7 @@
       if (!j.ok) return; state.features = j.features; state.flags = j.flags; renderFeatures(); applyFlags();
     }).catch(function () {});
     api('settings').then(function (r) { return r.json(); }).then(function (j) {
-      if (!j.ok) return; state.settings = j.settings; renderSettings(); renderNiveis(); renderDep(); renderAffList(); renderComputed();
+      if (!j.ok) return; state.settings = j.settings; renderSettings(); renderNiveis(); renderDep(); renderAffList(); renderOfertas(); renderComputed();
     }).catch(function () {});
   }
 
@@ -1053,6 +1058,65 @@
   if ($('emb-code')) $('emb-code').addEventListener('input', buildEmb);
   if ($('emb-copy')) $('emb-copy').addEventListener('click', function () { var l = buildEmb(); if (l && l !== '—') copyText(l, $('emb-status')); });
   function renderCrescimento() { buildUtm(); renderDep(); renderAffList(); buildEmb(); loadPulse(); loadAffiliates(); }
+
+  // ---------- Ofertas (cupons + order bump) ----------
+  function cupomRow(c) {
+    return '<div class="niv-row cupom-row" data-uses="' + (c.uses || 0) + '" style="flex-wrap:wrap">' +
+      '<input class="cp-code" style="width:120px;text-transform:uppercase" value="' + esc(c.code || '') + '" placeholder="CODIGO">' +
+      '<select class="cp-type"><option value="pct"' + (c.type !== 'fixed' ? ' selected' : '') + '>%</option><option value="fixed"' + (c.type === 'fixed' ? ' selected' : '') + '>R$</option></select>' +
+      '<input class="cp-value niv-price" type="number" step="0.01" value="' + (c.type === 'fixed' ? ((c.value || 0) / 100).toFixed(2) : (c.value || 0)) + '" placeholder="valor">' +
+      '<input class="cp-max niv-price" type="number" step="1" value="' + (c.maxUses || 0) + '" title="usos máximos (0 = ilimitado)" style="width:74px">' +
+      '<label class="sub" style="display:flex;align-items:center;gap:4px"><input type="checkbox" class="cp-active"' + (c.active !== false ? ' checked' : '') + '> ativo</label>' +
+      '<span class="sub">' + (c.uses || 0) + ' uso(s)</span>' +
+      '<button class="niv-del cp-del" title="Remover">×</button></div>';
+  }
+  function collectCupons() {
+    return [].slice.call(document.querySelectorAll('#cupons-list .cupom-row')).map(function (row) {
+      var type = row.querySelector('.cp-type').value;
+      var raw = parseFloat(row.querySelector('.cp-value').value) || 0;
+      return {
+        code: row.querySelector('.cp-code').value,
+        type: type,
+        value: type === 'fixed' ? Math.round(raw * 100) : Math.round(raw),
+        maxUses: parseInt(row.querySelector('.cp-max').value, 10) || 0,
+        active: row.querySelector('.cp-active').checked,
+        uses: +(row.getAttribute('data-uses') || 0),
+      };
+    });
+  }
+  function renderCupons() {
+    var s = state.settings; if (!s || !$('cupons-list')) return;
+    var list = s.coupons || [];
+    $('cupons-list').innerHTML = list.length ? list.map(cupomRow).join('') : '<div class="sub">Nenhum cupom. Adicione um.</div>';
+  }
+  if ($('cupom-add')) $('cupom-add').addEventListener('click', function () { var l = collectCupons(); l.push({ code: '', type: 'pct', value: 10, maxUses: 0, active: true, uses: 0 }); state.settings.coupons = l; renderCupons(); });
+  if ($('cupons-list')) $('cupons-list').addEventListener('click', function (e) {
+    var d = e.target.closest('.cp-del'); if (!d) return;
+    var rows = [].slice.call(document.querySelectorAll('#cupons-list .cupom-row')); var i = rows.indexOf(d.closest('.cupom-row'));
+    var l = collectCupons(); l.splice(i, 1); state.settings.coupons = l; renderCupons();
+  });
+  if ($('cupom-save')) $('cupom-save').addEventListener('click', function () {
+    $('cupom-status2').textContent = 'salvando…';
+    api('settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ coupons: collectCupons() }) }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.ok) { state.settings = j.settings; renderCupons(); $('cupom-status2').textContent = '✅ salvo'; setTimeout(function () { $('cupom-status2').textContent = ''; }, 2500); } else $('cupom-status2').textContent = 'erro';
+    }).catch(function () { $('cupom-status2').textContent = 'erro'; });
+  });
+  function renderOrderBump() {
+    var s = state.settings; if (!s || !$('ob-enabled')) return;
+    var ob = s.orderBump || {};
+    $('ob-enabled').checked = !!ob.enabled;
+    $('ob-label').value = ob.label || '';
+    $('ob-desc').value = ob.desc || '';
+    $('ob-price').value = ((ob.price || 0) / 100).toFixed(2);
+  }
+  if ($('ob-save')) $('ob-save').addEventListener('click', function () {
+    var ob = { enabled: $('ob-enabled').checked, label: $('ob-label').value, desc: $('ob-desc').value, price: Math.round(parseFloat($('ob-price').value || '0') * 100) };
+    $('ob-status').textContent = 'salvando…';
+    api('settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderBump: ob }) }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.ok) { state.settings = j.settings; renderOrderBump(); $('ob-status').textContent = '✅ salvo'; setTimeout(function () { $('ob-status').textContent = ''; }, 2500); } else $('ob-status').textContent = 'erro';
+    }).catch(function () { $('ob-status').textContent = 'erro'; });
+  });
+  function renderOfertas() { renderCupons(); renderOrderBump(); }
 
   function boot() {
     $('login').style.display = 'none';

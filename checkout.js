@@ -29,11 +29,28 @@ checkoutPlan.textContent = display.title;
 checkoutPrice.textContent = display.price;
 checkoutDuration.textContent = display.duration;
 
-// Mostra o preço editado no painel já na abertura (o valor cobrado já vem do servidor).
+// Preço/order-bump vindos do painel. O valor cobrado é sempre resolvido no servidor.
+let basePriceCents = 0;
+let bumpCfg = null;
+const fmtBRL = (c) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+function refreshTotal() {
+  let total = basePriceCents;
+  if (bumpCfg && bumpCfg.enabled && el('bump-check') && el('bump-check').checked) total += bumpCfg.price;
+  if (total) checkoutPrice.textContent = fmtBRL(total);
+}
 fetch('/api/settings').then(function (r) { return r.json(); }).then(function (j) {
-  if (!j.ok || !j.settings || !j.settings.prices) return;
-  var cents = j.settings.prices['checkout/' + selectedPlan];
-  if (cents) checkoutPrice.textContent = (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  if (!j.ok || !j.settings) return;
+  var cents = j.settings.prices && j.settings.prices['checkout/' + selectedPlan];
+  if (cents) basePriceCents = cents;
+  bumpCfg = j.settings.orderBump || null;
+  if (bumpCfg && bumpCfg.enabled) {
+    el('bump-label').textContent = bumpCfg.label || 'Adicional';
+    el('bump-price').textContent = '+ ' + fmtBRL(bumpCfg.price);
+    el('bump-desc').textContent = bumpCfg.desc || '';
+    el('bump-box').style.display = 'flex';
+    el('bump-check').addEventListener('change', refreshTotal);
+  }
+  refreshTotal();
 }).catch(function () {});
 pixCodeEl.textContent = 'O código PIX será gerado ao finalizar.';
 
@@ -153,15 +170,25 @@ form.addEventListener('submit', async (event) => {
   formStatus.textContent = 'Gerando seu PIX...';
 
   try {
+    const cupom = (el('cupom') && el('cupom').value.trim()) || '';
+    const orderBump = !!(el('bump-check') && el('bump-check').checked);
     const response = await fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ offer: 'checkout', plan: selectedPlan, nome, email, telefone, cpf, ...getUtm() }),
+      body: JSON.stringify({ offer: 'checkout', plan: selectedPlan, nome, email, telefone, cpf, coupon: cupom, orderBump, ...getUtm() }),
     });
 
     const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.ok) {
+      if (result && result.error === 'invalid_coupon') {
+        if (el('cupom-status')) { el('cupom-status').style.color = '#ff6b6b'; el('cupom-status').textContent = 'Cupom inválido ou esgotado.'; }
+        throw new Error('Cupom inválido. Confira o código ou remova para continuar.');
+      }
       throw new Error('Não foi possível gerar o PIX agora. Tente novamente.');
+    }
+    if (result.data && result.data.couponApplied && el('cupom-status')) {
+      el('cupom-status').style.color = '#34e5b0';
+      el('cupom-status').textContent = 'Cupom aplicado: −' + fmtBRL(result.data.discount || 0);
     }
 
     const d = result.data;

@@ -5,6 +5,7 @@ const { createPixCharge } = require('../provider');
 const { rateLimit, clientIp } = require('../ratelimit');
 const { saveOrder } = require('../orders');
 const { setJSON, dayKey } = require('../store');
+const { getSettings, findValidCoupon, applyCoupon } = require('../settings');
 
 const cleanUtm = (v) => (typeof v === 'string' ? v.slice(0, 80).replace(/[<>"']/g, '') : '');
 const cleanRef = (v) => (typeof v === 'string' ? v.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 16) : '');
@@ -45,6 +46,23 @@ exports.handler = async function (event) {
     return reply(400, { ok: false, error: 'invalid_fields', fields: errors });
   }
 
+  // Ajustes de preço (SEMPRE resolvidos no servidor): cupom e order bump.
+  const settings = await getSettings();
+  let amount = offer.amount;
+  let discount = 0, couponCode = '';
+  if (payload.coupon) {
+    const coupon = findValidCoupon(settings, payload.coupon);
+    if (!coupon) return reply(400, { ok: false, error: 'invalid_coupon' });
+    const r = applyCoupon(amount, coupon);
+    amount = r.amount; discount = r.discount; couponCode = coupon.code;
+  }
+  let bumpTaken = false;
+  const bumpCfg = settings.orderBump;
+  if (payload.orderBump && bumpCfg && bumpCfg.enabled) {
+    bumpTaken = true; amount += bumpCfg.price;
+  }
+  const chargeLabel = offer.label + (bumpTaken ? ' + ' + bumpCfg.label : '');
+
   const headers = event.headers || {};
   const proto = headers['x-forwarded-proto'] || 'https';
   const host = headers['host'];
@@ -57,9 +75,9 @@ exports.handler = async function (event) {
 
   try {
     const charge = await createPixCharge({
-      amount: offer.amount,
+      amount,
       webhookUrl,
-      label: offer.label,
+      label: chargeLabel,
       customer: { name: lead.nome, email: lead.email, phone: lead.telefone, cpf: lead.cpf },
     });
     const qrImage = charge.qrImageBase64
@@ -74,8 +92,12 @@ exports.handler = async function (event) {
         id: charge.id,
         offer: offer.offer,
         plan: offer.plan,
-        label: offer.label,
-        amount: offer.amount,
+        label: chargeLabel,
+        amount,
+        baseAmount: offer.amount,
+        discount,
+        couponCode,
+        bumpTaken,
         netAmount: charge.netAmount,
         status: charge.status === 'paid' ? 'paid' : 'pending',
         nome: lead.nome,
@@ -92,7 +114,7 @@ exports.handler = async function (event) {
         e: 'pix',
         offer: offer.offer,
         plan: offer.plan,
-        amount: offer.amount,
+        amount,
         us: cleanUtm(payload.us),
         uc: cleanUtm(payload.uc),
         ts: now,
@@ -108,9 +130,11 @@ exports.handler = async function (event) {
         id: charge.id,
         brcode: charge.brcode,
         qrImage,
-        amount: offer.amount,
-        price: formatBRL(offer.amount),
-        label: offer.label,
+        amount,
+        price: formatBRL(amount),
+        label: chargeLabel,
+        discount,
+        couponApplied: couponCode || undefined,
         status: charge.status,
         provider: charge.provider,
       },

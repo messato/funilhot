@@ -43,15 +43,15 @@ const FEATURES = [
   { id: 'cartao_boleto', cat: 'Vendas & checkout', label: 'Cartão e boleto no checkout', desc: 'Métodos além do PIX (AssetPay já suporta).', status: 'em_breve', def: false },
   { id: 'assinatura_recorrente', cat: 'Vendas & checkout', label: 'Assinatura recorrente', desc: 'Cobrança automática no cartão.', status: 'em_breve', def: false },
   { id: 'trial', cat: 'Vendas & checkout', label: 'Trial de entrada (R$1)', desc: 'Degustação que vira recorrente.', status: 'em_breve', def: false },
-  { id: 'order_bump', cat: 'Vendas & checkout', label: 'Order bump', desc: 'Adicional com checkbox no checkout.', status: 'em_breve', def: false },
+  { id: 'order_bump', cat: 'Vendas & checkout', label: 'Order bump', desc: 'Adicional com checkbox no checkout.', status: 'ativo', def: true },
   { id: 'ab_preco', cat: 'Vendas & checkout', label: 'Teste A/B de preço', desc: 'Alterna preços e mede a conversão.', status: 'em_breve', def: false },
   { id: 'regenerar_pix', cat: 'Vendas & checkout', label: 'Regenerar PIX expirado', desc: 'Novo QR sem refazer cadastro.', status: 'em_breve', def: false },
   { id: 'multi_gateway', cat: 'Vendas & checkout', label: 'Multi-gateway com fallback', desc: 'Usa outro gateway se a AssetPay cair.', status: 'em_breve', def: false },
-  { id: 'cupons', cat: 'Vendas & checkout', label: 'Cupons de desconto', desc: 'Códigos promocionais com rastreio.', status: 'em_breve', def: false },
+  { id: 'cupons', cat: 'Vendas & checkout', label: 'Cupons de desconto', desc: 'Códigos promocionais com rastreio.', status: 'ativo', def: true },
   { id: 'editar_precos', cat: 'Vendas & checkout', label: 'Editar preços pelo painel', desc: 'Sem precisar de deploy.', status: 'em_breve', def: false },
   { id: 'prova_social', cat: 'Vendas & checkout', label: 'Prova social real', desc: '“X compraram hoje” com dados reais.', status: 'ativo', def: true },
   { id: 'quiz', cat: 'Vendas & checkout', label: 'Quiz de qualificação', desc: 'Segmenta antes do checkout.', status: 'em_breve', def: false },
-  { id: 'verificacao_idade', cat: 'Vendas & checkout', label: 'Verificação de idade (18+)', desc: 'Barreira de idade no checkout.', status: 'em_breve', def: false },
+  { id: 'verificacao_idade', cat: 'Vendas & checkout', label: 'Verificação de idade (18+)', desc: 'Barreira de idade na entrada.', status: 'ativo', def: true },
 
   // ---------- Tráfego & ROAS ----------
   { id: 'meta_capi', cat: 'Tráfego & ROAS', label: 'Meta Conversions API', desc: 'Evento de compra server-side pro Meta.', status: 'em_breve', def: false },

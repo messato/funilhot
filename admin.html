@@ -339,7 +339,7 @@
     .fo-l { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
     .fo-p { font-size: 11px; color: var(--cyan); font-weight: 800; }
     .fo-arrow { color: var(--muted); font-size: 18px; }
-    .dep-row select { padding: 9px; border: 1px solid var(--line-strong); border-radius: 10px; background: rgba(255,255,255,.04); color: var(--ink); font-size: 13px; outline: none; }
+    .dep-row select, .niv-row select { padding: 9px; border: 1px solid var(--line-strong); border-radius: 10px; background: rgba(255,255,255,.04); color: var(--ink); font-size: 13px; outline: none; }
 
     .view { display: none; }
     .view.on { display: block; }
@@ -428,6 +428,7 @@
       <div class="nav-item" data-view="crescimento"><svg class="ic"><use href="#ic-gift"></use></svg> Crescimento</div>
 
       <div class="nav-label">Configurar</div>
+      <div class="nav-item" data-view="ofertas"><svg class="ic"><use href="#ic-ticket"></use></svg> Ofertas &amp; cupons</div>
       <div class="nav-item" data-view="config"><svg class="ic"><use href="#ic-image"></use></svg> Página &amp; Config</div>
       <div class="nav-item" data-view="recursos"><svg class="ic"><use href="#ic-layers"></use></svg> Recursos</div>
 
@@ -743,6 +744,29 @@
           <div class="card" style="margin-top:14px">
             <h2>Publicações recentes</h2>
             <div class="table-scroll"><div id="soc-history"></div></div>
+          </div>
+        </section>
+
+        <!-- VIEW: Ofertas & cupons -->
+        <section class="view" data-view="ofertas">
+          <div class="card" id="sec-cupons" style="margin-bottom:14px">
+            <h2>Cupons de desconto <span class="hint">válidos no checkout</span></h2>
+            <div class="cap">Crie códigos com % ou valor fixo. O cliente digita no checkout; o desconto é aplicado e conferido no servidor. Deixe “usos máx.” em 0 para ilimitado.</div>
+            <div id="cupons-list"></div>
+            <div style="margin-top:10px"><button class="btn-ghost" id="cupom-add"><svg class="ic ic-sm"><use href="#ic-plus"></use></svg> Adicionar cupom</button>
+              <button class="btn-o" id="cupom-save" style="margin-left:6px">Salvar cupons</button> <span id="cupom-status2" class="sub" style="margin-left:8px"></span></div>
+          </div>
+          <div class="card" id="sec-orderbump">
+            <h2>Order bump <span class="hint">adicional no checkout</span></h2>
+            <div class="cap">Uma oferta extra com checkbox no checkout. Se o cliente marcar, o valor é somado ao total (tudo resolvido no servidor).</div>
+            <label class="net" style="margin-bottom:12px"><input type="checkbox" id="ob-enabled"> Mostrar order bump no checkout</label>
+            <label class="sub">Título</label>
+            <input id="ob-label" class="set-in" placeholder="Pack extra de fotos" />
+            <label class="sub">Descrição</label>
+            <input id="ob-desc" class="set-in" placeholder="Leve também 30 fotos exclusivas." />
+            <label class="sub">Preço do adicional (R$)</label>
+            <input id="ob-price" type="number" step="0.01" class="set-in" style="max-width:150px" />
+            <div style="margin-top:10px"><button class="btn-o" id="ob-save">Salvar order bump</button> <span id="ob-status" class="sub" style="margin-left:8px"></span></div>
           </div>
         </section>
 
