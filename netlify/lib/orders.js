@@ -3,7 +3,7 @@
 const { setJSON, getJSON, listKeys, dayKey } = require('./store');
 const { formatBRL } = require('./catalog');
 const { isEnabled } = require('./features');
-const { incrementCouponUse } = require('./settings');
+const { incrementCouponUse, getSettings } = require('./settings');
 
 // Pedidos particionados por mês: orders/<yyyy-mm>/<txid>.json
 function monthOf(ts = Date.now()) {
@@ -73,6 +73,26 @@ async function notifyTelegram(order) {
   }
 }
 
+// Dispara os webhooks de saída configurados (Zapier/n8n/Discord/etc.).
+async function fireWebhooks(order) {
+  try {
+    if (!(await isEnabled('webhooks'))) return;
+    const s = await getSettings();
+    const hooks = (s.webhooks || []).filter((w) => w.active && w.url);
+    if (!hooks.length) return;
+    const payload = {
+      event: 'sale.paid', id: order.id, label: order.label, amount: order.amount,
+      plan: order.plan, offer: order.offer, nome: order.nome, email: order.email,
+      utmSource: order.utmSource || '', ref: order.ref || '', paidAt: order.paidAt,
+    };
+    await Promise.all(hooks.map((w) => fetch(w.url, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    }).catch((e) => console.error('webhook failed:', w.url, e.message))));
+  } catch (error) {
+    console.error('fireWebhooks error:', error.message);
+  }
+}
+
 // Idempotente: marca pago uma única vez, grava o evento e notifica.
 async function markPaid(id) {
   const found = await findOrder(id);
@@ -97,6 +117,7 @@ async function markPaid(id) {
   });
 
   await notifyTelegram(order);
+  await fireWebhooks(order);
   return order;
 }
 

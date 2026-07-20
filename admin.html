@@ -352,6 +352,33 @@
       .hero-row { grid-template-columns: 1fr; }
       .two-col, .two-col.even { grid-template-columns: 1fr; }
     }
+
+    /* Relatório PDF (impressão) */
+    #print-report { display: none; }
+    @media print {
+      body { background: #fff !important; }
+      body * { visibility: hidden !important; }
+      #print-report, #print-report * { visibility: visible !important; }
+      #print-report { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 24px; color: #111; }
+      #print-report h1 { font-size: 22px; margin-bottom: 4px; }
+      #print-report h2 { font-size: 15px; margin: 18px 0 8px; }
+      #print-report table { width: 100%; border-collapse: collapse; font-size: 12px; }
+      #print-report td, #print-report th { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+      #print-report .pr-kpis { display: flex; flex-wrap: wrap; gap: 10px; }
+      #print-report .pr-kpi { border: 1px solid #ccc; border-radius: 8px; padding: 10px 14px; min-width: 130px; }
+      #print-report .pr-kpi b { display: block; font-size: 18px; }
+    }
+
+    /* Modo TV */
+    #tv-mode { position: fixed; inset: 0; z-index: 90000; background: radial-gradient(1200px 700px at 50% -10%, rgba(124,92,255,.25), transparent 60%), #06060f; color: #fff; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 5vh; }
+    #tv-mode.on { display: flex; }
+    #tv-mode .tv-label { color: #8f8fc0; font-size: 2vw; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
+    #tv-mode .tv-value { font-size: 13vw; font-weight: 900; letter-spacing: -.02em; background: linear-gradient(135deg,#9d82ff,#22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; line-height: 1; margin: 2vh 0; }
+    #tv-mode .tv-sub { color: #c9c4e6; font-size: 2.2vw; }
+    #tv-mode .tv-exit { position: absolute; top: 24px; right: 28px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); color: #fff; border-radius: 12px; padding: 10px 16px; font-weight: 700; cursor: pointer; }
+    #tv-mode .tv-dots { position: absolute; bottom: 5vh; display: flex; gap: 8px; }
+    #tv-mode .tv-dots i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.25); }
+    #tv-mode .tv-dots i.on { background: #22d3ee; }
   </style>
 </head>
 <body>
@@ -429,6 +456,7 @@
 
       <div class="nav-label">Configurar</div>
       <div class="nav-item" data-view="ofertas"><svg class="ic"><use href="#ic-ticket"></use></svg> Ofertas &amp; cupons</div>
+      <div class="nav-item" data-view="integracoes"><svg class="ic"><use href="#ic-plug"></use></svg> Integrações</div>
       <div class="nav-item" data-view="config"><svg class="ic"><use href="#ic-image"></use></svg> Página &amp; Config</div>
       <div class="nav-item" data-view="recursos"><svg class="ic"><use href="#ic-layers"></use></svg> Recursos</div>
 
@@ -443,6 +471,8 @@
         <div class="crumbs">Agatha VIP <span style="opacity:.4">›</span> <b>Painel</b></div>
         <div class="top-actions">
           <div class="live"><span class="pulse"></span> ao vivo</div>
+          <button class="icon-btn" id="btn-pdf" title="Relatório PDF"><svg class="ic ic-sm"><use href="#ic-file"></use></svg></button>
+          <button class="icon-btn" id="btn-tv" title="Modo TV"><svg class="ic ic-sm"><use href="#ic-tv"></use></svg></button>
           <button class="icon-btn" id="btn-refresh" title="Atualizar"><svg class="ic ic-sm"><use href="#ic-refresh"></use></svg></button>
           <button class="icon-btn" id="btn-sair" title="Sair"><svg class="ic ic-sm"><use href="#ic-power"></use></svg></button>
         </div>
@@ -793,6 +823,22 @@
           </div>
         </section>
 
+        <!-- VIEW: Integrações -->
+        <section class="view" data-view="integracoes">
+          <div class="card" id="sec-webhooks" style="margin-bottom:14px">
+            <h2>Webhooks de saída <span class="hint">avisa outros sistemas a cada venda</span></h2>
+            <div class="cap">Cole a URL de um webhook (Zapier, n8n, Make, Discord…). A cada venda paga, enviamos os dados do pedido em JSON. Somente HTTPS.</div>
+            <div id="wh-list"></div>
+            <div style="margin-top:10px"><button class="btn-ghost" id="wh-add"><svg class="ic ic-sm"><use href="#ic-plus"></use></svg> Adicionar webhook</button>
+              <button class="btn-o" id="wh-save" style="margin-left:6px">Salvar webhooks</button> <span id="wh-status" class="sub" style="margin-left:8px"></span></div>
+          </div>
+          <div class="card" id="sec-backup">
+            <h2>Backup total <span class="hint">baixe todos os seus dados</span></h2>
+            <div class="cap">Exporta pedidos, eventos, métricas e configurações num único arquivo JSON. Guarde em local seguro — contém dados de clientes.</div>
+            <button class="btn-o" id="backup-download"><svg class="ic ic-sm"><use href="#ic-download"></use></svg> Baixar backup (.json)</button>
+          </div>
+        </section>
+
         <!-- VIEW: Página & Configurações -->
         <section class="view" data-view="config">
           <div class="card" id="sec-pagina">
@@ -854,6 +900,15 @@
         <div class="foot" id="foot-updated">—</div>
       </div>
     </div>
+  </div>
+
+  <div id="print-report"></div>
+  <div id="tv-mode">
+    <button class="tv-exit" id="tv-exit">✕ Sair (Esc)</button>
+    <div class="tv-label" id="tv-label">Faturamento</div>
+    <div class="tv-value" id="tv-value">—</div>
+    <div class="tv-sub" id="tv-sub"></div>
+    <div class="tv-dots" id="tv-dots"></div>
   </div>
 
   <script src="three.min.js"></script>

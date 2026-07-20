@@ -17,9 +17,9 @@ const FEATURES = [
   { id: 'som_venda', cat: 'Painel & métricas', label: 'Alerta sonoro de venda', desc: 'Toca um som quando cai uma venda.', status: 'ativo', def: true },
   { id: 'export_csv', cat: 'Painel & métricas', label: 'Exportar CSV', desc: 'Botão de download dos pedidos.', status: 'ativo', def: true },
   { id: 'comparar_periodos', cat: 'Painel & métricas', label: 'Comparar dois períodos', desc: 'Período atual vs anterior lado a lado.', status: 'ativo', def: true },
-  { id: 'relatorio_pdf', cat: 'Painel & métricas', label: 'Relatório em PDF', desc: 'Exportar o mês em PDF.', status: 'em_breve', def: false },
+  { id: 'relatorio_pdf', cat: 'Painel & métricas', label: 'Relatório em PDF', desc: 'Exportar o período em PDF.', status: 'ativo', def: true },
   { id: 'dashboard_custom', cat: 'Painel & métricas', label: 'Dashboard personalizável', desc: 'Arrastar e esconder cards.', status: 'em_breve', def: false },
-  { id: 'modo_tv', cat: 'Painel & métricas', label: 'Modo TV / telão', desc: 'Tela cheia pra deixar num monitor.', status: 'em_breve', def: false },
+  { id: 'modo_tv', cat: 'Painel & métricas', label: 'Modo TV / telão', desc: 'Tela cheia pra deixar num monitor.', status: 'ativo', def: true },
   { id: 'mapa_estado', cat: 'Painel & métricas', label: 'Mapa por estado', desc: 'Vendas por região (via DDD).', status: 'ativo', def: true },
   { id: 'coorte_retencao', cat: 'Painel & métricas', label: 'Coorte de retenção', desc: 'Quantos seguem ativos por mês de entrada.', status: 'ativo', def: true },
   { id: 'modo_coach', cat: 'Painel & métricas', label: 'Modo coach', desc: 'Sugere a próxima ação do dia.', status: 'ativo', def: true },
@@ -92,15 +92,15 @@ const FEATURES = [
 
   // ---------- Integrações ----------
   { id: 'planilha_google', cat: 'Integrações', label: 'Planilha Google', desc: 'Cada venda vira uma linha.', status: 'em_breve', def: false },
-  { id: 'webhooks', cat: 'Integrações', label: 'Webhooks de saída', desc: 'Plugar em Zapier/n8n/Discord.', status: 'em_breve', def: false },
-  { id: 'backup', cat: 'Integrações', label: 'Backup / exportação total', desc: 'Baixar todos os dados.', status: 'em_breve', def: false },
+  { id: 'webhooks', cat: 'Integrações', label: 'Webhooks de saída', desc: 'Plugar em Zapier/n8n/Discord.', status: 'ativo', def: true },
+  { id: 'backup', cat: 'Integrações', label: 'Backup / exportação total', desc: 'Baixar todos os dados.', status: 'ativo', def: true },
   { id: 'notif_email_sms', cat: 'Integrações', label: 'Notificação e-mail/SMS', desc: 'Alertas além do Telegram.', status: 'em_breve', def: false },
 
   // ---------- Segurança ----------
   { id: 'mascarar_pii', cat: 'Segurança', label: 'Mascarar CPF/e-mail/telefone', desc: 'Esconde dados sensíveis no painel.', status: 'ativo', def: true },
   { id: 'push_pwa', cat: 'Segurança', label: 'Push no celular (PWA)', desc: 'Alerta de venda com o painel fechado.', status: 'em_breve', def: false },
   { id: '2fa', cat: 'Segurança', label: '2FA no login', desc: 'Segundo fator de autenticação.', status: 'em_breve', def: false },
-  { id: 'auto_logout', cat: 'Segurança', label: 'Auto-logout por inatividade', desc: 'Encerra a sessão parada.', status: 'em_breve', def: false },
+  { id: 'auto_logout', cat: 'Segurança', label: 'Auto-logout por inatividade', desc: 'Encerra a sessão parada (30 min).', status: 'ativo', def: false },
   { id: 'multiusuario', cat: 'Segurança', label: 'Multiusuário com papéis', desc: 'Admin e leitura, com log de acesso.', status: 'em_breve', def: false },
   { id: 'antifraude', cat: 'Segurança', label: 'Detecção de fraude', desc: 'Alerta de telefone/e-mail repetido.', status: 'ativo', def: true },
 ];

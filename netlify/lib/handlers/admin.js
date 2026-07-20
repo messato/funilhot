@@ -1,7 +1,7 @@
 'use strict';
 
 const { makeToken, verifyToken, passwordMatches, headerKey, TOKEN_TTL_MS } = require('../adminauth');
-const { dayKey, setJSON } = require('../store');
+const { dayKey, setJSON, listKeys, getJSON } = require('../store');
 const { listOrders, findOrder, saveOrder } = require('../orders');
 const { createPixCharge } = require('../provider');
 const { formatBRL } = require('../catalog');
@@ -213,6 +213,37 @@ exports.handler = async function (event) {
         e: 'pix', offer: o.offer, plan: o.plan, amount: o.amount, us: o.utmSource || '', uc: o.utmCampaign || '', ts: now,
       });
       return reply(200, { ok: true, data: { id: charge.id, brcode: charge.brcode, qrImage, price: formatBRL(o.amount) } });
+    }
+
+    // Backup total (JSON com tudo do KV, menos binários de mídia). Token-protegido.
+    if (route === 'backup') {
+      const prefixes = ['config/', 'orders/', 'ev/', 'spend/', 'rollup/', 'social/'];
+      const data = {};
+      for (const p of prefixes) {
+        const keys = await listKeys(p);
+        for (const k of keys) data[k] = await getJSON(k);
+      }
+      return reply(200, JSON.stringify({ exportedAt: Date.now(), data }), {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Disposition': `attachment; filename="backup-funilhot-${dayKey()}.json"`,
+      });
+    }
+
+    // Testar um webhook de saída (dispara payload de exemplo server-side).
+    if (route === 'webhook-test' && event.httpMethod === 'POST') {
+      let body = {};
+      try { body = JSON.parse(event.body || '{}'); } catch { /* */ }
+      const url = String(body.url || '');
+      if (!/^https:\/\//i.test(url)) return reply(400, { ok: false, error: 'url_invalida' });
+      try {
+        const r = await fetch(url, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event: 'test', from: 'funilhot', at: Date.now(), sample: { label: 'Plano Mensal', amount: 3990 } }),
+        });
+        return reply(200, { ok: true, status: r.status });
+      } catch (e) {
+        return reply(200, { ok: false, error: 'falha_ao_enviar' });
+      }
     }
 
     // Definir meta do mês

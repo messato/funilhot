@@ -48,6 +48,8 @@ const DEFAULTS = {
   quiz: { enabled: false, question: 'O que você mais curte?', options: [] },
   // Teste A/B de preço: variante B para um plano. priceB em CENTAVOS (0 = desligado).
   abTest: { enabled: false, plan: 'mensal', priceB: 0 },
+  // Webhooks de saída: disparados a cada venda paga. Interno.
+  webhooks: [],
 };
 
 // Variante A/B determinística a partir do vid do visitante (mesma no cliente e no servidor).
@@ -84,7 +86,16 @@ async function getSettings() {
   out.quiz = Object.assign({}, DEFAULTS.quiz, saved.quiz || {});
   if (!Array.isArray(out.quiz.options)) out.quiz.options = [];
   out.abTest = Object.assign({}, DEFAULTS.abTest, saved.abTest || {});
+  out.webhooks = Array.isArray(saved.webhooks) ? saved.webhooks : DEFAULTS.webhooks;
   return out;
+}
+
+function cleanWebhooks(arr) {
+  if (!Array.isArray(arr)) return null;
+  return arr.slice(0, 10).map((w) => ({
+    url: /^https:\/\//i.test(String(w && w.url || '')) ? String(w.url).slice(0, 300) : '',
+    active: !(w && w.active === false),
+  })).filter((w) => w.url);
 }
 
 function cleanABTest(o) {
@@ -238,6 +249,10 @@ async function saveSettings(patch) {
   if ('abTest' in patch) {
     const ab = cleanABTest(patch.abTest);
     if (ab) next.abTest = ab;
+  }
+  if ('webhooks' in patch) {
+    const wh = cleanWebhooks(patch.webhooks);
+    if (wh) next.webhooks = wh;
   }
 
   await setJSON('config/settings.json', next);
