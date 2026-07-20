@@ -5,7 +5,7 @@ const { createPixCharge } = require('../provider');
 const { rateLimit, clientIp } = require('../ratelimit');
 const { saveOrder } = require('../orders');
 const { setJSON, dayKey } = require('../store');
-const { getSettings, findValidCoupon, applyCoupon } = require('../settings');
+const { getSettings, findValidCoupon, applyCoupon, abVariant } = require('../settings');
 
 const cleanUtm = (v) => (typeof v === 'string' ? v.slice(0, 80).replace(/[<>"']/g, '') : '');
 const cleanRef = (v) => (typeof v === 'string' ? v.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 16) : '');
@@ -46,9 +46,16 @@ exports.handler = async function (event) {
     return reply(400, { ok: false, error: 'invalid_fields', fields: errors });
   }
 
-  // Ajustes de preço (SEMPRE resolvidos no servidor): cupom e order bump.
+  // Ajustes de preço (SEMPRE resolvidos no servidor): A/B, cupom e order bump.
   const settings = await getSettings();
   let amount = offer.amount;
+  let abTag = '';
+  const ab = settings.abTest;
+  if (ab && ab.enabled && ab.plan === offer.plan && ab.priceB && payload.vid) {
+    const variant = abVariant(String(payload.vid));
+    abTag = variant;
+    if (variant === 'B') amount = ab.priceB;
+  }
   let discount = 0, couponCode = '';
   if (payload.coupon) {
     const coupon = findValidCoupon(settings, payload.coupon);
@@ -98,11 +105,13 @@ exports.handler = async function (event) {
         discount,
         couponCode,
         bumpTaken,
+        abVariant: abTag,
         netAmount: charge.netAmount,
         status: charge.status === 'paid' ? 'paid' : 'pending',
         nome: lead.nome,
         email: lead.email,
         telefone: lead.telefone,
+        cpf: lead.cpf, // guardado só p/ regenerar PIX; nunca exposto nas respostas do painel
         utmSource: cleanUtm(payload.us),
         utmMedium: cleanUtm(payload.um),
         utmCampaign: cleanUtm(payload.uc),

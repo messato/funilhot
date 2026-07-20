@@ -264,17 +264,37 @@
     );
   }
   function renderAbandoned(list) {
+    var regenOn = !(state.flags && state.flags.regenerar_pix === false);
     $('abandoned').innerHTML = tableHTML(
       [{ t: 'Quando' }, { t: 'Cliente' }, { t: 'Produto' }, { t: 'Valor', num: 1 }, { t: 'Recuperar' }],
       list.slice(0, 60).map(function (o) {
         var phone = String(o.telefone || '').replace(/\D/g, '');
         var msg = 'Oi ' + (o.nome || '').split(' ')[0] + '! Vi que você gerou o PIX do ' + o.label + ' mas não finalizou. Posso te ajudar a concluir?';
         var wa = phone ? '<a class="wa" target="_blank" rel="noopener" href="https://wa.me/55' + phone + '?text=' + encodeURIComponent(msg) + '">💬 WhatsApp</a>' : '<span class="sub">sem telefone</span>';
-        return [fmtDH(o.createdAt), esc(o.nome) + '<div class="sub">' + esc(maskPhone(o.telefone)) + '</div>', esc(o.label), o.price, wa];
+        var regen = regenOn ? ' &nbsp;<span class="reveal regen-pix" data-id="' + esc(o.id) + '">🔄 Novo PIX</span>' : '';
+        return [fmtDH(o.createdAt), esc(o.nome) + '<div class="sub">' + esc(maskPhone(o.telefone)) + '</div>', esc(o.label), o.price, wa + regen];
       }),
       'Nenhum PIX abandonado. 🎉'
     );
   }
+  // Regenerar PIX de um abandonado → mostra o novo código pra copiar/enviar.
+  if ($('abandoned')) $('abandoned').addEventListener('click', function (e) {
+    var b = e.target.closest('.regen-pix'); if (!b) return;
+    b.textContent = 'gerando…';
+    api('regen-pix', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: b.dataset.id }) })
+      .then(function (r) { return r.json(); }).then(function (j) {
+        if (!j.ok) { b.textContent = j.error === 'sem_cpf' ? 'sem CPF salvo' : (j.error === 'ja_pago' ? 'já pago' : 'erro'); return; }
+        b.textContent = '🔄 Novo PIX';
+        var body = '<div class="sub" style="margin-bottom:6px">Novo código PIX (' + esc(j.data.price) + ') — envie pro cliente:</div>' +
+          '<div class="pix-code" style="word-break:break-all;background:#0d0d0d;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;font-size:12px" id="regen-code">' + esc(j.data.brcode) + '</div>' +
+          (j.data.qrImage ? '<img src="' + j.data.qrImage + '" alt="QR" style="display:block;margin:10px auto 0;width:170px;border-radius:10px;background:#fff">' : '');
+        var ov = modal('PIX regenerado', body, function (o, close) {
+          try { navigator.clipboard.writeText(j.data.brcode); } catch (er) { /* */ }
+          close();
+        });
+        var ok = ov.querySelector('[data-ok]'); if (ok) ok.textContent = 'Copiar código';
+      }).catch(function () { b.textContent = 'erro'; });
+  });
 
   // ---------- banner ----------
   function renderBanner(d) {
@@ -440,8 +460,8 @@
     show('sec-depoimentos', f.depoimentos); show('sec-afiliados', f.afiliados); show('sec-embaixadores', f.embaixadores);
     showNav('crescimento', (f.utm_builder !== false) || (f.publico_meta !== false) || (f.prova_social !== false) || (f.depoimentos !== false) || (f.afiliados !== false) || (f.embaixadores !== false));
     // Ofertas & cupons
-    show('sec-cupons', f.cupons); show('sec-orderbump', f.order_bump);
-    showNav('ofertas', (f.cupons !== false) || (f.order_bump !== false));
+    show('sec-cupons', f.cupons); show('sec-orderbump', f.order_bump); show('sec-quiz', f.quiz); show('sec-abtest', f.ab_preco);
+    showNav('ofertas', (f.cupons !== false) || (f.order_bump !== false) || (f.quiz !== false) || (f.ab_preco !== false));
     setCsv();
   }
   function renderFeatures() {
@@ -831,6 +851,7 @@
     try { renderFinance(); } catch (e) { /* */ }
     try { renderResumo(); renderCoach(); renderForecast(); } catch (e) { /* */ }
     try { renderMapa(); renderCriativos(); renderFunilOrigem(); renderAntifraude(); renderComparar(); } catch (e) { /* */ }
+    try { renderABReport(); } catch (e) { /* */ }
   }
 
   // ---------- Membros (MRR, gamificação, coorte, níveis VIP) ----------
@@ -1116,7 +1137,71 @@
       if (j.ok) { state.settings = j.settings; renderOrderBump(); $('ob-status').textContent = '✅ salvo'; setTimeout(function () { $('ob-status').textContent = ''; }, 2500); } else $('ob-status').textContent = 'erro';
     }).catch(function () { $('ob-status').textContent = 'erro'; });
   });
-  function renderOfertas() { renderCupons(); renderOrderBump(); }
+  // Quiz de qualificação
+  function qzOptRow(o) {
+    return '<div class="niv-row qz-opt-row"><input class="qz-label" style="flex:1;min-width:120px" value="' + esc(o.label || '') + '" placeholder="Rótulo (ex: Fotos)"><input class="qz-tag" style="width:120px" value="' + esc(o.tag || '') + '" placeholder="tag"><button class="niv-del qz-del" title="Remover">×</button></div>';
+  }
+  function collectQuizOptions() {
+    return [].slice.call(document.querySelectorAll('#qz-options .qz-opt-row')).map(function (row) {
+      return { label: row.querySelector('.qz-label').value, tag: row.querySelector('.qz-tag').value };
+    });
+  }
+  function renderQuizCfg() {
+    var s = state.settings; if (!s || !$('qz-enabled')) return;
+    var q = s.quiz || {};
+    $('qz-enabled').checked = !!q.enabled;
+    $('qz-question').value = q.question || '';
+    $('qz-options').innerHTML = (q.options || []).length ? q.options.map(qzOptRow).join('') : '<div class="sub">Nenhuma opção. Adicione.</div>';
+  }
+  if ($('qz-add')) $('qz-add').addEventListener('click', function () {
+    var s = state.settings; s.quiz = s.quiz || { options: [] }; s.quiz.options = collectQuizOptions(); s.quiz.options.push({ label: '', tag: '' }); renderQuizCfg();
+  });
+  if ($('qz-options')) $('qz-options').addEventListener('click', function (e) {
+    var d = e.target.closest('.qz-del'); if (!d) return;
+    var rows = [].slice.call(document.querySelectorAll('#qz-options .qz-opt-row')); var i = rows.indexOf(d.closest('.qz-opt-row'));
+    var opts = collectQuizOptions(); opts.splice(i, 1); state.settings.quiz = state.settings.quiz || {}; state.settings.quiz.options = opts; renderQuizCfg();
+  });
+  if ($('qz-save')) $('qz-save').addEventListener('click', function () {
+    var quiz = { enabled: $('qz-enabled').checked, question: $('qz-question').value, options: collectQuizOptions() };
+    $('qz-status').textContent = 'salvando…';
+    api('settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ quiz: quiz }) }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.ok) { state.settings = j.settings; renderQuizCfg(); $('qz-status').textContent = '✅ salvo'; setTimeout(function () { $('qz-status').textContent = ''; }, 2500); } else $('qz-status').textContent = 'erro';
+    }).catch(function () { $('qz-status').textContent = 'erro'; });
+  });
+  // Teste A/B de preço (config + relatório)
+  function renderABReport() {
+    if (!$('ab-report')) return;
+    var by = { A: { n: 0, paid: 0, rev: 0 }, B: { n: 0, paid: 0, rev: 0 } };
+    (state.orders || []).forEach(function (o) {
+      var v = o.abVariant === 'B' ? 'B' : (o.abVariant === 'A' ? 'A' : null); if (!v) return;
+      by[v].n++; if (o.status === 'paid') { by[v].paid++; by[v].rev += o.amount; }
+    });
+    if (!by.A.n && !by.B.n) { $('ab-report').innerHTML = '<div class="sub">Sem dados A/B ainda (ative o teste e traga tráfego).</div>'; return; }
+    var convA = by.A.n ? by.A.paid / by.A.n : 0, convB = by.B.n ? by.B.paid / by.B.n : 0;
+    var winner = (by.A.n && by.B.n) ? (convA >= convB ? 'A' : 'B') : '';
+    $('ab-report').innerHTML = tableHTML(
+      [{ t: 'Variante' }, { t: 'PIX gerados', num: 1 }, { t: 'Pagos', num: 1 }, { t: 'Conversão', num: 1 }, { t: 'Receita', num: 1 }],
+      ['A', 'B'].map(function (v) {
+        var d = by[v], conv = d.n ? Math.round(d.paid / d.n * 100) : 0;
+        return ['Preço ' + v + (winner === v ? ' 🏆' : ''), d.n, d.paid, '<span class="roas-tag ' + (winner === v ? 'good' : 'bad') + '">' + conv + '%</span>', brl(d.rev)];
+      }), '');
+  }
+  function renderABTest() {
+    var s = state.settings; if (!s || !$('ab-enabled')) return;
+    var ab = s.abTest || {};
+    $('ab-enabled').checked = !!ab.enabled;
+    $('ab-plan').value = ab.plan || 'mensal';
+    $('ab-priceb').value = ((ab.priceB || 0) / 100).toFixed(2);
+    renderABReport();
+  }
+  if ($('ab-save')) $('ab-save').addEventListener('click', function () {
+    var ab = { enabled: $('ab-enabled').checked, plan: $('ab-plan').value, priceB: Math.round(parseFloat($('ab-priceb').value || '0') * 100) };
+    $('ab-status').textContent = 'salvando…';
+    api('settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ abTest: ab }) }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.ok) { state.settings = j.settings; renderABTest(); $('ab-status').textContent = '✅ salvo'; setTimeout(function () { $('ab-status').textContent = ''; }, 2500); } else $('ab-status').textContent = 'erro';
+    }).catch(function () { $('ab-status').textContent = 'erro'; });
+  });
+  function renderOfertas() { renderCupons(); renderOrderBump(); renderQuizCfg(); renderABTest(); }
 
   function boot() {
     $('login').style.display = 'none';

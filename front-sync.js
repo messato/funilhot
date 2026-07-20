@@ -28,6 +28,31 @@
     host.appendChild(wrap);
   }
 
+  // ----- Quiz de qualificação (segmenta o lead na entrada) -----
+  function renderQuiz(quiz, features) {
+    if (!quiz || !quiz.enabled || !quiz.options || !quiz.options.length) return;
+    if (features && features.quiz === false) return;
+    try { if (localStorage.getItem('funil_quiz')) return; } catch (e) { /* */ }
+    var opts = quiz.options.map(function (o) {
+      return '<button data-tag="' + escapeHtml(o.tag || '') + '" class="quiz-opt" style="display:block;width:100%;margin:8px 0;padding:14px;border:1px solid rgba(255,105,180,.4);border-radius:12px;background:rgba(255,255,255,.05);color:#fff;font-size:15px;font-weight:700;cursor:pointer;text-align:left">' + escapeHtml(o.label) + '</button>';
+    }).join('');
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(8,6,14,.92);display:flex;align-items:center;justify-content:center;padding:24px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)';
+    ov.innerHTML = '<div style="max-width:420px;width:100%;background:#15101d;border:1px solid rgba(255,105,180,.35);border-radius:20px;padding:26px"><h2 style="color:#fff;font-size:19px;margin:0 0 14px;text-align:center">' + escapeHtml(quiz.question) + '</h2>' + opts + '</div>';
+    function mount() { if (document.body) document.body.appendChild(ov); else setTimeout(mount, 30); }
+    mount();
+    ov.addEventListener('click', function (e) {
+      var b = e.target.closest('.quiz-opt'); if (!b) return;
+      var tag = b.getAttribute('data-tag');
+      try {
+        var u = JSON.parse(localStorage.getItem('funil_utm') || '{}'); u.utm_content = tag; localStorage.setItem('funil_utm', JSON.stringify(u));
+        localStorage.setItem('funil_quiz', tag);
+      } catch (er) { /* */ }
+      if (ov.parentNode) ov.parentNode.removeChild(ov);
+      var planos = document.getElementById('planos'); if (planos) planos.scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+
   // ----- Prova social (selo flutuante, dados reais e anonimizados) -----
   function showPulse() {
     fetch('/api/pulse').then(function (r) { return r.json(); }).then(function (j) {
@@ -53,6 +78,8 @@
 
   fetch('/api/settings').then(function (r) { return r.json(); }).then(function (j) {
     if (!j.ok || !j.settings) return;
+    window.__funilFeatures = j.features || {};
+    renderQuiz(j.settings.quiz, j.features);
     var s = j.settings;
     document.querySelectorAll('[data-field]').forEach(function (el) {
       var v = s[el.getAttribute('data-field')];

@@ -44,13 +44,13 @@ const FEATURES = [
   { id: 'assinatura_recorrente', cat: 'Vendas & checkout', label: 'Assinatura recorrente', desc: 'Cobrança automática no cartão.', status: 'em_breve', def: false },
   { id: 'trial', cat: 'Vendas & checkout', label: 'Trial de entrada (R$1)', desc: 'Degustação que vira recorrente.', status: 'em_breve', def: false },
   { id: 'order_bump', cat: 'Vendas & checkout', label: 'Order bump', desc: 'Adicional com checkbox no checkout.', status: 'ativo', def: true },
-  { id: 'ab_preco', cat: 'Vendas & checkout', label: 'Teste A/B de preço', desc: 'Alterna preços e mede a conversão.', status: 'em_breve', def: false },
-  { id: 'regenerar_pix', cat: 'Vendas & checkout', label: 'Regenerar PIX expirado', desc: 'Novo QR sem refazer cadastro.', status: 'em_breve', def: false },
+  { id: 'ab_preco', cat: 'Vendas & checkout', label: 'Teste A/B de preço', desc: 'Alterna preços e mede a conversão.', status: 'ativo', def: true },
+  { id: 'regenerar_pix', cat: 'Vendas & checkout', label: 'Regenerar PIX expirado', desc: 'Novo QR sem refazer cadastro.', status: 'ativo', def: true },
   { id: 'multi_gateway', cat: 'Vendas & checkout', label: 'Multi-gateway com fallback', desc: 'Usa outro gateway se a AssetPay cair.', status: 'em_breve', def: false },
   { id: 'cupons', cat: 'Vendas & checkout', label: 'Cupons de desconto', desc: 'Códigos promocionais com rastreio.', status: 'ativo', def: true },
   { id: 'editar_precos', cat: 'Vendas & checkout', label: 'Editar preços pelo painel', desc: 'Sem precisar de deploy.', status: 'em_breve', def: false },
   { id: 'prova_social', cat: 'Vendas & checkout', label: 'Prova social real', desc: '“X compraram hoje” com dados reais.', status: 'ativo', def: true },
-  { id: 'quiz', cat: 'Vendas & checkout', label: 'Quiz de qualificação', desc: 'Segmenta antes do checkout.', status: 'em_breve', def: false },
+  { id: 'quiz', cat: 'Vendas & checkout', label: 'Quiz de qualificação', desc: 'Segmenta o lead na entrada da landing.', status: 'ativo', def: true },
   { id: 'verificacao_idade', cat: 'Vendas & checkout', label: 'Verificação de idade (18+)', desc: 'Barreira de idade na entrada.', status: 'ativo', def: true },
 
   // ---------- Tráfego & ROAS ----------
@@ -64,7 +64,7 @@ const FEATURES = [
 
   // ---------- Recuperação & remarketing ----------
   { id: 'recuperacao_auto', cat: 'Recuperação & remarketing', label: 'Recuperação automática', desc: 'Sequência D+0/D+1/D+3 do abandono.', status: 'em_breve', def: false },
-  { id: 'downsell_auto', cat: 'Recuperação & remarketing', label: 'Downsell automático', desc: 'Oferta menor pra quem não pagou.', status: 'em_breve', def: false },
+  { id: 'downsell_auto', cat: 'Recuperação & remarketing', label: 'Downsell automático', desc: 'Popup de saída com oferta menor na landing.', status: 'ativo', def: true },
   { id: 'winback', cat: 'Recuperação & remarketing', label: 'Win-back de cancelados', desc: 'Reconquistar quem expirou.', status: 'em_breve', def: false },
   { id: 'publico_meta', cat: 'Recuperação & remarketing', label: 'Público personalizado', desc: 'Exportar base pro Meta (lookalike).', status: 'ativo', def: true },
   { id: 'central_disparos', cat: 'Recuperação & remarketing', label: 'Central de disparos', desc: 'Broadcast segmentado pra base.', status: 'em_breve', def: false },

@@ -350,6 +350,8 @@
     }
     let popupMostrado = false;
     document.addEventListener('mouseleave', function(e) {
+      // Downsell automático: só mostra se o recurso não estiver desligado no painel.
+      if (window.__funilFeatures && window.__funilFeatures.downsell_auto === false) return;
       if (e.clientY <= 0 && !popupMostrado) {
         popupMostrado = true;
         document.getElementById('popup-saida').classList.add('ativo');

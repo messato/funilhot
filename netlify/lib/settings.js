@@ -44,7 +44,19 @@ const DEFAULTS = {
   coupons: [],
   // Order bump: adicional opcional no checkout. price em CENTAVOS.
   orderBump: { enabled: false, label: 'Pack extra de fotos', desc: 'Leve também 30 fotos exclusivas por um precinho.', price: 1990 },
+  // Quiz de qualificação na entrada (segmenta o lead).
+  quiz: { enabled: false, question: 'O que você mais curte?', options: [] },
+  // Teste A/B de preço: variante B para um plano. priceB em CENTAVOS (0 = desligado).
+  abTest: { enabled: false, plan: 'mensal', priceB: 0 },
 };
+
+// Variante A/B determinística a partir do vid do visitante (mesma no cliente e no servidor).
+function abVariant(vid) {
+  let h = 0;
+  const s = String(vid || '');
+  for (let i = 0; i < s.length; i++) h = (h + s.charCodeAt(i)) % 1000;
+  return h % 2 === 0 ? 'A' : 'B';
+}
 
 const TEXT_FIELDS = ['siteName', 'siteUser', 'siteBioTitle', 'siteBioText', 'siteStats'];
 const VER_FIELDS = ['avatarVer', 'capaVer', 'logoVer'];
@@ -69,7 +81,29 @@ async function getSettings() {
   out.affiliates = Array.isArray(saved.affiliates) ? saved.affiliates : DEFAULTS.affiliates;
   out.coupons = Array.isArray(saved.coupons) ? saved.coupons : DEFAULTS.coupons;
   out.orderBump = Object.assign({}, DEFAULTS.orderBump, saved.orderBump || {});
+  out.quiz = Object.assign({}, DEFAULTS.quiz, saved.quiz || {});
+  if (!Array.isArray(out.quiz.options)) out.quiz.options = [];
+  out.abTest = Object.assign({}, DEFAULTS.abTest, saved.abTest || {});
   return out;
+}
+
+function cleanABTest(o) {
+  if (!o || typeof o !== 'object') return null;
+  const priceB = Math.round(Number(o.priceB));
+  return {
+    enabled: !!o.enabled,
+    plan: ['mensal', 'trimestral', 'anual'].indexOf(o.plan) >= 0 ? o.plan : 'mensal',
+    priceB: Number.isFinite(priceB) && priceB >= 100 && priceB <= 5000000 ? priceB : 0,
+  };
+}
+
+function cleanQuiz(o) {
+  if (!o || typeof o !== 'object') return null;
+  const options = Array.isArray(o.options) ? o.options.slice(0, 6).map((op) => ({
+    label: cleanText(op && op.label, 60),
+    tag: slugify(op && op.tag) || slugify(op && op.label),
+  })).filter((op) => op.label) : [];
+  return { enabled: !!o.enabled, question: cleanText(o.question, 120) || DEFAULTS.quiz.question, options };
 }
 
 function cleanCoupons(arr) {
@@ -197,6 +231,14 @@ async function saveSettings(patch) {
     const ob = cleanOrderBump(patch.orderBump);
     if (ob) next.orderBump = ob;
   }
+  if ('quiz' in patch) {
+    const qz = cleanQuiz(patch.quiz);
+    if (qz) next.quiz = qz;
+  }
+  if ('abTest' in patch) {
+    const ab = cleanABTest(patch.abTest);
+    if (ab) next.abTest = ab;
+  }
 
   await setJSON('config/settings.json', next);
   return getSettings();
@@ -231,6 +273,13 @@ function publicView(s) {
     orderBump: s.orderBump && s.orderBump.enabled
       ? { enabled: true, label: s.orderBump.label, desc: s.orderBump.desc, price: s.orderBump.price }
       : { enabled: false },
+    quiz: s.quiz && s.quiz.enabled && (s.quiz.options || []).length
+      ? { enabled: true, question: s.quiz.question, options: s.quiz.options }
+      : { enabled: false },
+    // A/B: só o necessário pro cliente exibir a variante certa (o servidor recalcula na cobrança).
+    abTest: s.abTest && s.abTest.enabled && s.abTest.priceB
+      ? { enabled: true, plan: s.abTest.plan, priceB: s.abTest.priceB }
+      : { enabled: false },
   };
   TEXT_FIELDS.forEach((f) => { out[f] = s[f]; });
   VER_FIELDS.forEach((f) => { out[f] = s[f]; });
@@ -254,4 +303,4 @@ function applyCoupon(amount, coupon) {
   return { amount: amount - discount, discount };
 }
 
-module.exports = { DEFAULTS, getSettings, saveSettings, publicView, bumpMedia, findValidCoupon, applyCoupon, incrementCouponUse };
+module.exports = { DEFAULTS, getSettings, saveSettings, publicView, bumpMedia, findValidCoupon, applyCoupon, incrementCouponUse, abVariant };

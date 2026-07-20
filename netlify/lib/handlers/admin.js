@@ -1,8 +1,9 @@
 'use strict';
 
 const { makeToken, verifyToken, passwordMatches, headerKey, TOKEN_TTL_MS } = require('../adminauth');
-const { dayKey } = require('../store');
-const { listOrders } = require('../orders');
+const { dayKey, setJSON } = require('../store');
+const { listOrders, findOrder, saveOrder } = require('../orders');
+const { createPixCharge } = require('../provider');
 const { formatBRL } = require('../catalog');
 const { rateLimit, clientIp } = require('../ratelimit');
 const { summary, setSpend, setGoal, DAY_MS } = require('../metrics');
@@ -16,6 +17,12 @@ const reply = (statusCode, payload, headers = JSON_HEADERS) => ({
   headers,
   body: typeof payload === 'string' ? payload : JSON.stringify(payload),
 });
+
+// Nunca expõe o CPF nas respostas do painel (fica guardado só p/ regenerar PIX).
+function stripOrder(o) {
+  const { cpf, ...rest } = o;
+  return { ...rest, price: formatBRL(o.amount) };
+}
 
 function csvEscape(value) {
   let s = String(value == null ? '' : value);
@@ -80,7 +87,7 @@ exports.handler = async function (event) {
           (o.email || '').toLowerCase().includes(search) ||
           (o.id || '').toLowerCase().includes(search));
       }
-      return reply(200, { ok: true, orders: filtered.slice(0, 500).map((o) => ({ ...o, price: formatBRL(o.amount) })) });
+      return reply(200, { ok: true, orders: filtered.slice(0, 500).map(stripOrder) });
     }
 
     if (route === 'settings') {
@@ -121,7 +128,7 @@ exports.handler = async function (event) {
       const settings = await getSettings();
       const cutoff = Date.now() - settings.abandonMinutes * 60 * 1000;
       const abandoned = orders.filter((o) => o.status !== 'paid' && o.createdAt < cutoff);
-      return reply(200, { ok: true, abandoned: abandoned.slice(0, 500).map((o) => ({ ...o, price: formatBRL(o.amount) })) });
+      return reply(200, { ok: true, abandoned: abandoned.slice(0, 500).map(stripOrder) });
     }
 
     if (route === 'export.csv') {
@@ -174,6 +181,38 @@ exports.handler = async function (event) {
         return reply(ok ? 200 : 400, { ok, error: ok ? undefined : 'nao_ativavel' });
       }
       return reply(200, { ok: true, features: FEATURES, flags: await getFlags() });
+    }
+
+    // Regenerar PIX de um pedido pendente/expirado (mesmo valor, novo QR).
+    if (route === 'regen-pix' && event.httpMethod === 'POST') {
+      let body = {};
+      try { body = JSON.parse(event.body || '{}'); } catch { /* */ }
+      const found = await findOrder(String(body.id || ''));
+      if (!found) return reply(404, { ok: false, error: 'nao_encontrado' });
+      const o = found.order;
+      if (o.status === 'paid') return reply(400, { ok: false, error: 'ja_pago' });
+      if (!o.cpf) return reply(400, { ok: false, error: 'sem_cpf' }); // pedidos antigos não têm CPF guardado
+
+      const h = event.headers || {};
+      const secret = process.env.WEBHOOK_SECRET || '';
+      let webhookUrl;
+      if (h.host) {
+        webhookUrl = `${h['x-forwarded-proto'] || 'https'}://${h.host}/api/webhook`;
+        if (secret) webhookUrl += `?token=${encodeURIComponent(secret)}`;
+      }
+      const charge = await createPixCharge({
+        amount: o.amount, webhookUrl, label: o.label,
+        customer: { name: o.nome, email: o.email, phone: o.telefone, cpf: o.cpf },
+      });
+      const qrImage = charge.qrImageBase64
+        ? (charge.qrImageBase64.startsWith('data:') ? charge.qrImageBase64 : 'data:image/png;base64,' + charge.qrImageBase64)
+        : '';
+      const now = Date.now();
+      await saveOrder({ ...o, id: charge.id, netAmount: charge.netAmount, status: 'pending', createdAt: now, paidAt: null, regenOf: o.id });
+      await setJSON(`ev/${dayKey(now)}/${now}-${Math.random().toString(16).slice(2, 8)}.json`, {
+        e: 'pix', offer: o.offer, plan: o.plan, amount: o.amount, us: o.utmSource || '', uc: o.utmCampaign || '', ts: now,
+      });
+      return reply(200, { ok: true, data: { id: charge.id, brcode: charge.brcode, qrImage, price: formatBRL(o.amount) } });
     }
 
     // Definir meta do mês

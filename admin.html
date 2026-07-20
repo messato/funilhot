@@ -768,6 +768,29 @@
             <input id="ob-price" type="number" step="0.01" class="set-in" style="max-width:150px" />
             <div style="margin-top:10px"><button class="btn-o" id="ob-save">Salvar order bump</button> <span id="ob-status" class="sub" style="margin-left:8px"></span></div>
           </div>
+          <div class="card" id="sec-quiz" style="margin-top:14px">
+            <h2>Quiz de qualificação <span class="hint">segmenta na entrada</span></h2>
+            <div class="cap">Uma pergunta rápida na entrada da landing. A resposta vira segmento (utm_content) e aparece no Tráfego. Cada opção tem um rótulo e uma “tag”.</div>
+            <label class="net" style="margin-bottom:12px"><input type="checkbox" id="qz-enabled"> Mostrar quiz na entrada</label>
+            <label class="sub">Pergunta</label>
+            <input id="qz-question" class="set-in" placeholder="O que você mais curte?" />
+            <div class="feat-cat">Opções</div>
+            <div id="qz-options"></div>
+            <div style="margin-top:8px"><button class="btn-ghost" id="qz-add"><svg class="ic ic-sm"><use href="#ic-plus"></use></svg> Adicionar opção</button>
+              <button class="btn-o" id="qz-save" style="margin-left:6px">Salvar quiz</button> <span id="qz-status" class="sub" style="margin-left:8px"></span></div>
+          </div>
+          <div class="card" id="sec-abtest" style="margin-top:14px">
+            <h2>Teste A/B de preço <span class="hint">metade vê o preço B</span></h2>
+            <div class="cap">Metade dos visitantes (sorteados pelo dispositivo) vê o preço B naquele plano. O painel mostra qual converte melhor. O preço é sempre decidido no servidor.</div>
+            <label class="net" style="margin-bottom:12px"><input type="checkbox" id="ab-enabled"> Ativar teste A/B</label>
+            <div class="two-col even" style="gap:8px;margin:0">
+              <div><label class="sub">Plano</label><select id="ab-plan" class="set-in"><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>
+              <div><label class="sub">Preço B (R$)</label><input id="ab-priceb" type="number" step="0.01" class="set-in" placeholder="49.90" /></div>
+            </div>
+            <div style="margin:2px 0 12px"><button class="btn-o" id="ab-save">Salvar teste A/B</button> <span id="ab-status" class="sub" style="margin-left:8px"></span></div>
+            <div class="feat-cat">Resultado no período</div>
+            <div class="table-scroll"><div id="ab-report"></div></div>
+          </div>
         </section>
 
         <!-- VIEW: Página & Configurações -->

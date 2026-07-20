@@ -38,10 +38,14 @@ function refreshTotal() {
   if (bumpCfg && bumpCfg.enabled && el('bump-check') && el('bump-check').checked) total += bumpCfg.price;
   if (total) checkoutPrice.textContent = fmtBRL(total);
 }
+function getVid() { try { return localStorage.getItem('funil_vid') || ''; } catch (e) { return ''; } }
+function abVariant(vid) { var h = 0, s = String(vid || ''); for (var i = 0; i < s.length; i++) h = (h + s.charCodeAt(i)) % 1000; return h % 2 === 0 ? 'A' : 'B'; }
 fetch('/api/settings').then(function (r) { return r.json(); }).then(function (j) {
   if (!j.ok || !j.settings) return;
   var cents = j.settings.prices && j.settings.prices['checkout/' + selectedPlan];
   if (cents) basePriceCents = cents;
+  var ab = j.settings.abTest;
+  if (ab && ab.enabled && ab.plan === selectedPlan && ab.priceB && abVariant(getVid()) === 'B') basePriceCents = ab.priceB;
   bumpCfg = j.settings.orderBump || null;
   if (bumpCfg && bumpCfg.enabled) {
     el('bump-label').textContent = bumpCfg.label || 'Adicional';
@@ -175,7 +179,7 @@ form.addEventListener('submit', async (event) => {
     const response = await fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ offer: 'checkout', plan: selectedPlan, nome, email, telefone, cpf, coupon: cupom, orderBump, ...getUtm() }),
+      body: JSON.stringify({ offer: 'checkout', plan: selectedPlan, nome, email, telefone, cpf, coupon: cupom, orderBump, vid: getVid(), ...getUtm() }),
     });
 
     const result = await response.json().catch(() => ({}));
