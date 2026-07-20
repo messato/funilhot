@@ -339,6 +339,7 @@
     .fo-l { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
     .fo-p { font-size: 11px; color: var(--cyan); font-weight: 800; }
     .fo-arrow { color: var(--muted); font-size: 18px; }
+    .dep-row select { padding: 9px; border: 1px solid var(--line-strong); border-radius: 10px; background: rgba(255,255,255,.04); color: var(--ink); font-size: 13px; outline: none; }
 
     .view { display: none; }
     .view.on { display: block; }
@@ -424,6 +425,7 @@
       <div class="nav-item" data-view="metas"><svg class="ic"><use href="#ic-target"></use></svg> Metas &amp; produtos</div>
       <div class="nav-item" data-view="financeiro"><svg class="ic"><use href="#ic-money"></use></svg> Financeiro</div>
       <div class="nav-item" data-view="insights"><svg class="ic"><use href="#ic-spark"></use></svg> IA &amp; Insights</div>
+      <div class="nav-item" data-view="crescimento"><svg class="ic"><use href="#ic-gift"></use></svg> Crescimento</div>
 
       <div class="nav-label">Configurar</div>
       <div class="nav-item" data-view="config"><svg class="ic"><use href="#ic-image"></use></svg> Página &amp; Config</div>
@@ -619,6 +621,65 @@
               <div class="cap">Projeção pelo ritmo atual e destaque de dias fora da curva.</div>
               <div id="forecast-body"></div>
             </div>
+          </div>
+        </section>
+
+        <!-- VIEW: Crescimento -->
+        <section class="view" data-view="crescimento">
+          <div class="two-col even">
+            <div class="card" id="sec-utm">
+              <h2>Montador de link UTM <span class="hint">rastreie cada anúncio</span></h2>
+              <div class="cap">Gera um link marcado pra você saber exatamente de onde veio cada venda.</div>
+              <label class="sub">Link de destino</label>
+              <input id="utm-base" class="set-in" placeholder="https://funilhot.pages.dev/" />
+              <div class="two-col even" style="gap:8px;margin:0">
+                <div><label class="sub">Origem (source)</label><input id="utm-source" class="set-in" placeholder="instagram" /></div>
+                <div><label class="sub">Mídia (medium)</label><input id="utm-medium" class="set-in" placeholder="story" /></div>
+              </div>
+              <div class="two-col even" style="gap:8px;margin:0">
+                <div><label class="sub">Campanha</label><input id="utm-campaign" class="set-in" placeholder="promo_julho" /></div>
+                <div><label class="sub">Conteúdo (opcional)</label><input id="utm-content" class="set-in" placeholder="criativo_a" /></div>
+              </div>
+              <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:6px;word-break:break-all;font-size:12.5px" id="utm-out">—</div>
+              <div style="margin-top:10px"><button class="btn-o" id="utm-copy">Copiar link</button> <span id="utm-status" class="sub" style="margin-left:8px"></span></div>
+            </div>
+            <div class="card" id="sec-publico-meta">
+              <h2>Público personalizado (Meta) <span class="hint">remarketing & lookalike</span></h2>
+              <div class="cap">Baixa a lista dos seus compradores no formato do Meta Ads. Suba em <b>Públicos → Criar → Lista de clientes</b> pra remarketing e público semelhante. O Meta faz o hash na importação.</div>
+              <button class="btn-o" id="pm-download"><svg class="ic ic-sm"><use href="#ic-download"></use></svg> Baixar lista (.csv)</button>
+              <div class="sub" style="margin-top:10px">Contém e-mail, telefone, nome e estado dos clientes pagantes. Use só pra suas próprias campanhas.</div>
+            </div>
+          </div>
+          <div class="card" id="sec-prova" style="margin-top:14px">
+            <h2>Prova social na landing <span class="hint">“X compraram nas últimas 24h”</span></h2>
+            <div class="cap">Mostra um selo real de atividade na sua página de vendas — sem inventar número. Some/aparece conforme as vendas reais. Ative/desative em Recursos.</div>
+            <div class="fc-grid" id="prova-preview" style="max-width:420px"></div>
+          </div>
+          <div class="card" id="sec-depoimentos" style="margin-top:14px">
+            <h2>Mural de depoimentos <span class="hint">aparece na landing</span></h2>
+            <div class="cap">Cadastre depoimentos de clientes. Eles aparecem na sua página de vendas como prova social.</div>
+            <div id="dep-list"></div>
+            <div style="margin-top:10px"><button class="btn-ghost" id="dep-add"><svg class="ic ic-sm"><use href="#ic-plus"></use></svg> Adicionar depoimento</button>
+              <button class="btn-o" id="dep-save" style="margin-left:6px">Salvar depoimentos</button> <span id="dep-status" class="sub" style="margin-left:8px"></span></div>
+          </div>
+          <div class="card" id="sec-afiliados" style="margin-top:14px">
+            <h2>Programa de afiliados <span class="hint">links ?ref, comissão e ganhos</span></h2>
+            <div class="cap">Cadastre afiliados com um código. O link deles marca a venda e o painel calcula a comissão. Cada um divulga <code>?ref=CÓDIGO</code>.</div>
+            <div class="mini-row" id="aff-totals" style="margin-bottom:12px"></div>
+            <div class="feat-cat">Afiliados cadastrados</div>
+            <div id="aff-list"></div>
+            <div style="margin:8px 0 14px"><button class="btn-ghost" id="aff-add"><svg class="ic ic-sm"><use href="#ic-plus"></use></svg> Adicionar afiliado</button>
+              <button class="btn-o" id="aff-save" style="margin-left:6px">Salvar afiliados</button> <span id="aff-status" class="sub" style="margin-left:8px"></span></div>
+            <div class="feat-cat">Ganhos por afiliado</div>
+            <div class="table-scroll"><div id="aff-ledger"></div></div>
+          </div>
+          <div class="card" id="sec-embaixadores" style="margin-top:14px">
+            <h2>Programa de indicação <span class="hint">member-get-member</span></h2>
+            <div class="cap">Transforme clientes em divulgadores: gere um link de indicação pra qualquer pessoa. Quem vier por ele fica marcado como indicação dessa pessoa (mesma engine dos afiliados).</div>
+            <label class="sub">Código/nome da indicação (ex: ana, cliente123)</label>
+            <input id="emb-code" class="set-in" placeholder="ana" style="max-width:280px" />
+            <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:6px;word-break:break-all;font-size:12.5px" id="emb-out">—</div>
+            <div style="margin-top:10px"><button class="btn-o" id="emb-copy">Copiar link de indicação</button> <span id="emb-status" class="sub" style="margin-left:8px"></span></div>
           </div>
         </section>
 

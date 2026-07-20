@@ -381,6 +381,7 @@
     metas: { t: 'Metas & produtos', s: 'Progresso do mês', data: true },
     financeiro: { t: 'Financeiro', s: 'Lucro real, impostos e recebíveis', data: true },
     insights: { t: 'IA & Insights', s: 'Resumo, próximas ações e previsão', data: true },
+    crescimento: { t: 'Crescimento', s: 'Links, público, prova social, depoimentos e afiliados', data: false },
     config: { t: 'Página & Configurações', s: 'Sua página de vendas, preços, links e textos', data: false },
     recursos: { t: 'Recursos', s: 'Ligue e desligue funcionalidades', data: false },
   };
@@ -399,6 +400,7 @@
     if (name === 'overview' && window.__globeResize) window.__globeResize();
     if (name === 'publicacoes') loadSocialHistory();
     if (name === 'membros') { loadMembers(); renderNiveis(); }
+    if (name === 'crescimento') renderCrescimento();
     if (name === 'config') renderPagina();
     window.scrollTo(0, 0);
   }
@@ -431,6 +433,10 @@
     // Insights de tráfego
     show('sec-criativos', f.ranking_criativos); show('sec-mapa', f.mapa_estado);
     show('sec-funil-origem', f.funil_por_origem); show('sec-antifraude', f.antifraude); show('sec-comparar', f.comparar_periodos);
+    // Crescimento
+    show('sec-utm', f.utm_builder); show('sec-publico-meta', f.publico_meta); show('sec-prova', f.prova_social);
+    show('sec-depoimentos', f.depoimentos); show('sec-afiliados', f.afiliados); show('sec-embaixadores', f.embaixadores);
+    showNav('crescimento', (f.utm_builder !== false) || (f.publico_meta !== false) || (f.prova_social !== false) || (f.depoimentos !== false) || (f.afiliados !== false) || (f.embaixadores !== false));
     setCsv();
   }
   function renderFeatures() {
@@ -494,7 +500,7 @@
       if (!j.ok) return; state.features = j.features; state.flags = j.flags; renderFeatures(); applyFlags();
     }).catch(function () {});
     api('settings').then(function (r) { return r.json(); }).then(function (j) {
-      if (!j.ok) return; state.settings = j.settings; renderSettings(); renderNiveis(); renderComputed();
+      if (!j.ok) return; state.settings = j.settings; renderSettings(); renderNiveis(); renderDep(); renderAffList(); renderComputed();
     }).catch(function () {});
   }
 
@@ -934,6 +940,119 @@
     $('mem-filter').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
     b.classList.add('on'); state.memFilter = b.dataset.f; renderMembersTable();
   });
+
+  // ---------- Crescimento (UTM, público Meta, prova social, depoimentos, afiliados, indicação) ----------
+  function siteOrigin() { return window.location.origin; }
+  function copyText(txt, statusEl) {
+    try { navigator.clipboard.writeText(txt); if (statusEl) { statusEl.textContent = 'copiado ✓'; setTimeout(function () { statusEl.textContent = ''; }, 2000); } }
+    catch (e) { if (statusEl) statusEl.textContent = 'copie manualmente'; }
+  }
+  function buildUtm() {
+    var base = ($('utm-base') && $('utm-base').value.trim()) || siteOrigin() + '/';
+    var qs = [];
+    [['utm_source', 'utm-source'], ['utm_medium', 'utm-medium'], ['utm_campaign', 'utm-campaign'], ['utm_content', 'utm-content']].forEach(function (pair) {
+      var v = $(pair[1]) && $(pair[1]).value.trim();
+      if (v) qs.push(pair[0] + '=' + encodeURIComponent(v));
+    });
+    var url = base + (qs.length ? (base.indexOf('?') >= 0 ? '&' : '?') + qs.join('&') : '');
+    if ($('utm-out')) $('utm-out').textContent = url;
+    return url;
+  }
+  ['utm-base', 'utm-source', 'utm-medium', 'utm-campaign', 'utm-content'].forEach(function (id) { if ($(id)) $(id).addEventListener('input', buildUtm); });
+  if ($('utm-copy')) $('utm-copy').addEventListener('click', function () { copyText(buildUtm(), $('utm-status')); });
+  if ($('pm-download')) $('pm-download').addEventListener('click', function () {
+    api('audience.csv').then(function (r) { return r.blob(); }).then(function (blob) {
+      var a = el('a'); a.href = URL.createObjectURL(blob); a.download = 'publico-meta.csv'; a.click(); URL.revokeObjectURL(a.href);
+    });
+  });
+  function loadPulse() {
+    var box = $('prova-preview'); if (!box) return;
+    fetch('/api/pulse').then(function (r) { return r.json(); }).then(function (j) {
+      if (!j.ok) return;
+      if (j.enabled === false) { box.innerHTML = '<div class="fc-box"><div class="l">Status na landing</div><div class="v" style="font-size:15px">desligado</div></div>'; return; }
+      box.innerHTML = '<div class="fc-box"><div class="l">Compras (24h)</div><div class="v">' + j.today + '</div></div>' +
+        '<div class="fc-box"><div class="l">Na última hora</div><div class="v">' + j.lastHour + '</div></div>';
+    }).catch(function () {});
+  }
+  // Depoimentos
+  function collectDep() {
+    return [].slice.call(document.querySelectorAll('#dep-list .dep-row')).map(function (row) {
+      return { name: row.querySelector('.dep-name').value, uf: row.querySelector('.dep-uf').value, rating: +row.querySelector('.dep-rating').value || 5, text: row.querySelector('.dep-text').value };
+    });
+  }
+  function depRow(t) {
+    return '<div class="dep-row" style="border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px">' +
+      '<div class="niv-row" style="margin-bottom:6px"><input class="dep-name" style="width:150px" value="' + esc(t.name || '') + '" placeholder="Nome"><input class="dep-uf" style="width:60px" value="' + esc(t.uf || '') + '" placeholder="UF"><select class="dep-rating">' +
+      [5, 4, 3, 2, 1].map(function (n) { return '<option value="' + n + '"' + (((t.rating || 5) === n) ? ' selected' : '') + '>' + n + '★</option>'; }).join('') + '</select><button class="niv-del dep-del" title="Remover">×</button></div>' +
+      '<textarea class="dep-text set-in" style="margin:0" placeholder="Depoimento...">' + esc(t.text || '') + '</textarea></div>';
+  }
+  function renderDep() {
+    var s = state.settings; if (!s || !$('dep-list')) return;
+    var list = s.testimonials || [];
+    $('dep-list').innerHTML = list.length ? list.map(depRow).join('') : '<div class="sub">Nenhum depoimento. Adicione um.</div>';
+  }
+  if ($('dep-add')) $('dep-add').addEventListener('click', function () { var l = collectDep(); l.push({ name: '', uf: '', rating: 5, text: '' }); state.settings.testimonials = l; renderDep(); });
+  if ($('dep-list')) $('dep-list').addEventListener('click', function (e) { var d = e.target.closest('.dep-del'); if (!d) return; var rows = [].slice.call(document.querySelectorAll('#dep-list .dep-row')); var i = rows.indexOf(d.closest('.dep-row')); var l = collectDep(); l.splice(i, 1); state.settings.testimonials = l; renderDep(); });
+  if ($('dep-save')) $('dep-save').addEventListener('click', function () {
+    $('dep-status').textContent = 'salvando…';
+    api('settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ testimonials: collectDep() }) }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.ok) { state.settings = j.settings; renderDep(); $('dep-status').textContent = '✅ salvo'; setTimeout(function () { $('dep-status').textContent = ''; }, 2500); } else $('dep-status').textContent = 'erro';
+    }).catch(function () { $('dep-status').textContent = 'erro'; });
+  });
+  // Afiliados
+  function collectAff() {
+    return [].slice.call(document.querySelectorAll('#aff-list .aff-row')).map(function (row) {
+      return { name: row.querySelector('.aff-name').value, code: row.querySelector('.aff-code').value, commissionPct: parseFloat(row.querySelector('.aff-pct').value) || 0 };
+    });
+  }
+  function affRow(a) {
+    var link = siteOrigin() + '/?ref=' + encodeURIComponent((a.code || '').toLowerCase().replace(/[^a-z0-9-]/g, ''));
+    return '<div class="aff-row" style="margin-bottom:8px">' +
+      '<div class="niv-row" style="margin-bottom:4px"><input class="aff-name" style="width:140px" value="' + esc(a.name || '') + '" placeholder="Nome"><input class="aff-code" style="width:110px" value="' + esc(a.code || '') + '" placeholder="codigo"><input class="aff-pct niv-price" type="number" step="1" value="' + (a.commissionPct || 0) + '" placeholder="%"><button class="niv-del aff-del" title="Remover">×</button></div>' +
+      '<div class="sub" style="word-break:break-all">' + esc(link) + ' <span class="reveal aff-copy" data-link="' + esc(link) + '">copiar</span></div></div>';
+  }
+  function renderAffList() {
+    var s = state.settings; if (!s || !$('aff-list')) return;
+    var list = s.affiliates || [];
+    $('aff-list').innerHTML = list.length ? list.map(affRow).join('') : '<div class="sub">Nenhum afiliado. Adicione um.</div>';
+  }
+  function renderAffLedger() {
+    var d = state.affData; if (!d || !$('aff-ledger')) return;
+    if ($('aff-totals')) $('aff-totals').innerHTML =
+      '<div class="mini"><div class="l">Vendas por afiliados</div><div class="v">' + d.totals.sales + '</div></div>' +
+      '<div class="mini"><div class="l">Receita atribuída</div><div class="v">' + brl(d.totals.revenue) + '</div></div>' +
+      '<div class="mini"><div class="l">Comissão a pagar</div><div class="v">' + brl(d.totals.commission) + '</div></div>';
+    $('aff-ledger').innerHTML = tableHTML(
+      [{ t: 'Afiliado' }, { t: 'Código' }, { t: 'Vendas', num: 1 }, { t: 'Receita', num: 1 }, { t: 'Comissão', num: 1 }],
+      d.affiliates.map(function (a) { return [esc(a.name) + (a.registered ? '' : ' <span class="badge-soon">não cadastrado</span>'), esc(a.code), a.sales, brl(a.revenue), a.commissionPct ? brl(a.commission) + ' <span class="sub">(' + a.commissionPct + '%)</span>' : '<span class="sub">—</span>']; }),
+      'Nenhuma venda por afiliado ainda.'
+    );
+  }
+  function loadAffiliates() {
+    api('affiliates?window=90').then(function (r) { return r.json(); }).then(function (j) { if (!j.ok) return; state.affData = j; renderAffLedger(); }).catch(function () {});
+  }
+  if ($('aff-add')) $('aff-add').addEventListener('click', function () { var l = collectAff(); l.push({ name: '', code: '', commissionPct: 0 }); state.settings.affiliates = l; renderAffList(); });
+  if ($('aff-list')) $('aff-list').addEventListener('click', function (e) {
+    var cp = e.target.closest('.aff-copy'); if (cp) { copyText(cp.dataset.link, null); cp.textContent = 'copiado ✓'; return; }
+    var d = e.target.closest('.aff-del'); if (!d) return;
+    var rows = [].slice.call(document.querySelectorAll('#aff-list .aff-row')); var i = rows.indexOf(d.closest('.aff-row')); var l = collectAff(); l.splice(i, 1); state.settings.affiliates = l; renderAffList();
+  });
+  if ($('aff-save')) $('aff-save').addEventListener('click', function () {
+    $('aff-status').textContent = 'salvando…';
+    api('settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ affiliates: collectAff() }) }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.ok) { state.settings = j.settings; renderAffList(); $('aff-status').textContent = '✅ salvo'; setTimeout(function () { $('aff-status').textContent = ''; }, 2500); } else $('aff-status').textContent = 'erro';
+    }).catch(function () { $('aff-status').textContent = 'erro'; });
+  });
+  // Embaixadores (indicação)
+  function buildEmb() {
+    var code = ($('emb-code') && $('emb-code').value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 16)) || '';
+    var link = code ? siteOrigin() + '/?ref=' + code : '—';
+    if ($('emb-out')) $('emb-out').textContent = link;
+    return link;
+  }
+  if ($('emb-code')) $('emb-code').addEventListener('input', buildEmb);
+  if ($('emb-copy')) $('emb-copy').addEventListener('click', function () { var l = buildEmb(); if (l && l !== '—') copyText(l, $('emb-status')); });
+  function renderCrescimento() { buildUtm(); renderDep(); renderAffList(); buildEmb(); loadPulse(); loadAffiliates(); }
 
   function boot() {
     $('login').style.display = 'none';

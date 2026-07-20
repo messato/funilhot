@@ -7,6 +7,7 @@ const { saveOrder } = require('../orders');
 const { setJSON, dayKey } = require('../store');
 
 const cleanUtm = (v) => (typeof v === 'string' ? v.slice(0, 80).replace(/[<>"']/g, '') : '');
+const cleanRef = (v) => (typeof v === 'string' ? v.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 16) : '');
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 
@@ -83,6 +84,7 @@ exports.handler = async function (event) {
         utmSource: cleanUtm(payload.us),
         utmMedium: cleanUtm(payload.um),
         utmCampaign: cleanUtm(payload.uc),
+        ref: cleanRef(payload.ref),
         createdAt: now,
         paidAt: null,
       });

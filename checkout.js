@@ -46,7 +46,7 @@ let pollTimer = null;
 function getUtm() {
   try {
     const u = JSON.parse(localStorage.getItem('funil_utm') || '{}');
-    return { us: u.utm_source || '', um: u.utm_medium || '', uc: u.utm_campaign || '' };
+    return { us: u.utm_source || '', um: u.utm_medium || '', uc: u.utm_campaign || '', ref: localStorage.getItem('funil_ref') || '' };
   } catch {
     return {};
   }

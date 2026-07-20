@@ -49,7 +49,7 @@ const FEATURES = [
   { id: 'multi_gateway', cat: 'Vendas & checkout', label: 'Multi-gateway com fallback', desc: 'Usa outro gateway se a AssetPay cair.', status: 'em_breve', def: false },
   { id: 'cupons', cat: 'Vendas & checkout', label: 'Cupons de desconto', desc: 'Códigos promocionais com rastreio.', status: 'em_breve', def: false },
   { id: 'editar_precos', cat: 'Vendas & checkout', label: 'Editar preços pelo painel', desc: 'Sem precisar de deploy.', status: 'em_breve', def: false },
-  { id: 'prova_social', cat: 'Vendas & checkout', label: 'Prova social real', desc: '“X compraram hoje” com dados reais.', status: 'em_breve', def: false },
+  { id: 'prova_social', cat: 'Vendas & checkout', label: 'Prova social real', desc: '“X compraram hoje” com dados reais.', status: 'ativo', def: true },
   { id: 'quiz', cat: 'Vendas & checkout', label: 'Quiz de qualificação', desc: 'Segmenta antes do checkout.', status: 'em_breve', def: false },
   { id: 'verificacao_idade', cat: 'Vendas & checkout', label: 'Verificação de idade (18+)', desc: 'Barreira de idade no checkout.', status: 'em_breve', def: false },
 
@@ -58,7 +58,7 @@ const FEATURES = [
   { id: 'gasto_meta_auto', cat: 'Tráfego & ROAS', label: 'Puxar gasto do Meta', desc: 'ROAS 100% automático (sem digitar).', status: 'em_breve', def: false },
   { id: 'gasto_tiktok', cat: 'Tráfego & ROAS', label: 'Gasto TikTok/Kwai', desc: 'Integração de gasto de outras redes.', status: 'em_breve', def: false },
   { id: 'ranking_criativos', cat: 'Tráfego & ROAS', label: 'Ranking de criativos', desc: 'Alerta de ROAS baixo por campanha.', status: 'ativo', def: true },
-  { id: 'utm_builder', cat: 'Tráfego & ROAS', label: 'Montador de link UTM', desc: 'Gera links de anúncio marcados.', status: 'em_breve', def: false },
+  { id: 'utm_builder', cat: 'Tráfego & ROAS', label: 'Montador de link UTM', desc: 'Gera links de anúncio marcados.', status: 'ativo', def: true },
   { id: 'funil_por_origem', cat: 'Tráfego & ROAS', label: 'Funil por origem', desc: 'Da visita à venda, por utm_source.', status: 'ativo', def: true },
   { id: 'atribuicao_multi', cat: 'Tráfego & ROAS', label: 'Atribuição multi-toque', desc: 'Qual criativo iniciou vs fechou.', status: 'em_breve', def: false },
 
@@ -66,16 +66,16 @@ const FEATURES = [
   { id: 'recuperacao_auto', cat: 'Recuperação & remarketing', label: 'Recuperação automática', desc: 'Sequência D+0/D+1/D+3 do abandono.', status: 'em_breve', def: false },
   { id: 'downsell_auto', cat: 'Recuperação & remarketing', label: 'Downsell automático', desc: 'Oferta menor pra quem não pagou.', status: 'em_breve', def: false },
   { id: 'winback', cat: 'Recuperação & remarketing', label: 'Win-back de cancelados', desc: 'Reconquistar quem expirou.', status: 'em_breve', def: false },
-  { id: 'publico_meta', cat: 'Recuperação & remarketing', label: 'Público personalizado', desc: 'Exportar base pro Meta (lookalike).', status: 'em_breve', def: false },
+  { id: 'publico_meta', cat: 'Recuperação & remarketing', label: 'Público personalizado', desc: 'Exportar base pro Meta (lookalike).', status: 'ativo', def: true },
   { id: 'central_disparos', cat: 'Recuperação & remarketing', label: 'Central de disparos', desc: 'Broadcast segmentado pra base.', status: 'em_breve', def: false },
 
   // ---------- Comunidade & gamificação ----------
   { id: 'gamificacao_membros', cat: 'Comunidade & gamificação', label: 'Pontos e fidelidade', desc: 'Ranking por tempo de casa e compras.', status: 'ativo', def: true },
   { id: 'boas_vindas', cat: 'Comunidade & gamificação', label: 'Boas-vindas automáticas', desc: 'Onboarding do novo membro.', status: 'em_breve', def: false },
   { id: 'reativacao_inativo', cat: 'Comunidade & gamificação', label: 'Reativação de inativo', desc: 'Empurrão antes de cancelar.', status: 'em_breve', def: false },
-  { id: 'depoimentos', cat: 'Comunidade & gamificação', label: 'Mural de depoimentos', desc: 'Coleta e exibe prova social.', status: 'em_breve', def: false },
-  { id: 'embaixadores', cat: 'Comunidade & gamificação', label: 'Programa de indicação', desc: 'Member-get-member com recompensa.', status: 'em_breve', def: false },
-  { id: 'afiliados', cat: 'Comunidade & gamificação', label: 'Programa de afiliados', desc: 'Links ?ref, comissão e painel.', status: 'em_breve', def: false },
+  { id: 'depoimentos', cat: 'Comunidade & gamificação', label: 'Mural de depoimentos', desc: 'Coleta e exibe prova social.', status: 'ativo', def: true },
+  { id: 'embaixadores', cat: 'Comunidade & gamificação', label: 'Programa de indicação', desc: 'Member-get-member com recompensa.', status: 'ativo', def: true },
+  { id: 'afiliados', cat: 'Comunidade & gamificação', label: 'Programa de afiliados', desc: 'Links ?ref, comissão e painel.', status: 'ativo', def: true },
 
   // ---------- IA ----------
   { id: 'ia_assistente', cat: 'Inteligência artificial', label: 'Assistente “por que caiu?”', desc: 'Pergunte e a IA analisa seus dados.', status: 'em_breve', def: false },

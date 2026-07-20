@@ -39,6 +39,12 @@
     if (found) localStorage.setItem('funil_utm', JSON.stringify(utm));
   } catch (e) { /* localStorage indisponível não bloqueia nada */ }
 
+  // Afiliado/embaixador: ?ref=CODE — guardado pra atribuir a venda e a comissão.
+  try {
+    var ref = (params.get('ref') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 16);
+    if (ref) localStorage.setItem('funil_ref', ref);
+  } catch (e) { /* */ }
+
   var payload = JSON.stringify({
     page: page,
     vid: vid,

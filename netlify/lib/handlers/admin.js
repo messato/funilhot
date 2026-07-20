@@ -8,7 +8,7 @@ const { rateLimit, clientIp } = require('../ratelimit');
 const { summary, setSpend, setGoal, DAY_MS } = require('../metrics');
 const { FEATURES, getFlags, setFlag } = require('../features');
 const { getSettings, saveSettings } = require('../settings');
-const { computeMembers } = require('../members');
+const { computeMembers, ufFromPhone } = require('../members');
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 const reply = (statusCode, payload, headers = JSON_HEADERS) => ({
@@ -97,6 +97,25 @@ exports.handler = async function (event) {
       return reply(200, { ok: true, ...(await computeMembers(windowDays)) });
     }
 
+    if (route === 'affiliates') {
+      const windowDays = Math.min(730, Math.max(1, parseInt(q.window, 10) || 90));
+      const orders = await listOrders(Date.now() - windowDays * DAY_MS);
+      const paid = orders.filter((o) => o.status === 'paid' && o.ref);
+      const settings = await getSettings();
+      const affMap = {};
+      (settings.affiliates || []).forEach((a) => { affMap[a.code] = { code: a.code, name: a.name, commissionPct: a.commissionPct, sales: 0, revenue: 0, commission: 0, registered: true }; });
+      paid.forEach((o) => {
+        if (!affMap[o.ref]) affMap[o.ref] = { code: o.ref, name: '(não cadastrado)', commissionPct: 0, sales: 0, revenue: 0, commission: 0, registered: false };
+        affMap[o.ref].sales += 1;
+        affMap[o.ref].revenue += o.amount;
+      });
+      const affiliates = Object.keys(affMap).map((k) => affMap[k]);
+      affiliates.forEach((a) => { a.commission = Math.round(a.revenue * (a.commissionPct || 0) / 100); });
+      affiliates.sort((x, y) => y.revenue - x.revenue);
+      const totals = affiliates.reduce((t, a) => ({ revenue: t.revenue + a.revenue, commission: t.commission + a.commission, sales: t.sales + a.sales }), { revenue: 0, commission: 0, sales: 0 });
+      return reply(200, { ok: true, affiliates, totals, windowDays });
+    }
+
     if (route === 'abandoned') {
       const orders = await listOrders(Date.now() - days * DAY_MS);
       const settings = await getSettings();
@@ -110,6 +129,28 @@ exports.handler = async function (event) {
       return reply(200, toCSV(orders), {
         'Content-Type': 'text/csv; charset=utf-8',
         'Content-Disposition': `attachment; filename="pedidos-${dayKey()}.csv"`,
+      });
+    }
+
+    // Público personalizado do Meta: lista de compradores (formato customer list).
+    if (route === 'audience.csv') {
+      const { members } = await computeMembers(730);
+      const header = ['email', 'phone', 'fn', 'ln', 'st', 'country'];
+      const rows = members.map((m) => {
+        const parts = String(m.name || '').trim().split(/\s+/);
+        const fn = (parts.shift() || '').toLowerCase();
+        const ln = parts.join(' ').toLowerCase();
+        const digits = String(m.telefone || '').replace(/\D/g, '');
+        // Dígitos com código do país (sem '+', pra não disparar o anti-fórmula do CSV). O Meta normaliza.
+        const phone = digits ? (digits.startsWith('55') ? digits : '55' + digits) : '';
+        return [
+          String(m.email || '').toLowerCase(),
+          phone, fn, ln, ufFromPhone(m.telefone).toLowerCase(), 'br',
+        ].map(csvEscape).join(',');
+      });
+      return reply(200, [header.join(','), ...rows].join('\r\n'), {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': `attachment; filename="publico-meta-${dayKey()}.csv"`,
       });
     }
 

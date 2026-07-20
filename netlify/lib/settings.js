@@ -36,6 +36,10 @@ const DEFAULTS = {
     { name: 'VIP', price: 3990, link: '' },
     { name: 'VIP+', price: 9790, link: '' },
   ],
+  // Depoimentos exibidos na landing (prova social).
+  testimonials: [],
+  // Afiliados/embaixadores: code (slug), commissionPct (%). Interno (não vai ao público).
+  affiliates: [],
 };
 
 const TEXT_FIELDS = ['siteName', 'siteUser', 'siteBioTitle', 'siteBioText', 'siteStats'];
@@ -57,6 +61,8 @@ async function getSettings() {
   VER_FIELDS.forEach((f) => { out[f] = typeof saved[f] === 'number' ? saved[f] : DEFAULTS[f]; });
   Object.keys(NUM_FIELDS).forEach((f) => { out[f] = typeof saved[f] === 'number' ? saved[f] : DEFAULTS[f]; });
   out.vipLevels = Array.isArray(saved.vipLevels) ? saved.vipLevels : DEFAULTS.vipLevels;
+  out.testimonials = Array.isArray(saved.testimonials) ? saved.testimonials : DEFAULTS.testimonials;
+  out.affiliates = Array.isArray(saved.affiliates) ? saved.affiliates : DEFAULTS.affiliates;
   return out;
 }
 
@@ -70,6 +76,33 @@ function cleanVipLevels(arr) {
       link: /^https?:\/\//i.test(String(lv && lv.link || '')) ? String(lv.link).slice(0, 300) : '',
     };
   }).filter((lv) => lv.price > 0);
+}
+
+function cleanTestimonials(arr) {
+  if (!Array.isArray(arr)) return null;
+  return arr.slice(0, 30).map((t) => {
+    const rating = Math.round(Number(t && t.rating));
+    return {
+      name: cleanText(t && t.name, 40) || 'Cliente',
+      uf: cleanText(t && t.uf, 4),
+      text: cleanText(t && t.text, 240),
+      rating: Number.isFinite(rating) && rating >= 1 && rating <= 5 ? rating : 5,
+    };
+  }).filter((t) => t.text);
+}
+
+function slugify(v) { return String(v || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 16); }
+function cleanAffiliates(arr) {
+  if (!Array.isArray(arr)) return null;
+  const seen = {};
+  return arr.slice(0, 100).map((a) => {
+    const pct = Number(a && a.commissionPct);
+    return {
+      name: cleanText(a && a.name, 40) || 'Afiliado',
+      code: slugify(a && a.code),
+      commissionPct: Number.isFinite(pct) && pct >= 0 && pct <= 90 ? Math.round(pct * 100) / 100 : 0,
+    };
+  }).filter((a) => a.code && !seen[a.code] && (seen[a.code] = 1));
 }
 
 function safeUrl(v, fallback) {
@@ -113,6 +146,14 @@ async function saveSettings(patch) {
     const lv = cleanVipLevels(patch.vipLevels);
     if (lv) next.vipLevels = lv;
   }
+  if ('testimonials' in patch) {
+    const t = cleanTestimonials(patch.testimonials);
+    if (t) next.testimonials = t;
+  }
+  if ('affiliates' in patch) {
+    const a = cleanAffiliates(patch.affiliates);
+    if (a) next.affiliates = a;
+  }
 
   await setJSON('config/settings.json', next);
   return getSettings();
@@ -128,7 +169,7 @@ async function bumpMedia(name, ts) {
 
 // Só o que é seguro expor publicamente (usado pelas páginas do funil).
 function publicView(s) {
-  const out = { prices: s.prices, vipLink: s.vipLink, supportLink: s.supportLink };
+  const out = { prices: s.prices, vipLink: s.vipLink, supportLink: s.supportLink, testimonials: s.testimonials || [] };
   TEXT_FIELDS.forEach((f) => { out[f] = s[f]; });
   VER_FIELDS.forEach((f) => { out[f] = s[f]; });
   return out;
