@@ -72,32 +72,52 @@
     return '<span class="delta ' + cls + '">' + arrow + ' ' + Math.abs(pct) + '%</span>';
   }
 
-  // ---------- hero + mini ----------
+  // ---------- KPIs (Vision UI) + usuários ativos ----------
+  function deltaKd(curr, prev) {
+    if (!prev) return '<span class="kd flat">novo</span>';
+    var pct = Math.round((curr - prev) / prev * 100);
+    var cls = pct === 0 ? 'flat' : (pct > 0 ? 'up' : 'down');
+    return '<span class="kd ' + cls + '">' + (pct > 0 ? '+' : '') + pct + '%</span>';
+  }
+  function vuiKpi(ic, label, value, dl) {
+    return '<div class="vui-kpi"><div class="kx"><div class="kl">' + label + '</div><div class="kv">' + value + ' ' + dl + '</div></div><div class="ki">' + svgIcon(ic) + '</div></div>';
+  }
   function renderHero(d) {
     var k = d.kpis, p = d.prevKpis;
-    if ($('globe-visits')) { $('globe-visits').textContent = String(k.visits); $('globe-uniques').textContent = String(k.uniques); }
-    $('hero').innerHTML =
-      heroCard(true, 'money', 'Faturamento', 'bruto no período', brl(k.gross), delta(k.gross, p.gross), 'ticket médio ' + brl(k.ticket)) +
-      heroCard(false, 'bank', 'Líquido', 'após taxas do gateway', brl(k.net), delta(k.net, p.net), 'margem ' + (k.gross ? Math.round(k.net / k.gross * 100) : 0) + '%') +
-      heroCard(false, 'cart', 'Vendas pagas', 'pedidos confirmados', String(k.paidCount), delta(k.paidCount, p.paidCount), 'conversão PIX ' + k.pixConversion + '%');
+    if ($('hero')) $('hero').innerHTML =
+      vuiKpi('money', 'Faturamento', brl(k.gross), deltaKd(k.gross, p.gross)) +
+      vuiKpi('cart', 'Vendas pagas', String(k.paidCount), deltaKd(k.paidCount, p.paidCount)) +
+      vuiKpi('people', 'Visitas', String(k.visits), deltaKd(k.visits, p.visits)) +
+      vuiKpi('bank', 'Líquido', brl(k.net), deltaKd(k.net, p.net));
 
-    var mini = [
-      { l: 'Lucro (pós-gasto)', v: brl(k.profit), d: delta(k.profit, p.profit) },
-      { l: 'ROAS', v: k.roas ? k.roas + 'x' : '—', d: k.spend ? delta(k.roas, p.roas) : '' },
-      { l: 'Ticket médio', v: brl(k.ticket), d: delta(k.ticket, p.ticket) },
-      { l: 'Conversão PIX', v: k.pixConversion + '%', d: delta(k.pixConversion, p.pixConversion) },
-      { l: 'Visitas', v: String(k.visits), d: delta(k.visits, p.visits) },
-      { l: 'Tempo até pagar', v: d.avgPayMinutes ? d.avgPayMinutes + ' min' : '—', d: '' },
+    if ($('au-delta')) { var dv = k.visits - (p.visits || 0); $('au-delta').textContent = '(' + (dv >= 0 ? '+' : '') + dv + ')'; $('au-delta').className = 'delta ' + (dv >= 0 ? 'up' : 'down'); }
+    var vis = k.visits || 0;
+    var stats = [
+      { ic: 'people', l: 'Visitas', v: String(k.visits), bar: 100 },
+      { ic: 'flame', l: 'PIX gerados', v: String(k.pixCount), bar: vis ? Math.min(100, Math.round(k.pixCount / vis * 100)) : 0 },
+      { ic: 'cart', l: 'Vendas', v: String(k.paidCount), bar: vis ? Math.min(100, Math.round(k.paidCount / vis * 100)) : 0 },
+      { ic: 'money', l: 'Faturamento', v: brl(k.gross), bar: k.gross ? Math.round(k.net / k.gross * 100) : 0 },
     ];
-    $('mini').innerHTML = mini.map(function (m) {
-      return '<div class="mini"><div class="l">' + m.l + '</div><div class="v">' + m.v + '</div>' + (m.d ? '<div class="d">' + m.d + '</div>' : '') + '</div>';
+    if ($('mini')) $('mini').innerHTML = stats.map(function (s) {
+      return '<div class="au-stat"><div class="as-top"><span class="as-ic">' + svgIcon(s.ic) + '</span>' + s.l + '</div><div class="as-v">' + s.v + '</div><div class="as-bar"><i style="width:' + Math.max(4, s.bar) + '%"></i></div></div>';
     }).join('');
   }
-  function heroCard(accent, ic, title, sub, val, dl, foot) {
-    return '<div class="hero' + (accent ? ' accent' : '') + '">' +
-      '<div class="h-top"><div class="h-ic">' + svgIcon(ic) + '</div><div><div class="h-title">' + title + '</div><div class="h-sub">' + sub + '</div></div></div>' +
-      '<div class="h-val">' + val + '</div>' +
-      '<div class="h-foot"><span>' + foot + '</span>' + dl + '</div></div>';
+  // Tabela "Sales by Country" (por estado) ao lado do globo
+  function renderMapaVui() {
+    var box = $('mapa-vui'); if (!box) return;
+    var paid = (state.orders || []).filter(function (o) { return o.status === 'paid'; });
+    var by = {}, total = 0;
+    paid.forEach(function (o) { var uf = ufFromPhone(o.telefone) || '??'; by[uf] = by[uf] || { c: 0, rev: 0 }; by[uf].c++; by[uf].rev += o.amount; total += o.amount; });
+    var arr = Object.keys(by).map(function (uf) { return { uf: uf, c: by[uf].c, rev: by[uf].rev }; }).sort(function (a, b) { return b.rev - a.rev; }).slice(0, 5);
+    if (!arr.length) { box.innerHTML = '<div class="sub" style="padding:12px 0">Sem vendas com telefone no período ainda.</div>'; return; }
+    box.innerHTML = '<table class="vc-table"><tbody>' + arr.map(function (a) {
+      var share = total ? Math.round(a.rev / total * 100) : 0;
+      return '<tr><td><span class="vc-flag">' + esc(a.uf) + '</span></td>' +
+        '<td class="vc-cell"><div class="cl">Estado</div><div class="cv">' + esc(a.uf) + '</div></td>' +
+        '<td class="vc-cell"><div class="cl">Vendas</div><div class="cv">' + a.c + '</div></td>' +
+        '<td class="vc-cell"><div class="cl">Valor</div><div class="cv">' + brl(a.rev) + '</div></td>' +
+        '<td class="vc-cell"><div class="cl">Part.</div><div class="cv">' + share + '%</div></td></tr>';
+    }).join('') + '</tbody></table>';
   }
 
   // ---------- meta ----------
@@ -142,23 +162,20 @@
     var max = Math.max.apply(null, vals.concat([1]));
     var peak = vals.indexOf(Math.max.apply(null, vals));
 
-    $('chart-big').textContent = money ? brl(total) : total.toLocaleString('pt-BR');
-    $('chart-cap').textContent = METRIC[m].label;
+    if ($('chart-big')) $('chart-big').textContent = money ? brl(total) : total.toLocaleString('pt-BR');
+    if ($('chart-cap')) $('chart-cap').textContent = METRIC[m].label;
 
-    var W = Math.max(560, rows.length * 40), H = 210, padL = 8, padB = 24, padT = 12;
-    var plotW = W - padL, plotH = H - padT - padB, bw = Math.min(26, (plotW / rows.length) - 6);
-    var fmtY = function (v) { return money ? (v >= 100000 ? 'R$' + Math.round(v / 100000) / 10 + 'k' : 'R$' + Math.round(v / 100)) : String(Math.round(v)); };
+    var W = Math.max(480, rows.length * 34), H = 200, padL = 8, padB = 22, padT = 14;
+    var plotW = W - padL, plotH = H - padT - padB, bw = Math.min(11, Math.max(5, (plotW / rows.length) - 8));
 
     var svg = '<svg width="' + W + '" height="' + H + '" role="img" aria-label="' + METRIC[m].label + '">';
-    svg += '<defs><linearGradient id="og" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + ORANGE + '"/><stop offset="1" stop-color="' + ORANGE2 + '"/></linearGradient>' +
-      '<filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+    svg += '<defs><linearGradient id="og" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="rgba(255,255,255,.28)"/></linearGradient></defs>';
     rows.forEach(function (r, i) {
       var v = r[m] || 0, h = Math.round(plotH * v / max);
       var x = padL + (plotW / rows.length) * i + ((plotW / rows.length) - bw) / 2, y = padT + plotH - h;
-      var isPeak = i === peak && v > 0;
-      svg += '<rect class="cbar" data-i="' + i + '" x="' + x + '" y="' + y + '" width="' + bw + '" height="' + Math.max(h, 2) + '" rx="5" fill="' + (isPeak ? 'url(#og)' : BAR) + '"' + (isPeak ? ' filter="url(#glow)"' : '') + '/>';
-      if (rows.length <= 14 || i % Math.ceil(rows.length / 14) === 0) {
-        svg += '<text x="' + (x + bw / 2) + '" y="' + (H - 7) + '" text-anchor="middle" font-size="10" fill="' + MUTED + '">' + r.day.slice(8) + '/' + r.day.slice(5, 7) + '</text>';
+      svg += '<rect class="cbar" data-i="' + i + '" x="' + x + '" y="' + y + '" width="' + bw + '" height="' + Math.max(h, 2) + '" rx="4" fill="url(#og)"/>';
+      if (rows.length <= 14 || i % Math.ceil(rows.length / 12) === 0) {
+        svg += '<text x="' + (x + bw / 2) + '" y="' + (H - 6) + '" text-anchor="middle" font-size="9.5" fill="' + MUTED + '">' + r.day.slice(8) + '/' + r.day.slice(5, 7) + '</text>';
       }
     });
     svg += '</svg>';
@@ -168,7 +185,7 @@
     $('chart').querySelectorAll('.cbar').forEach(function (rect) {
       rect.addEventListener('mouseenter', function () {
         var i = +rect.getAttribute('data-i'), r = rows[i];
-        rect.setAttribute('fill', 'url(#og)');
+        rect.setAttribute('opacity', '0.6');
         var val = money ? brl(r[m] || 0) : (r[m] || 0);
         tip.innerHTML = '<b>' + r.day.slice(8) + '/' + r.day.slice(5, 7) + '</b>' + val + (m === 'revenue' ? ' · ' + r.pago + ' venda(s)' : '');
         var bx = +rect.getAttribute('x'), by = +rect.getAttribute('y');
@@ -176,12 +193,46 @@
         tip.style.left = Math.min(wrap.clientWidth - 120, Math.max(4, bx - 30)) + 'px';
         tip.style.top = Math.max(0, by - 46) + 'px';
       });
-      rect.addEventListener('mouseleave', function () {
-        var i = +rect.getAttribute('data-i');
-        rect.setAttribute('fill', i === peak && (rows[i][m] || 0) > 0 ? 'url(#og)' : BAR);
-        tip.style.opacity = '0';
-      });
+      rect.addEventListener('mouseleave', function () { rect.setAttribute('opacity', '1'); tip.style.opacity = '0'; });
     });
+  }
+
+  // ---------- gráfico de área "Visão de vendas" (Vision UI) ----------
+  function smoothPath(pts) {
+    if (!pts.length) return '';
+    if (pts.length < 2) return 'M' + pts[0][0] + ',' + pts[0][1];
+    var d = 'M' + pts[0][0] + ',' + pts[0][1];
+    for (var i = 0; i < pts.length - 1; i++) {
+      var p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+      var c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+      var c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d += ' C' + c1x.toFixed(1) + ',' + c1y.toFixed(1) + ' ' + c2x.toFixed(1) + ',' + c2y.toFixed(1) + ' ' + p2[0].toFixed(1) + ',' + p2[1].toFixed(1);
+    }
+    return d;
+  }
+  function renderArea(d) {
+    var host = $('area'); if (!host || !d) return;
+    var k = d.kpis, p = d.prevKpis;
+    if ($('area-delta')) { var pct = p.gross ? Math.round((k.gross - p.gross) / p.gross * 100) : 0; $('area-delta').textContent = (pct >= 0 ? '+' : '') + pct + '% vs anterior'; $('area-delta').className = 'delta ' + (pct >= 0 ? 'up' : 'down'); }
+    var rows = d.daily || [], vals = rows.map(function (r) { return r.revenue || 0; });
+    if (!vals.length) { host.innerHTML = ''; return; }
+    var W = Math.max(480, rows.length * 40), H = 240, padL = 40, padR = 10, padT = 14, padB = 26;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var max = Math.max.apply(null, vals.concat([1])) * 1.15;
+    var xx = function (i) { return padL + (rows.length <= 1 ? plotW / 2 : plotW * i / (rows.length - 1)); };
+    var yy = function (v) { return padT + plotH - (plotH * v / max); };
+    var fmtY = function (c) { var r = c / 100; return r >= 1000 ? ('R$' + Math.round(r / 1000) + 'k') : ('R$' + Math.round(r)); };
+    var pts = vals.map(function (v, i) { return [xx(i), yy(v)]; });
+    var line = smoothPath(pts);
+    var area = line + ' L' + xx(rows.length - 1).toFixed(1) + ',' + (padT + plotH) + ' L' + xx(0).toFixed(1) + ',' + (padT + plotH) + ' Z';
+    var grid = '';
+    for (var g = 0; g <= 4; g++) { var gy = padT + plotH * g / 4; grid += '<line x1="' + padL + '" y1="' + gy + '" x2="' + (W - padR) + '" y2="' + gy + '" stroke="rgba(255,255,255,.06)" stroke-dasharray="4 6"/>'; grid += '<text x="' + (padL - 8) + '" y="' + (gy + 3) + '" text-anchor="end" font-size="9" fill="' + MUTED + '">' + fmtY(max * (1 - g / 4)) + '</text>'; }
+    var xl = '';
+    rows.forEach(function (r, i) { if (rows.length <= 14 || i % Math.ceil(rows.length / 12) === 0) xl += '<text x="' + xx(i).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="9" fill="' + MUTED + '">' + r.day.slice(8) + '/' + r.day.slice(5, 7) + '</text>'; });
+    host.innerHTML = '<svg width="' + W + '" height="' + H + '" role="img" aria-label="Visão de vendas">' +
+      '<defs><linearGradient id="areaG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(33,212,253,.45)"/><stop offset="1" stop-color="rgba(33,212,253,0)"/></linearGradient>' +
+      '<linearGradient id="lineG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#21d4fd"/><stop offset="1" stop-color="#2152ff"/></linearGradient></defs>' +
+      grid + '<path d="' + area + '" fill="url(#areaG)"/><path d="' + line + '" fill="none" stroke="url(#lineG)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' + xl + '</svg>';
   }
 
   // ---------- funil ----------
@@ -344,7 +395,7 @@
     api('summary?days=' + state.days).then(function (r) { return r.json(); }).then(function (d) {
       if (!d.ok) return;
       state.data = d;
-      renderBanner(d); renderHero(d); renderGoal(d); renderChart(d); renderFunnel(d); renderUtm(d); renderProducts(d); renderHeat(d); renderComputed();
+      renderBanner(d); renderHero(d); renderGoal(d); renderChart(d); renderArea(d); renderFunnel(d); renderUtm(d); renderProducts(d); renderHeat(d); renderComputed();
       $('foot-updated').textContent = 'Atualizado às ' + new Date(d.generatedAt).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' }) + ' · atualiza sozinho a cada 60s';
     }).catch(function () {});
 
@@ -421,8 +472,8 @@
     $('head-sub').textContent = VIEWS[name].s;
     $('period').style.display = VIEWS[name].data ? '' : 'none';
     setCsv();
-    if (name === 'overview' && state.data) renderChart(state.data); // re-mede o container ao exibir
-    if (name === 'overview' && window.__globeResize) window.__globeResize();
+    if (name === 'overview' && state.data) { renderChart(state.data); renderArea(state.data); renderMapaVui(); } // re-mede ao exibir
+    if (name === 'overview' && window.__globeResize) setTimeout(window.__globeResize, 30);
     if (name === 'publicacoes') loadSocialHistory();
     if (name === 'membros') { loadMembers(); renderNiveis(); }
     if (name === 'remarketing') renderRemarketing();
@@ -865,7 +916,7 @@
     try { renderFinance(); } catch (e) { /* */ }
     try { renderResumo(); renderCoach(); renderForecast(); } catch (e) { /* */ }
     try { renderMapa(); renderCriativos(); renderFunilOrigem(); renderAntifraude(); renderComparar(); } catch (e) { /* */ }
-    try { renderABReport(); } catch (e) { /* */ }
+    try { renderABReport(); renderMapaVui(); } catch (e) { /* */ }
   }
 
   // ---------- Membros (MRR, gamificação, coorte, níveis VIP) ----------

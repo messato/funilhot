@@ -28,6 +28,15 @@
       --bad: #ff5d8f;
       --bar: rgba(255,255,255,.07);
       --glow: 0 8px 30px rgba(124,92,255,.35);
+      /* ---- Vision UI (Visão geral) ---- */
+      --vui-card: linear-gradient(127deg, rgba(6,11,40,.78) 19%, rgba(10,14,35,.74) 77%);
+      --vui-grad: linear-gradient(310deg, #2152ff 0%, #21d4fd 100%);
+      --vui-blue: #0075ff;
+      --vui-cyan: #21d4fd;
+      --vui-line: rgba(255,255,255,.06);
+      --vui-good: #01b574;
+      --vui-bad: #e31a1a;
+      --vui-muted: #a0aec0;
     }
 
     * , *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -341,6 +350,58 @@
     .fo-arrow { color: var(--muted); font-size: 18px; }
     .dep-row select, .niv-row select { padding: 9px; border: 1px solid var(--line-strong); border-radius: 10px; background: rgba(255,255,255,.04); color: var(--ink); font-size: 13px; outline: none; }
 
+    /* ============ Vision UI — Visão geral ============ */
+    .vui-card { background: var(--vui-card); border: 1px solid var(--vui-line); border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,.35); backdrop-filter: blur(20px); }
+    .vui-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 18px; }
+    .vui-kpi { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; }
+    .vui-kpi .kl { color: var(--vui-muted); font-size: 12px; font-weight: 600; margin-bottom: 5px; }
+    .vui-kpi .kv { font-size: 20px; font-weight: 800; letter-spacing: -.4px; }
+    .vui-kpi .kv .kd { font-size: 13px; font-weight: 700; margin-left: 7px; }
+    .vui-kpi .kd.up { color: var(--vui-good); } .vui-kpi .kd.down { color: var(--vui-bad); } .vui-kpi .kd.flat { color: var(--vui-muted); }
+    .vui-kpi .ki { width: 46px; height: 46px; border-radius: 14px; background: var(--vui-grad); display: grid; place-items: center; color: #fff; flex-shrink: 0; box-shadow: 0 6px 18px rgba(33,82,255,.4); }
+    .vui-kpi .ki .ic { width: 22px; height: 22px; stroke: #fff; }
+
+    .vui-country { display: flex; gap: 20px; align-items: stretch; position: relative; overflow: hidden; padding: 24px 26px; margin-bottom: 18px; }
+    .vui-country .vc-left { flex: 1 1 54%; min-width: 0; z-index: 2; }
+    .vui-country h2 { font-size: 18px; font-weight: 800; margin-bottom: 2px; }
+    .vui-country .vc-sub { color: var(--vui-muted); font-size: 12.5px; margin-bottom: 16px; }
+    .vc-table { width: 100%; border-collapse: collapse; }
+    .vc-table td { padding: 12px 6px; border-bottom: 1px solid var(--vui-line); vertical-align: middle; }
+    .vc-table tr:last-child td { border-bottom: none; }
+    .vc-flag { width: 26px; height: 18px; border-radius: 4px; display: inline-grid; place-items: center; font-size: 11px; font-weight: 800; background: var(--vui-grad); color: #fff; margin-right: 10px; }
+    .vc-cell .cl { color: var(--vui-muted); font-size: 10.5px; font-weight: 600; }
+    .vc-cell .cv { font-size: 13.5px; font-weight: 700; margin-top: 2px; white-space: nowrap; }
+    .vui-globe { flex: 1 1 46%; position: relative; min-height: 300px; }
+    .vui-globe .globe-wrap { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); width: 360px; height: 360px; max-width: 46vw; }
+    .vui-globe .globe, .vui-globe .globe-rim { width: 100%; height: 100%; }
+
+    .vui-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 8px; }
+    .vui-chart-card { padding: 18px; position: relative; }
+    .vui-chart-inner { background: linear-gradient(126deg, #0b1338 0%, #070b26 100%); border-radius: 16px; padding: 14px 8px 4px; overflow: hidden; }
+    .vui-chart-card .vc-head { font-size: 17px; font-weight: 800; }
+    .vui-chart-card .vc-head .delta { font-size: 13px; margin-left: 8px; }
+    .vui-chart-card .vc-headsub { color: var(--vui-muted); font-size: 12.5px; margin: 2px 0 14px; }
+    .au-title { font-size: 16px; font-weight: 800; margin-top: 16px; }
+    .au-title .delta { font-size: 13px; margin-left: 6px; }
+    .au-sub { color: var(--vui-muted); font-size: 12px; margin-top: 2px; margin-bottom: 14px; }
+    .au-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .au-stat .as-top { display: flex; align-items: center; gap: 7px; color: var(--vui-muted); font-size: 12px; font-weight: 600; }
+    .au-stat .as-ic { width: 26px; height: 26px; border-radius: 8px; background: rgba(33,82,255,.18); display: grid; place-items: center; color: var(--vui-cyan); }
+    .au-stat .as-ic .ic { width: 15px; height: 15px; }
+    .au-stat .as-v { font-size: 18px; font-weight: 800; margin: 6px 0 7px; letter-spacing: -.3px; }
+    .au-stat .as-bar { height: 3px; border-radius: 999px; background: rgba(255,255,255,.1); overflow: hidden; }
+    .au-stat .as-bar > i { display: block; height: 100%; border-radius: 999px; background: var(--vui-grad); }
+    .seg.vui-seg button.on { background: var(--vui-grad); box-shadow: 0 4px 14px rgba(33,82,255,.35); }
+
+    @media (max-width: 980px) {
+      .vui-kpis { grid-template-columns: repeat(2, 1fr); }
+      .vui-charts { grid-template-columns: 1fr; }
+      .vui-country { flex-direction: column; }
+      .vui-globe { min-height: 260px; }
+      .vui-globe .globe-wrap { position: relative; right: 0; top: 0; transform: none; margin: 0 auto; width: 240px; height: 240px; max-width: 80vw; }
+      .au-stats { grid-template-columns: repeat(2, 1fr); }
+    }
+
     .view { display: none; }
     .view.on { display: block; }
     .section { scroll-margin-top: 74px; }
@@ -498,36 +559,43 @@
 
         <div class="banner" id="banner"></div>
 
-        <!-- VIEW: Visão geral (minimalista: números-chave + gráfico) -->
+        <!-- VIEW: Visão geral (estilo Vision UI) -->
         <section class="view on" data-view="overview">
-          <div class="globe-banner">
-            <div class="gb-left">
-              <div class="gb-label">Alcance no período</div>
-              <div class="gb-val grad-text" id="globe-visits">—</div>
-              <div class="gb-sub"><span id="globe-uniques">0</span> visitantes únicos · em tempo real</div>
+          <div class="vui-kpis" id="hero"></div>
+
+          <div class="vui-card vui-country" id="vui-country">
+            <div class="vc-left">
+              <h2>Vendas por estado</h2>
+              <div class="vc-sub">distribuição real no período — pelo DDD do telefone</div>
+              <div id="mapa-vui"></div>
             </div>
-            <div class="globe-wrap">
-              <div class="globe"></div>
-              <div class="globe-rim"></div>
-              <span class="globe-dot p1"></span><span class="globe-dot d2 p2"></span><span class="globe-dot p3"></span><span class="globe-dot d2 p4"></span>
+            <div class="vui-globe">
+              <div class="globe-wrap">
+                <div class="globe"></div>
+                <div class="globe-rim"></div>
+                <span class="globe-dot p1"></span><span class="globe-dot d2 p2"></span><span class="globe-dot p3"></span><span class="globe-dot d2 p4"></span>
+              </div>
             </div>
           </div>
-          <div class="hero-row" id="hero"></div>
-          <div class="mini-row" id="mini"></div>
-          <div class="card">
-            <div class="chart-head">
-              <div>
-                <div class="chart-big grad-text" id="chart-big">R$ 0,00</div>
-                <div class="chart-cap" id="chart-cap">receita no período</div>
-              </div>
-              <div class="seg" id="metric">
+
+          <div class="vui-charts">
+            <div class="vui-card vui-chart-card">
+              <div class="seg vui-seg" id="metric" style="position:absolute;top:16px;right:16px">
                 <button data-metric="revenue" class="on">Receita</button>
                 <button data-metric="pago">Vendas</button>
                 <button data-metric="pix">PIX</button>
                 <button data-metric="visits">Visitas</button>
               </div>
+              <div class="vui-chart-inner"><div class="chart-wrap"><div id="chart"></div><div class="tooltip" id="tip"></div></div></div>
+              <div class="au-title">Usuários ativos <span class="delta up" id="au-delta"></span></div>
+              <div class="au-sub" id="au-sub">no período</div>
+              <div class="au-stats" id="mini"></div>
             </div>
-            <div class="chart-wrap"><div id="chart"></div><div class="tooltip" id="tip"></div></div>
+            <div class="vui-card vui-chart-card">
+              <div class="vc-head">Visão de vendas <span class="delta up" id="area-delta"></span></div>
+              <div class="vc-headsub" id="area-sub">receita por dia no período</div>
+              <div class="chart-wrap"><div id="area"></div></div>
+            </div>
           </div>
         </section>
 
