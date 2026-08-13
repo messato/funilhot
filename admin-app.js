@@ -1455,6 +1455,8 @@
       }
     }).catch(function () { if (alvo) alvo.textContent = 'Não consegui carregar.'; });
 
+    renderBotCopy();
+
     api('bot/previas').then(function (r) { return r.json(); }).then(function (d) {
       var el = $('bot-previas');
       if (!el) return;
@@ -1541,6 +1543,106 @@
             + '<td><b style="color:' + cor + '">' + esc(s.status) + '</b></td><td>' + venc + '</td></tr>';
         }).join('') + '</tbody></table></div>';
     }).catch(function () { /* silencioso */ });
+  }
+
+  /** Editor dos textos do bot. */
+  function renderBotCopy() {
+    var el = $('bot-copy');
+    if (!el) return;
+    el.innerHTML = '<div class="sub">carregando…</div>';
+
+    api('bot/copy').then(function (r) { return r.json(); }).then(function (d) {
+      if (!d.ok) { el.innerHTML = '<div class="sub">Não consegui carregar.</div>'; return; }
+
+      el.innerHTML = d.grupos.map(function (g) {
+        return '<div class="feat-cat">' + esc(g.nome) + '</div>'
+          + g.itens.map(function (it) {
+            var dica = it.vars.length ? 'pode usar ' + it.vars.map(function (v) { return '{' + v + '}'; }).join(' ') : '';
+            var campo = it.botao
+              ? '<input class="set-in" style="margin:0" data-copy="' + esc(it.chave) + '" maxlength="' + it.limite + '" placeholder="' + esc(it.padrao) + '" value="' + esc(it.valor) + '" />'
+              : '<textarea class="set-in" style="margin:0;min-height:64px" data-copy="' + esc(it.chave) + '" placeholder="' + esc(it.padrao) + '">' + esc(it.valor) + '</textarea>';
+            return '<div style="margin:10px 0" data-linha="' + esc(it.chave) + '">'
+              + '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">'
+              + '<label class="sub">' + esc(rotuloCopy(it.chave)) + (dica ? ' <span style="opacity:.7">— ' + esc(dica) + '</span>' : '') + '</label>'
+              + '<button class="link" data-testar="' + esc(it.chave) + '" style="flex:none">testar em mim</button></div>'
+              + campo
+              + '<div class="sub" data-erro="' + esc(it.chave) + '" style="color:var(--bad);display:none"></div></div>';
+          }).join('');
+      }).join('');
+
+      el.querySelectorAll('button[data-testar]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var chave = b.dataset.testar;
+          var campo = el.querySelector('[data-copy="' + chave + '"]');
+          b.textContent = 'enviando…';
+          // Manda o texto da TELA: você testa o que está vendo, mesmo sem salvar.
+          api('bot/copy-testar', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chave: chave, texto: campo ? campo.value : '' }),
+          }).then(function (r) { return r.json(); }).then(function (j) {
+            b.textContent = j.ok ? 'chegou ✓' : 'erro';
+            if (!j.ok) mostraErroCopy(chave, j.error);
+            setTimeout(function () { b.textContent = 'testar em mim'; }, 2500);
+          }).catch(function () { b.textContent = 'erro'; });
+        });
+      });
+    }).catch(function () { el.innerHTML = '<div class="sub">Não consegui carregar.</div>'; });
+  }
+
+  function mostraErroCopy(chave, msg) {
+    var e = document.querySelector('[data-erro="' + chave + '"]');
+    if (!e) return;
+    e.textContent = msg || '';
+    e.style.display = msg ? '' : 'none';
+  }
+
+  // Nome amigável de cada mensagem, para a tela não mostrar a chave técnica.
+  var COPY_NOMES = {
+    'start.saudacao': 'Primeira mensagem (pergunta a idade)',
+    'btn.age_sim': 'Botão "sou maior"', 'btn.age_nao': 'Botão "não"',
+    'age.ok': 'Depois de confirmar 18+', 'age.negado': 'Quando responde que é menor',
+    'btn.proximo': 'Botões de avançar (um por linha)', 'btn.cta': 'Botão de compra (durante)',
+    'btn.cta_final': 'Botão de compra (no fim)', 'previas.final': 'Fecho da sequência',
+    'previas.vazio': 'Quando não há prévias', 'previas.catalogo_mudou': 'Quando o catálogo muda no meio',
+    'fallback.sem_start': 'Se mandar qualquer coisa antes de começar',
+    'venda.boas_vindas': 'Acesso liberado após a compra', 'btn.entrar_vip': 'Botão de entrar no VIP',
+    'venda.fallback_link': 'Se o convite falhar', 'acesso.link_ok': 'Segunda via do convite',
+    'acesso.sem_assinatura': 'Pediu acesso e não tem assinatura', 'acesso.vencido': 'Pediu acesso e está vencido',
+    'acesso.limite_diario': 'Pediu o link vezes demais', 'acesso.erro_link': 'Falha ao gerar o link',
+    'acesso.erro_interno': 'Erro interno', 'entrada.negada': 'Tentou entrar no grupo sem assinatura',
+    'status.ativo': 'Situação: VIP ativo', 'status.vencido': 'Situação: vencido',
+    'status.sem_vip': 'Situação: nunca comprou', 'btn.quero_entrar': 'Botão "quero entrar"',
+    'claim.nao_pago': 'Resgate: pagamento ainda não caiu', 'claim.invalido': 'Resgate: link inválido',
+    'suporte.resposta': 'Resposta do /suporte',
+    'venc.aviso': 'Aviso de vencimento (3 e 1 dia antes)', 'btn.renovar': 'Botão de renovar',
+    'venc.fim': 'Quando o acesso termina', 'btn.winback': 'Botão de voltar pro VIP',
+  };
+  function rotuloCopy(chave) { return COPY_NOMES[chave] || chave; }
+
+  if ($('copy-save')) {
+    $('copy-save').addEventListener('click', function () {
+      var textos = {};
+      document.querySelectorAll('[data-copy]').forEach(function (c) {
+        textos[c.dataset.copy] = c.value;
+        mostraErroCopy(c.dataset.copy, '');
+      });
+      var st = $('copy-status');
+      st.textContent = 'salvando…';
+      api('bot/copy', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ textos: textos }),
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.ok) {
+          st.textContent = 'salvo ✓ (vale para todo mundo em até 1 minuto)';
+          setTimeout(function () { st.textContent = ''; }, 4000);
+          return;
+        }
+        st.textContent = 'confira os campos em vermelho';
+        (j.erros || []).forEach(function (e) { mostraErroCopy(e.chave, e.erro); });
+        var primeiro = document.querySelector('[data-linha="' + ((j.erros || [])[0] || {}).chave + '"]');
+        if (primeiro) primeiro.scrollIntoView({ block: 'center' });
+      }).catch(function () { st.textContent = 'erro ao salvar'; });
+    });
   }
 
   function renderIntegracoes() { renderWebhooks(); }

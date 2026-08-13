@@ -10,6 +10,7 @@ const cfg = require('../bot/config');
 const st = require('../bot/state');
 const chats = require('../bot/chats');
 const previews = require('../bot/previews');
+const copy = require('../bot/copy');
 const tg = require('../telegram');
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
@@ -204,6 +205,36 @@ exports.handler = async function (event) {
         joinMode: chave === 'cofre' ? 'invite' : 'request',
       });
       return reply(200, { ok: true, chat: doc });
+    }
+
+    if (rota === 'copy') {
+      if (post) {
+        const b = corpo(event);
+        const r = await copy.salvar(b.textos || {});
+        // Devolve chave a chave o que está errado, para a tela apontar o campo.
+        return r.ok ? reply(200, { ok: true, v: r.v }) : reply(400, { ok: false, erros: r.erros });
+      }
+      return reply(200, { ok: true, ...(await copy.listar()) });
+    }
+
+    // Manda o texto da TELA (não o salvo): contorna o cache e a propagação, e
+    // o erro do Telegram é o validador mais honesto que existe.
+    if (rota === 'copy-testar' && post) {
+      const b = corpo(event);
+      const dono = cfg.donoId();
+      if (!dono) return reply(400, { ok: false, error: 'Configure BOT_OWNER_ID para receber o teste.' });
+
+      const v = copy.validar(b.chave, b.texto);
+      if (!v.ok) return reply(400, { ok: false, error: v.erro });
+
+      const token = await cfg.tokenAtivo();
+      if (!token) return reply(400, { ok: false, error: 'bot_nao_configurado' });
+
+      const amostra = { nome: ', Marina', dias: 3, venc: new Date(Date.now() + 30 * 864e5).toLocaleDateString('pt-BR'), plano: 'mensal', minutos: 30 };
+      const texto = copy.aplicar(String(b.texto || '').trim() || copy.PADROES[b.chave] || '', { s: 's', ...amostra });
+      // Nunca aceita destinatário do corpo: o painel não pode virar relé de spam.
+      const r = await tg.sendMessage(token, dono, texto);
+      return reply(200, { ok: r.ok, degradado: !!r.degradado, error: r.ok ? '' : r.error });
     }
 
     if (rota === 'assinantes') {

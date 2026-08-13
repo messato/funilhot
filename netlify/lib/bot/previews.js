@@ -12,6 +12,7 @@ const { getJSON, setJSON } = require('../store');
 const tg = require('../telegram');
 const st = require('./state');
 const chats = require('./chats');
+const copy = require('./copy');
 
 const CHAVE = 'bot/previews/index.json';
 const MAX_ITENS = 30;
@@ -112,9 +113,8 @@ async function linkCta(u) {
   return `${base}/?utm_source=telegram&utm_medium=bot&utm_campaign=previas&tg=${tok}`;
 }
 
-function rotuloProximo(idx, total) {
-  const rotulos = ['ver mais 🔥', 'quero o resto 😏', 'mais uma 🙈', 'continua 👀'];
-  return idx + 1 >= total ? null : rotulos[idx % rotulos.length];
+async function rotuloProximo(idx, total) {
+  return idx + 1 >= total ? null : await copy.rotuloProximo(idx);
 }
 
 /**
@@ -125,18 +125,18 @@ async function enviarPrevia(token, u, idx) {
   const cat = await getCatalogo();
   const total = cat.items.length;
   if (!total) {
-    await tg.sendMessage(token, u.chatId, 'Ainda estou preparando as prévias 🙈 volta daqui a pouco!');
+    await tg.sendMessage(token, u.chatId, await copy.txt('previas.vazio'));
     return { ok: false, motivo: 'catalogo_vazio' };
   }
   if (idx >= total) return enviarFinal(token, u, cat);
 
   const item = cat.items[idx];
   const cta = await linkCta(u);
-  const proximo = rotuloProximo(idx, total);
+  const proximo = await rotuloProximo(idx, total);
 
   const linhas = [];
   if (proximo) linhas.push([tg.botao(proximo, `p:${idx + 1}:${cat.v}`)]);
-  linhas.push([tg.botaoUrl(idx + 1 >= total ? 'VER TUDO ➜' : 'quero tudo agora ➜', cta)]);
+  linhas.push([tg.botaoUrl(await copy.txt(idx + 1 >= total ? 'btn.cta_final' : 'btn.cta'), cta)]);
 
   const r = await tg.copyMessage(token, u.chatId, item.vaultChatId, item.vaultMsgId, {
     caption: item.caption || undefined,
@@ -164,8 +164,8 @@ async function enviarFinal(token, u, cat) {
   await st.evento('bot_cta_view', { uid: u.uid });
   await tg.sendMessage(
     token, u.chatId,
-    'Aqui eu tenho que parar 🙈\n\nO resto não cabe no Telegram público — tá tudo no VIP, sem corte.',
-    { reply_markup: tg.teclado([[tg.botaoUrl('VER TUDO ➜', cta)]]) }
+    await copy.txt('previas.final'),
+    { reply_markup: tg.teclado([[tg.botaoUrl(await copy.txt('btn.cta_final'), cta)]]) }
   );
   return { ok: true, final: true };
 }

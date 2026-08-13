@@ -13,6 +13,7 @@ const st = require('../../netlify/lib/bot/state');
 const access = require('../../netlify/lib/bot/access');
 const cfg = require('../../netlify/lib/bot/config');
 const tg = require('../../netlify/lib/telegram');
+const copy = require('../../netlify/lib/bot/copy');
 const { getSettings } = require('../../netlify/lib/settings');
 const { getJSON, setJSON } = require('../../netlify/lib/store');
 
@@ -58,12 +59,11 @@ async function avisarVencimentos(token, s) {
     const u = await st.getUser(sub.uid);
     if (u && u.blocked) return { pulado: true };
 
-    const texto = aplicarVariaveis(
-      s.expiringMsg || 'Oi {nome}! Seu acesso VIP vence em {dias} dia(s).',
-      { nome: (u && u.first) || '', dias }
-    );
+    // O catálogo do painel manda; se ainda não foi editado lá, respeita o texto
+    // que já existia em Remarketing em vez de descartá-lo.
+    const texto = await copy.txt('venc.aviso', { nome: (u && u.first) || '', dias }, s.expiringMsg);
     const env = await tg.sendMessage(token, (u && u.chatId) || sub.uid, texto, {
-      reply_markup: tg.teclado([[tg.botaoUrl('RENOVAR ➜', cfg.baseUrl() + '/?utm_source=telegram&utm_medium=bot&utm_campaign=renovacao')]]),
+      reply_markup: tg.teclado([[tg.botaoUrl(await copy.txt('btn.renovar'), cfg.baseUrl() + '/?utm_source=telegram&utm_medium=bot&utm_campaign=renovacao')]]),
     });
     // Erro terminal = pessoa bloqueou o bot; marcar evita gastar requisição
     // com ela em toda execução futura.
@@ -95,8 +95,8 @@ async function removerVencidos(token, s) {
     const u = await st.getUser(hint.uid);
     if (u && !u.blocked) {
       await tg.sendMessage(token, u.chatId || hint.uid,
-        'Seu acesso VIP chegou ao fim 💔\n\nQuando quiser voltar, é só clicar aqui:', {
-          reply_markup: tg.teclado([[tg.botaoUrl('VOLTAR PRO VIP ➜', cfg.baseUrl() + '/?utm_source=telegram&utm_medium=bot&utm_campaign=winback')]]),
+        await copy.txt('venc.fim', { nome: (u && u.first) || '' }, s.winbackMsg), {
+          reply_markup: tg.teclado([[tg.botaoUrl(await copy.txt('btn.winback'), cfg.baseUrl() + '/?utm_source=telegram&utm_medium=bot&utm_campaign=winback')]]),
         });
     }
     return res;

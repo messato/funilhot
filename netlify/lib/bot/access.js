@@ -14,6 +14,7 @@ const tg = require('../telegram');
 const cfg = require('./config');
 const st = require('./state');
 const chats = require('./chats');
+const copy = require('./copy');
 
 const HORA_MS = 3600 * 1000;
 
@@ -132,8 +133,8 @@ async function concederAcesso({ uid, order, motivo = 'compra' }) {
   const venc = new Date(sub.expiresAt).toLocaleDateString('pt-BR');
   await tg.sendMessage(
     token, (u && u.chatId) || uid,
-    `Bem-vindo(a) pro VIP 🔥\n\nSeu acesso tá aqui — o link é só seu e vale por 24h.\nVálido até <b>${venc}</b>.`,
-    { reply_markup: tg.teclado([[tg.botaoUrl('ENTRAR NO VIP ➜', link)]]) }
+    await copy.txt('venda.boas_vindas', { venc }),
+    { reply_markup: tg.teclado([[tg.botaoUrl(await copy.txt('btn.entrar_vip'), link)]]) }
   );
 
   await st.evento('bot_grant', { uid: String(uid), plan: order.plan, via: motivo });
@@ -144,8 +145,8 @@ async function concederAcesso({ uid, order, motivo = 'compra' }) {
 async function entregarFallback(token, uid, s) {
   const link = s && s.vipLink;
   if (!link || /LINK_DO_GRUPO_VIP/.test(link)) return;
-  await tg.sendMessage(token, uid, 'Tive um probleminha pra gerar seu convite. Use este link e, se não funcionar, me chama:', {
-    reply_markup: tg.teclado([[tg.botaoUrl('ENTRAR NO VIP ➜', link)]]),
+  await tg.sendMessage(token, uid, await copy.txt('venda.fallback_link'), {
+    reply_markup: tg.teclado([[tg.botaoUrl(await copy.txt('btn.entrar_vip'), link)]]),
   });
 }
 

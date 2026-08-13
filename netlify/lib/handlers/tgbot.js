@@ -14,6 +14,7 @@ const st = require('../bot/state');
 const chats = require('../bot/chats');
 const previews = require('../bot/previews');
 const access = require('../bot/access');
+const copy = require('../bot/copy');
 const tg = require('../telegram');
 
 const OK = { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: '{"ok":true}' };
@@ -185,7 +186,7 @@ async function aoPedirEntrada(token, req) {
     return;
   }
   await tg.declineChatJoinRequest(token, chatId, uid);
-  await tg.sendMessage(token, uid, 'Não achei uma assinatura ativa nesse seu perfil 🤔\n\nSe você já pagou, manda /acesso que eu verifico.');
+  await tg.sendMessage(token, uid, await copy.txt('entrada.negada'));
 }
 
 /** Registra quando a pessoa de fato entrou ou saiu do grupo. */
@@ -227,12 +228,12 @@ async function aoClicar(token, cq) {
 
   if (dados === 'age:no') {
     u.state = 'blocked';
-    await tg.sendMessage(token, chatId, 'Sem problema 💛 esse conteúdo é só para maiores de 18.');
+    await tg.sendMessage(token, chatId, await copy.txt('age.negado'));
   } else if (dados === 'age:ok') {
     u.ageOkAt = Date.now();
     u.state = 'previewing';
     await st.evento('bot_age_ok', { uid: u.uid });
-    await tg.sendMessage(token, chatId, 'Boa 😏 então vem comigo…');
+    await tg.sendMessage(token, chatId, await copy.txt('age.ok'));
     await previews.enviarPrevia(token, u, 0);
   } else {
     const m = dados.match(/^p:(\d+):(\d+)$/);
@@ -242,7 +243,7 @@ async function aoClicar(token, cq) {
       const cat = await previews.getCatalogo();
       // Catálogo mudou depois que o botão foi enviado: os índices não valem mais.
       if (versao !== cat.v) {
-        await tg.sendMessage(token, chatId, 'Atualizei as prévias — segue daqui 👇');
+        await tg.sendMessage(token, chatId, await copy.txt('previas.catalogo_mudou'));
         await previews.enviarPrevia(token, u, Math.min(u.step || 0, cat.items.length));
       } else {
         await previews.enviarPrevia(token, u, idx);
@@ -286,7 +287,7 @@ async function aoReceberMensagem(token, msg) {
     const payload = texto.replace(/^\/start\s*/, '').slice(0, 64);
     await comandoStart(token, u, payload);
   } else if (/^\/suporte\b/.test(texto)) {
-    await tg.sendMessage(token, u.chatId, 'Precisa de ajuda? Me chama por aqui que eu te respondo 💬');
+    await tg.sendMessage(token, u.chatId, await copy.txt('suporte.resposta'));
   } else if (dono && String(from.id) === dono && /^\/(grupos|vincular)\b/.test(texto)) {
     await comandoDonoNoPrivado(token, u, texto);
   } else if (/^\/acesso\b/.test(texto)) {
@@ -297,7 +298,7 @@ async function aoReceberMensagem(token, msg) {
     // Já passou pelo gate: retoma de onde parou em vez de mandar recomeçar.
     await previews.enviarPrevia(token, u, u.step || 0);
   } else {
-    await tg.sendMessage(token, u.chatId, 'Manda /start que eu te mostro o que separei 😏');
+    await tg.sendMessage(token, u.chatId, await copy.txt('fallback.sem_start'));
   }
 
   await st.saveUser(u);
@@ -354,12 +355,12 @@ async function comandoDonoNoPrivado(token, u, texto) {
 async function comandoAcesso(token, u) {
   const sub = await st.getSub(u.uid);
   if (!sub || sub.status === 'removed') {
-    await tg.sendMessage(token, u.chatId, 'Não achei uma assinatura ativa nesse seu perfil 🤔\n\nSe você comprou com outro Telegram, me diga o e-mail usado na compra que eu verifico.');
+    await tg.sendMessage(token, u.chatId, await copy.txt('acesso.sem_assinatura'));
     return;
   }
   if (sub.expiresAt <= Date.now()) {
-    await tg.sendMessage(token, u.chatId, 'Seu acesso venceu 😢 mas dá pra voltar agora mesmo:', {
-      reply_markup: tg.teclado([[tg.botaoUrl('RENOVAR ➜', await previews.linkCta(u))]]),
+    await tg.sendMessage(token, u.chatId, await copy.txt('acesso.vencido'), {
+      reply_markup: tg.teclado([[tg.botaoUrl(await copy.txt('btn.renovar'), await previews.linkCta(u))]]),
     });
     return;
   }
@@ -367,7 +368,7 @@ async function comandoAcesso(token, u) {
   const hoje = st.diaDe(Date.now());
   if (u.reissueDay !== hoje) { u.reissueDay = hoje; u.reissues = 0; }
   if (u.reissues >= 3) {
-    await tg.sendMessage(token, u.chatId, 'Já te mandei o link várias vezes hoje 🙈 tenta amanhã ou me chama no /suporte.');
+    await tg.sendMessage(token, u.chatId, await copy.txt('acesso.limite_diario'));
     return;
   }
   u.reissues += 1;
@@ -375,7 +376,7 @@ async function comandoAcesso(token, u) {
   const chats2 = require('../bot/chats');
   const chatDoc = await chats2.getChat(sub.chatKey || 'vip');
   if (!chatDoc || !chatDoc.chatId) {
-    await tg.sendMessage(token, u.chatId, 'Tive um problema aqui — já avisei a equipe, me chama no /suporte 🙏');
+    await tg.sendMessage(token, u.chatId, await copy.txt('acesso.erro_interno'));
     return;
   }
 
@@ -387,23 +388,23 @@ async function comandoAcesso(token, u) {
 
   const r = await tg.createChatInviteLink(token, chatDoc.chatId, params);
   if (!r.ok) {
-    await tg.sendMessage(token, u.chatId, 'Não consegui gerar o link agora 😞 tenta de novo em alguns minutos.');
+    await tg.sendMessage(token, u.chatId, await copy.txt('acesso.erro_link'));
     return;
   }
   sub.inviteLink = r.result.invite_link;
   sub.inviteExpiresAt = Date.now() + 30 * 60 * 1000;
   await st.saveSub(sub, sub.expDay);
 
-  await tg.sendMessage(token, u.chatId, 'Aqui está 👇 vale por 30 minutos.', {
-    reply_markup: tg.teclado([[tg.botaoUrl('ENTRAR NO VIP ➜', sub.inviteLink)]]),
+  await tg.sendMessage(token, u.chatId, await copy.txt('acesso.link_ok', { minutos: 30 }), {
+    reply_markup: tg.teclado([[tg.botaoUrl(await copy.txt('btn.entrar_vip'), sub.inviteLink)]]),
   });
 }
 
 async function comandoStatus(token, u) {
   const sub = await st.getSub(u.uid);
   if (!sub || sub.status === 'removed') {
-    await tg.sendMessage(token, u.chatId, 'Você ainda não tem VIP ativo por aqui 😌', {
-      reply_markup: tg.teclado([[tg.botaoUrl('QUERO ENTRAR ➜', await previews.linkCta(u))]]),
+    await tg.sendMessage(token, u.chatId, await copy.txt('status.sem_vip'), {
+      reply_markup: tg.teclado([[tg.botaoUrl(await copy.txt('btn.quero_entrar'), await previews.linkCta(u))]]),
     });
     return;
   }
@@ -412,8 +413,8 @@ async function comandoStatus(token, u) {
   await tg.sendMessage(
     token, u.chatId,
     dias > 0
-      ? `Seu VIP está ativo ✅\n\nPlano: <b>${tg.esc(sub.plan || '-')}</b>\nVence em <b>${venc}</b> (${dias} dia${dias === 1 ? '' : 's'})`
-      : `Seu acesso venceu em <b>${venc}</b> 😢`
+      ? await copy.txt('status.ativo', { plano: sub.plan || '-', venc, dias })
+      : await copy.txt('status.vencido', { venc })
   );
 }
 
@@ -423,9 +424,9 @@ async function comandoStart(token, u, payload) {
   if (claim) {
     const r = await access.resgatarClaim(u.uid, claim[1]);
     if (r.ok) { await st.saveUser(u); return; }
-    await tg.sendMessage(token, u.chatId, r.erro === 'pedido_nao_pago'
-      ? 'Esse pagamento ainda não consta como confirmado 🤔 assim que cair, é só apertar o botão de novo.'
-      : 'Esse link de acesso não vale mais. Manda /acesso que eu verifico sua compra.');
+    await tg.sendMessage(token, u.chatId, await copy.txt(
+      r.erro === 'pedido_nao_pago' ? 'claim.nao_pago' : 'claim.invalido'
+    ));
     return;
   }
 
@@ -444,11 +445,16 @@ async function comandoStart(token, u, payload) {
     await st.evento('bot_start', { uid: u.uid, src: u.src || '' });
   }
 
-  const nome = u.first ? ', ' + tg.esc(u.first) : '';
   await tg.sendMessage(
     token,
     u.chatId,
-    `Oi${nome} 😏\n\nAntes de eu te mostrar o que separei… você é maior de 18?`,
-    { reply_markup: tg.teclado([[tg.botao('Sim, sou maior 🔥', 'age:ok'), tg.botao('Não', 'age:no')]]) }
+    // O nome é escapado pelo próprio catálogo ao aplicar a variável.
+    await copy.txt('start.saudacao', { nome: u.first ? ', ' + u.first : '' }),
+    {
+      reply_markup: tg.teclado([[
+        tg.botao(await copy.txt('btn.age_sim'), 'age:ok'),
+        tg.botao(await copy.txt('btn.age_nao'), 'age:no'),
+      ]]),
+    }
   );
 }
