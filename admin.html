@@ -518,6 +518,7 @@
 
       <div class="nav-label">Configurar</div>
       <div class="nav-item" data-view="ofertas"><svg class="ic"><use href="#ic-ticket"></use></svg> Ofertas &amp; cupons</div>
+      <div class="nav-item" data-view="bot"><svg class="ic"><use href="#ic-megaphone"></use></svg> Bot do Telegram</div>
       <div class="nav-item" data-view="integracoes"><svg class="ic"><use href="#ic-plug"></use></svg> Integrações</div>
       <div class="nav-item" data-view="config"><svg class="ic"><use href="#ic-image"></use></svg> Página &amp; Config</div>
       <div class="nav-item" data-view="recursos"><svg class="ic"><use href="#ic-layers"></use></svg> Recursos</div>
@@ -912,6 +913,40 @@
         </section>
 
         <!-- VIEW: Integrações -->
+        <!-- VIEW: Bot do Telegram -->
+        <section class="view" data-view="bot">
+          <div class="card" style="margin-bottom:14px">
+            <h2>Situação do bot <span class="hint" id="bot-papel"></span></h2>
+            <div class="cap" id="bot-resumo">carregando…</div>
+            <div id="bot-checklist"></div>
+          </div>
+
+          <div class="card" style="margin-bottom:14px">
+            <h2>Grupos e canal</h2>
+            <div class="cap">O bot se registra sozinho quando você o adiciona como administrador. Se algum aparecer como pendente, escolha para que serve.</div>
+            <div id="bot-chats"></div>
+            <div id="bot-pendentes" style="margin-top:10px"></div>
+          </div>
+
+          <div class="card" style="margin-bottom:14px">
+            <h2>Prévias <span class="hint">mande as mídias no privado do bot</span></h2>
+            <div class="cap">A ordem aqui é a ordem em que o lead recebe. A legenda aparece junto da mídia.</div>
+            <div id="bot-previas"></div>
+          </div>
+
+          <div class="card" style="margin-bottom:14px">
+            <h2>Onde as pessoas param <span class="hint">últimos 7 dias</span></h2>
+            <div class="cap">Cada degrau é uma prévia. A maior queda é onde vale mexer no gancho.</div>
+            <div id="bot-funil"></div>
+          </div>
+
+          <div class="card">
+            <h2>Assinantes do VIP</h2>
+            <div class="cap">Quem o bot colocou no grupo, com a data de vencimento. A remoção é automática.</div>
+            <div id="bot-assinantes"></div>
+          </div>
+        </section>
+
         <section class="view" data-view="integracoes">
           <div class="card" id="sec-webhooks" style="margin-bottom:14px">
             <h2>Webhooks de saída <span class="hint">avisa outros sistemas a cada venda</span></h2>

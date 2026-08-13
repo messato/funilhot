@@ -117,7 +117,7 @@
         '<td class="vc-cell"><div class="cl">Vendas</div><div class="cv">' + a.c + '</div></td>' +
         '<td class="vc-cell"><div class="cl">Valor</div><div class="cv">' + brl(a.rev) + '</div></td>' +
         '<td class="vc-cell"><div class="cl">Part.</div><div class="cv">' + share + '%</div></td></tr>';
-    }).join('') + '</tbody></table>';
+    }).join('') + '</tbody></table></div>';
   }
 
   // ---------- meta ----------
@@ -250,7 +250,7 @@
   function tableHTML(headers, rows, empty) {
     if (!rows.length) return '<div class="empty">' + empty + '</div>';
     return '<table class="data"><thead><tr>' + headers.map(function (h) { return '<th class="' + (h.num ? 'num' : '') + '">' + h.t + '</th>'; }).join('') + '</tr></thead><tbody>' +
-      rows.map(function (r) { return '<tr>' + r.map(function (c, i) { return '<td class="' + (headers[i].num ? 'num' : '') + '">' + c + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>';
+      rows.map(function (r) { return '<tr>' + r.map(function (c, i) { return '<td class="' + (headers[i].num ? 'num' : '') + '">' + c + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
   }
   function renderUtm(d) {
     $('utm').innerHTML = tableHTML(
@@ -457,6 +457,7 @@
     insights: { t: 'IA & Insights', s: 'Resumo, próximas ações e previsão', data: true },
     crescimento: { t: 'Crescimento', s: 'Links, público, prova social, depoimentos e afiliados', data: false },
     ofertas: { t: 'Ofertas & cupons', s: 'Cupons de desconto e order bump do checkout', data: false },
+    bot: { t: 'Bot do Telegram', s: 'Prévias, grupos e acesso automático ao VIP', data: false },
     integracoes: { t: 'Integrações', s: 'Webhooks e backup dos seus dados', data: false },
     config: { t: 'Página & Configurações', s: 'Sua página de vendas, preços, links e textos', data: false },
     recursos: { t: 'Recursos', s: 'Ligue e desligue funcionalidades', data: false },
@@ -479,6 +480,7 @@
     if (name === 'remarketing') renderRemarketing();
     if (name === 'crescimento') renderCrescimento();
     if (name === 'ofertas') renderOfertas();
+    if (name === 'bot') renderBot();
     if (name === 'integracoes') renderIntegracoes();
     if (name === 'config') renderPagina();
     window.scrollTo(0, 0);
@@ -1362,6 +1364,147 @@
   if ($('backup-download')) $('backup-download').addEventListener('click', function () {
     api('backup').then(function (r) { return r.blob(); }).then(function (blob) { var a = el('a'); a.href = URL.createObjectURL(blob); a.download = 'backup-funilhot.json'; a.click(); URL.revokeObjectURL(a.href); });
   });
+  /* ---------- Bot do Telegram ---------- */
+
+  function botLinha(ok, titulo, detalhe) {
+    return '<div style="display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line)">'
+      + '<span style="flex:none;font-size:15px">' + (ok ? '✅' : '⬜') + '</span>'
+      + '<div><div style="font-weight:700">' + esc(titulo) + '</div>'
+      + (detalhe ? '<div class="sub">' + esc(detalhe) + '</div>' : '') + '</div></div>';
+  }
+
+  function renderBot() {
+    var alvo = $('bot-resumo');
+    if (alvo) alvo.textContent = 'carregando…';
+
+    api('bot/panorama').then(function (r) { return r.json(); }).then(function (d) {
+      if (!d.ok) { if (alvo) alvo.textContent = 'Não consegui carregar.'; return; }
+
+      var pap = $('bot-papel');
+      if (pap) pap.textContent = d.papel === 'reserva' ? 'rodando no bot reserva' : '';
+
+      if (alvo) {
+        alvo.innerHTML = d.bot && d.bot.username
+          ? 'Bot <b>@' + esc(d.bot.username) + '</b> — '
+            + (d.bot.webhookOk ? 'recebendo mensagens' : '<b style="color:var(--bad)">sem webhook registrado</b>')
+            + (d.bot.ultimoErro ? '<br><span class="sub">último erro: ' + esc(d.bot.ultimoErro) + '</span>' : '')
+          : 'Bot não configurado.';
+      }
+
+      var falta = [];
+      var chatsOk = d.chats.filter(function (c) { return c.ok; }).length;
+      if (!d.previas) falta.push('cadastrar prévias');
+      if (!d.chats.find(function (c) { return c.chave === 'cofre' && c.ok; })) falta.push('vincular o cofre');
+      if (!d.chats.find(function (c) { return c.chave === 'vip' && c.ok; })) falta.push('vincular o grupo VIP');
+
+      var cl = $('bot-checklist');
+      if (cl) {
+        cl.innerHTML =
+          botLinha(Boolean(d.bot && d.bot.webhookOk), 'Bot no ar', d.bot && d.bot.username ? '@' + d.bot.username : '')
+          + botLinha(chatsOk >= 2, 'Grupos vinculados', chatsOk + ' de 3')
+          + botLinha(d.previas > 0, 'Prévias cadastradas', d.previas + ' no catálogo')
+          + botLinha(true, 'Assinantes ativos',
+            d.assinantes.ativos + ' ativos · ' + d.assinantes.vencendo + ' vencendo em 3 dias'
+            + (d.assinantes.semConvite ? ' · ' + d.assinantes.semConvite + ' sem convite (verificar)' : ''));
+      }
+
+      var ch = $('bot-chats');
+      if (ch) {
+        ch.innerHTML = d.chats.map(function (c) {
+          var nome = c.chave === 'cofre' ? 'Canal cofre (guarda as prévias)'
+            : c.chave === 'vip' ? 'Grupo VIP (mensal e trimestral)'
+              : 'Grupo VIP+ (plano anual)';
+          return botLinha(c.ok, nome, c.ok ? c.titulo + ' · ' + c.chatId : 'ainda não vinculado');
+        }).join('');
+      }
+
+      var pend = $('bot-pendentes');
+      if (pend) {
+        pend.innerHTML = !d.pendentes.length ? ''
+          : '<div class="sub" style="margin-bottom:6px">Detectados, aguardando você escolher:</div>'
+            + d.pendentes.map(function (p) {
+              return '<div style="display:flex;gap:8px;align-items:center;margin:5px 0">'
+                + '<span style="flex:1">' + esc(p.titulo) + ' <span class="sub">' + p.chatId + '</span></span>'
+                + '<select class="set-in" style="width:auto" data-pend="' + p.chatId + '">'
+                + '<option value="">escolher…</option><option value="vip">Grupo VIP</option>'
+                + '<option value="vip-plus">Grupo VIP+</option><option value="cofre">Canal cofre</option></select></div>';
+            }).join('');
+        pend.querySelectorAll('select[data-pend]').forEach(function (s) {
+          s.addEventListener('change', function () {
+            if (!s.value) return;
+            api('bot/vincular', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ chave: s.value, chatId: Number(s.dataset.pend) }),
+            }).then(function () { renderBot(); });
+          });
+        });
+      }
+    }).catch(function () { if (alvo) alvo.textContent = 'Não consegui carregar.'; });
+
+    api('bot/previas').then(function (r) { return r.json(); }).then(function (d) {
+      var el = $('bot-previas');
+      if (!el) return;
+      if (!d.ok || !d.items.length) {
+        el.innerHTML = '<div class="sub">Nenhuma prévia ainda. Mande as fotos ou vídeos no privado do bot que ele cadastra sozinho.</div>';
+        return;
+      }
+      el.innerHTML = d.items.map(function (it, i) {
+        return '<div style="display:flex;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)">'
+          + '<span style="flex:none;font-weight:800;opacity:.5">' + (i + 1) + '</span>'
+          + '<span class="sub" style="flex:none;text-transform:uppercase">' + esc(it.kind) + '</span>'
+          + '<input class="set-in" style="flex:1;margin:0" value="' + esc(it.caption || '') + '" data-cap="' + esc(it.id) + '" placeholder="legenda…" />'
+          + '<button class="btn-ghost" data-del="' + esc(it.id) + '">remover</button></div>';
+      }).join('');
+
+      el.querySelectorAll('input[data-cap]').forEach(function (inp) {
+        inp.addEventListener('change', function () {
+          api('bot/previas', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ acao: 'legenda', id: inp.dataset.cap, caption: inp.value }),
+          });
+        });
+      });
+      el.querySelectorAll('button[data-del]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          if (!confirm('Remover esta prévia da sequência?')) return;
+          api('bot/previas', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ acao: 'remover', id: b.dataset.del }),
+          }).then(function () { renderBot(); });
+        });
+      });
+    }).catch(function () { /* silencioso */ });
+
+    api('bot/funil?days=7').then(function (r) { return r.json(); }).then(function (d) {
+      var el = $('bot-funil');
+      if (!el || !d.ok) return;
+      var etapas = [{ n: 'Começaram', v: d.starts }, { n: 'Confirmaram 18+', v: d.idades }];
+      (d.passos || []).forEach(function (v, i) { etapas.push({ n: 'Prévia ' + (i + 1), v: v }); });
+      etapas.push({ n: 'Chegaram ao VIP', v: d.grants });
+      var max = Math.max.apply(null, etapas.map(function (e) { return e.v; }).concat([1]));
+      el.innerHTML = etapas.map(function (e) {
+        var pct = Math.round((e.v / max) * 100);
+        return '<div style="margin:7px 0">'
+          + '<div style="display:flex;justify-content:space-between;font-size:12px"><span>' + esc(e.n) + '</span><b>' + e.v + '</b></div>'
+          + '<div style="height:7px;border-radius:4px;background:var(--line);overflow:hidden">'
+          + '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--violet-2),var(--violet))"></div></div></div>';
+      }).join('');
+    }).catch(function () { /* silencioso */ });
+
+    api('bot/assinantes').then(function (r) { return r.json(); }).then(function (d) {
+      var el = $('bot-assinantes');
+      if (!el || !d.ok) return;
+      if (!d.subs.length) { el.innerHTML = '<div class="sub">Nenhum assinante ainda.</div>'; return; }
+      el.innerHTML = '<div class="table-scroll"><table class="data"><thead><tr><th>Telegram</th><th>Plano</th><th>Situação</th><th>Vence</th></tr></thead><tbody>'
+        + d.subs.map(function (s) {
+          var venc = s.expiresAt ? new Date(s.expiresAt).toLocaleDateString('pt-BR') : '-';
+          var cor = s.status === 'active' ? 'var(--good)' : s.status === 'removed' ? 'var(--bad)' : '#ffce54';
+          return '<tr><td>' + esc(s.uid) + '</td><td>' + esc(s.plan || '-') + '</td>'
+            + '<td><b style="color:' + cor + '">' + esc(s.status) + '</b></td><td>' + venc + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+    }).catch(function () { /* silencioso */ });
+  }
+
   function renderIntegracoes() { renderWebhooks(); }
 
   // ---------- Central de remarketing (WhatsApp por segmento) ----------
