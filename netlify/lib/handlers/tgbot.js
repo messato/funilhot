@@ -94,6 +94,59 @@ async function rotear(token, upd) {
   // chat_member e chat_join_request entram na fase de entrada automática.
 }
 
+/* ---------- comandos do dono dentro do grupo ---------- */
+
+// Chaves lógicas que o funil usa. 'cofre' guarda as mídias das prévias.
+const CHAVES = {
+  vip: 'grupo VIP (planos mensal e trimestral)',
+  'vip-plus': 'grupo VIP+ (plano anual)',
+  cofre: 'canal onde ficam guardadas as prévias',
+};
+
+/**
+ * Vincular pelo próprio grupo evita ter que copiar id numérico para o painel:
+ * o dono manda /vincular vip lá dentro e acabou.
+ */
+async function comandoDeGrupo(token, msg, chat) {
+  const texto = String(msg.text || '').trim();
+  const m = texto.match(/^\/vincular(?:@\w+)?\s+([a-z0-9-]+)/i);
+
+  if (/^\/id\b/.test(texto)) {
+    await tg.sendMessage(token, chat.id, `Id deste chat: <code>${chat.id}</code>`);
+    return;
+  }
+  if (!m) {
+    if (/^\/vincular/i.test(texto)) {
+      const opcoes = Object.entries(CHAVES).map(([k, d]) => `<code>/vincular ${k}</code> — ${d}`).join('\n');
+      await tg.sendMessage(token, chat.id, `Use uma destas:\n\n${opcoes}`);
+    }
+    return;
+  }
+
+  const chave = m[1].toLowerCase();
+  if (!CHAVES[chave]) {
+    await tg.sendMessage(token, chat.id, `Não conheço "${tg.esc(chave)}". Opções: ${Object.keys(CHAVES).join(', ')}`);
+    return;
+  }
+
+  // Sem permissão o vínculo passa uma falsa sensação de pronto.
+  const eu = await tg.getChatMember(token, chat.id, (await tg.getMe(token)).result.id);
+  const status = eu.ok ? eu.result.status : '';
+  if (status !== 'administrator' && status !== 'creator') {
+    await tg.sendMessage(token, chat.id, '⚠️ Preciso ser <b>administrador</b> aqui antes de vincular.');
+    return;
+  }
+
+  const modo = chave === 'cofre' ? 'invite' : 'request';
+  const doc = await chats.vincular(chave, chat.id, { title: chat.title, joinMode: modo });
+
+  const extra = chave === 'cofre'
+    ? '\n\nAgora é só me mandar as prévias no privado que eu guardo aqui.'
+    : `\n\nEntrada por aprovação: só quem tem assinatura ativa passa.`;
+  await tg.sendMessage(token, chat.id, `✅ Vinculado como <b>${chave}</b> — ${CHAVES[chave]}.${extra}`);
+  await st.evento('bot_chat_bind', { chave, chatId: String(doc.chatId) });
+}
+
 /* ---------- entrada no grupo ---------- */
 
 /**
@@ -184,11 +237,14 @@ async function aoClicar(token, cq) {
 
 async function aoReceberMensagem(token, msg) {
   const chat = msg.chat || {};
-  // Em grupo o bot não conversa: só registra (tratado em my_chat_member).
-  if (chat.type !== 'private') return;
-
   const from = msg.from || {};
   if (!from.id || from.is_bot) return;
+
+  // Em grupo/canal o bot só atende o dono, para o vínculo do grupo.
+  if (chat.type !== 'private') {
+    if (String(from.id) === cfg.donoId()) await comandoDeGrupo(token, msg, chat);
+    return;
+  }
 
   const u = await st.ensureUser(from, chat.id);
   if (!st.dentroDoLimite(u)) { await st.saveUser(u); return; }

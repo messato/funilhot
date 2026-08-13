@@ -1,0 +1,17 @@
+# Worker agendado — roda separado do site.
+# Pages Functions não executam cron; por isso esta peça existe. Ela usa o MESMO
+# namespace KV do site, então lê e escreve exatamente os mesmos dados.
+name = "onlyagatinha-cron"
+main = "src/index.js"
+compatibility_date = "2025-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[kv_namespaces]]
+binding = "funil"
+id = "cf0dee975c864b8aae38fdbaddd96db1"
+
+[triggers]
+# 09:00 BRT — avisos de vencimento, remoções e win-back.
+# 21:00 BRT — resumo diário (ressuscita o que morreu na migração do Netlify).
+# Domingo 10:00 BRT — reconciliação: reconstrói o índice de expiração.
+crons = ["0 12 * * *", "0 0 * * *", "0 13 * * SUN"]
