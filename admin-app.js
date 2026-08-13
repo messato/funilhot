@@ -1480,6 +1480,9 @@
       if (!el || !d.ok) return;
       var etapas = [{ n: 'Começaram', v: d.starts }, { n: 'Confirmaram 18+', v: d.idades }];
       (d.passos || []).forEach(function (v, i) { etapas.push({ n: 'Prévia ' + (i + 1), v: v }); });
+      // Este degrau era calculado e descartado — e é justamente o passo
+      // imediatamente anterior à venda.
+      etapas.push({ n: 'Viram o convite final', v: d.ctas || 0 });
       etapas.push({ n: 'Chegaram ao VIP', v: d.grants });
       var max = Math.max.apply(null, etapas.map(function (e) { return e.v; }).concat([1]));
       el.innerHTML = etapas.map(function (e) {

@@ -84,13 +84,22 @@ async function reordenar(ids) {
   return cat;
 }
 
+/**
+ * @returns {{ok:boolean, item?:object, erro?:string}}
+ * Valida o HTML antes de gravar: uma legenda com "<" ou "&" sozinho faz o
+ * Telegram recusar o envio, e a prévia simplesmente não chega ao lead.
+ */
 async function editarLegenda(id, caption) {
+  const texto = tg.cortar(caption || '', 900);
+  const v = tg.validarHtml(texto);
+  if (!v.ok) return { ok: false, erro: v.erro };
+
   const cat = await getCatalogo();
   const item = cat.items.find((i) => i.id === id);
-  if (!item) return null;
-  item.caption = String(caption || '').slice(0, 900);
+  if (!item) return { ok: false, erro: 'Prévia não encontrada.' };
+  item.caption = texto;
   await saveCatalogo(cat);
-  return item;
+  return { ok: true, item };
 }
 
 /* ---------- envio da sequência ---------- */

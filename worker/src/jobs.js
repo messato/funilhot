@@ -28,8 +28,13 @@ async function comTrava(nome, fn) {
   return await fn();
 }
 
+/**
+ * Troca {variavel} pelo valor, sempre escapando: o texto sai com formatação
+ * HTML, então um lead chamado "A & B" quebrava o envio e não recebia nada.
+ * As marcações do próprio template continuam valendo — só o valor é escapado.
+ */
 function aplicarVariaveis(texto, dados) {
-  return String(texto || '').replace(/\{(\w+)\}/g, (_, k) => (dados[k] == null ? '' : dados[k]));
+  return String(texto || '').replace(/\{(\w+)\}/g, (_, k) => (dados[k] == null ? '' : tg.esc(dados[k])));
 }
 
 /* ---------- avisos de vencimento ---------- */

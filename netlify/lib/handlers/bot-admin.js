@@ -115,7 +115,12 @@ exports.handler = async function (event) {
       if (post) {
         const b = corpo(event);
         if (b.acao === 'remover' && b.id) return reply(200, { ok: true, cat: await previews.removerItem(b.id) });
-        if (b.acao === 'legenda' && b.id) return reply(200, { ok: true, item: await previews.editarLegenda(b.id, b.caption) });
+        if (b.acao === 'legenda' && b.id) {
+          const r = await previews.editarLegenda(b.id, b.caption);
+          // Devolve o motivo para o painel mostrar o que consertar, em vez de
+          // gravar um texto que faria a prévia não chegar ao lead.
+          return r.ok ? reply(200, { ok: true, item: r.item }) : reply(400, { ok: false, error: r.erro });
+        }
         if (b.acao === 'ordem' && Array.isArray(b.ids)) return reply(200, { ok: true, cat: await previews.reordenar(b.ids) });
         return reply(400, { ok: false, error: 'acao_invalida' });
       }

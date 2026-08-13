@@ -30,6 +30,24 @@ function ehTerminal(desc) {
   return TERMINAIS.some((t) => d.includes(t));
 }
 
+// Recusa por formatação. Não é erro de rede nem de permissão: o texto tem HTML
+// que o Telegram não aceita (um "<" solto, um "&" cru, tag não fechada).
+// Sem tratar isso, a mensagem simplesmente não sai — e num envio em lote
+// derruba a campanha inteira, uma pessoa de cada vez.
+const RE_FORMATACAO = /can't parse entities|unsupported start tag|unclosed start tag|can't find end tag|entity/i;
+function ehErroDeFormatacao(desc) {
+  return RE_FORMATACAO.test(String(desc || ''));
+}
+
+/** Tira as tags e devolve as entidades ao texto puro. */
+function semTags(texto) {
+  return String(texto == null ? '' : texto)
+    .replace(/<[^>]*>/g, '')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&');
+}
+
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
@@ -90,14 +108,38 @@ async function call(token, method, params = {}, opts = {}) {
 
 /* ---------- mensagens ---------- */
 
-const sendMessage = (token, chatId, text, extra = {}) =>
-  call(token, 'sendMessage', { chat_id: chatId, text, parse_mode: 'HTML', ...extra });
+/**
+ * Envia texto. Se o Telegram recusar por formatação, reenvia UMA vez sem
+ * formatação: perder o negrito é muito melhor do que a pessoa não receber nada.
+ */
+async function sendMessage(token, chatId, text, extra = {}) {
+  const params = { chat_id: chatId, text, parse_mode: 'HTML', ...extra };
+  const r = await call(token, 'sendMessage', params);
+  if (r.ok || !params.parse_mode || !ehErroDeFormatacao(r.error)) return r;
+
+  console.error('texto com HTML inválido, reenviando sem formatação:', r.error);
+  const limpo = { ...params, text: semTags(params.text) };
+  delete limpo.parse_mode;
+  const r2 = await call(token, 'sendMessage', limpo);
+  return r2.ok ? { ...r2, degradado: true } : r2;
+}
 
 // copyMessage é o jeito certo de reenviar as prévias: não marca "encaminhado",
 // aceita protect_content e — o mais importante — sobrevive à troca de bot,
 // diferente do file_id, que só vale pro bot que o recebeu.
-const copyMessage = (token, chatId, fromChatId, messageId, extra = {}) =>
-  call(token, 'copyMessage', { chat_id: chatId, from_chat_id: fromChatId, message_id: messageId, ...extra });
+async function copyMessage(token, chatId, fromChatId, messageId, extra = {}) {
+  const params = { chat_id: chatId, from_chat_id: fromChatId, message_id: messageId, ...extra };
+  const r = await call(token, 'copyMessage', params);
+  if (r.ok || !params.parse_mode || !ehErroDeFormatacao(r.error)) return r;
+
+  // Mesma rede de segurança do sendMessage: uma legenda com "<" ou "&" fazia a
+  // prévia não chegar, e o lead ficava no vácuo depois de clicar "ver mais".
+  console.error('legenda com HTML inválido, reenviando sem formatação:', r.error);
+  const limpo = { ...params, caption: semTags(params.caption) };
+  delete limpo.parse_mode;
+  const r2 = await call(token, 'copyMessage', limpo);
+  return r2.ok ? { ...r2, degradado: true } : r2;
+}
 
 const editMessageReplyMarkup = (token, chatId, messageId, replyMarkup) =>
   call(token, 'editMessageReplyMarkup', {
@@ -185,6 +227,59 @@ function esc(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// Tags que o Telegram aceita em parse_mode HTML.
+const TAGS_OK = ['b', 'strong', 'i', 'em', 'u', 'ins', 's', 'strike', 'del', 'code', 'pre', 'a', 'span', 'blockquote', 'tg-spoiler'];
+
+/**
+ * Confere se um texto é HTML válido para o Telegram ANTES de gravar.
+ * Rejeitar aqui é o único momento em que a pessoa está olhando para a tela e
+ * pode consertar — depois, o erro só apareceria como mensagem não entregue.
+ * @returns {{ok:boolean, erro?:string}}
+ */
+function validarHtml(texto) {
+  const s = String(texto == null ? '' : texto);
+  const semEntidade = /&(?!(amp|lt|gt|quot|#\d+);)/;
+  const pilha = [];
+  const re = /<(\/?)([a-z0-9-]+)((?:\s[^>]*)?)>/gi;
+  let m;
+  let ultimo = 0;
+
+  while ((m = re.exec(s))) {
+    if (semEntidade.test(s.slice(ultimo, m.index))) {
+      return { ok: false, erro: 'Use &amp; no lugar de & sozinho.' };
+    }
+    ultimo = re.lastIndex;
+
+    const fechando = m[1] === '/';
+    const tag = m[2].toLowerCase();
+    if (!TAGS_OK.includes(tag)) {
+      return { ok: false, erro: `A marcação <${tag}> não é aceita. Pode usar: ${TAGS_OK.slice(0, 6).join(', ')}.` };
+    }
+    if (tag === 'a' && !fechando && !/href\s*=\s*"(https?:\/\/|tg:\/\/)/i.test(m[3])) {
+      return { ok: false, erro: 'Link precisa de href="https://…".' };
+    }
+    if (fechando) {
+      if (pilha.pop() !== tag) return { ok: false, erro: `A marcação </${tag}> fecha algo que não foi aberto.` };
+    } else {
+      pilha.push(tag);
+    }
+  }
+
+  if (semEntidade.test(s.slice(ultimo))) return { ok: false, erro: 'Use &amp; no lugar de & sozinho.' };
+  // "<" que não chegou a formar marcação nenhuma (ex.: "preço < 50").
+  if (/<(?![a-z/])/i.test(s)) return { ok: false, erro: 'Use &lt; no lugar de < sozinho.' };
+  if (pilha.length) return { ok: false, erro: `Faltou fechar <${pilha[pilha.length - 1]}>.` };
+  return { ok: true };
+}
+
+/**
+ * Corta respeitando emoji: `.slice()` cru pode partir um emoji ao meio e gerar
+ * texto inválido — e emoji em rótulo de botão aqui é regra, não exceção.
+ */
+function cortar(s, max) {
+  return Array.from(String(s == null ? '' : s)).slice(0, max).join('');
+}
+
 const botao = (text, callback_data) => ({ text, callback_data });
 const botaoUrl = (text, url) => ({ text, url });
 const teclado = (linhas) => ({ inline_keyboard: linhas.filter((l) => l && l.length) });
@@ -212,5 +307,5 @@ module.exports = {
   getChat, getChatAdministrators, getChatMember, getMe,
   setWebhook, deleteWebhook, getWebhookInfo, UPDATES,
   esc, botao, botaoUrl, teclado, enviarEmLote,
-  ehTerminal,
+  ehTerminal, ehErroDeFormatacao, semTags, validarHtml, cortar, TAGS_OK,
 };
