@@ -67,7 +67,12 @@ let pollTimer = null;
 function getUtm() {
   try {
     const u = JSON.parse(localStorage.getItem('funil_utm') || '{}');
-    return { us: u.utm_source || '', um: u.utm_medium || '', uc: u.utm_campaign || '', ref: localStorage.getItem('funil_ref') || '' };
+    return {
+      us: u.utm_source || '', um: u.utm_medium || '', uc: u.utm_campaign || '',
+      ref: localStorage.getItem('funil_ref') || '',
+      // Identifica quem veio pelo bot, para a entrega do VIP ser automática.
+      tg: localStorage.getItem('funil_tg') || '',
+    };
   } catch {
     return {};
   }

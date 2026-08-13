@@ -16,6 +16,11 @@ const DEFAULTS = {
   },
   vipLink: 'https://t.me/+LINK_DO_GRUPO_VIP',
   supportLink: 'https://t.me/suporte_agatha',
+  // @ do bot de prévias (sem o @). Alimenta o botão de resgate do acesso
+  // no obrigado.html e os links de CTA.
+  botUsername: 'agatinharuiva_bot',
+  // Dias de tolerância depois do vencimento antes do bot remover do grupo.
+  graceDays: 1,
   recoveryMsg: 'Oi {nome}! Vi que você gerou o PIX do {produto} mas não finalizou. Posso te ajudar a concluir?',
   winbackMsg: 'Oi {nome}! Seu acesso VIP expirou — voltei com uma condição especial pra você retornar. Quer ver? 🔥',
   welcomeMsg: 'Oi {nome}! Seja muito bem-vindo(a) ao VIP 🔥 Qualquer dúvida, é só me chamar por aqui.',
@@ -75,6 +80,8 @@ async function getSettings() {
     prices: Object.assign({}, DEFAULTS.prices, saved.prices || {}),
     vipLink: saved.vipLink || DEFAULTS.vipLink,
     supportLink: saved.supportLink || DEFAULTS.supportLink,
+    botUsername: saved.botUsername || DEFAULTS.botUsername,
+    graceDays: saved.graceDays == null ? DEFAULTS.graceDays : saved.graceDays,
     recoveryMsg: saved.recoveryMsg || DEFAULTS.recoveryMsg,
     winbackMsg: saved.winbackMsg || DEFAULTS.winbackMsg,
     welcomeMsg: saved.welcomeMsg || DEFAULTS.welcomeMsg,
@@ -210,6 +217,8 @@ async function saveSettings(patch) {
   }
   if ('vipLink' in patch) next.vipLink = safeUrl(patch.vipLink, DEFAULTS.vipLink);
   if ('supportLink' in patch) next.supportLink = safeUrl(patch.supportLink, DEFAULTS.supportLink);
+  if ('botUsername' in patch) next.botUsername = String(patch.botUsername || '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 40);
+  if ('graceDays' in patch) next.graceDays = Math.min(30, Math.max(0, parseInt(patch.graceDays, 10) || 0));
   if ('recoveryMsg' in patch) next.recoveryMsg = String(patch.recoveryMsg || '').slice(0, 500);
   if ('winbackMsg' in patch) next.winbackMsg = String(patch.winbackMsg || '').slice(0, 500);
   if ('welcomeMsg' in patch) next.welcomeMsg = String(patch.welcomeMsg || '').slice(0, 500);
@@ -292,6 +301,7 @@ async function incrementCouponUse(code) {
 function publicView(s) {
   const out = {
     prices: s.prices, vipLink: s.vipLink, supportLink: s.supportLink,
+    botUsername: s.botUsername,
     testimonials: s.testimonials || [],
     // Order bump é exibido no checkout (sem o preço-base sensível). Cupons NÃO vão ao público.
     orderBump: s.orderBump && s.orderBump.enabled

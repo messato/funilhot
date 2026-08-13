@@ -45,6 +45,13 @@
     if (ref) localStorage.setItem('funil_ref', ref);
   } catch (e) { /* */ }
 
+  // ?tg=TOKEN — quem chegou pelo bot do Telegram. Guardado para o servidor
+  // reconhecer o comprador e o bot entregar o acesso sozinho depois do pagamento.
+  try {
+    var tgTok = (params.get('tg') || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64);
+    if (tgTok) localStorage.setItem('funil_tg', tgTok);
+  } catch (e) { /* */ }
+
   var payload = JSON.stringify({
     page: page,
     vid: vid,

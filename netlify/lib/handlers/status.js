@@ -23,11 +23,20 @@ exports.handler = async function (event) {
 
   try {
     const s = await getStatus(id);
-    if (s.status === 'paid') {
+    const pago = s.status === 'paid';
+    let claim = '';
+    if (pago) {
       // Mesmo sem webhook configurado, o polling do comprador marca a venda como paga.
       try { await markPaid(id); } catch (error) { console.error('markPaid failed:', error.message); }
+      // Código de resgate para o botão "receber no Telegram" — só é revelado
+      // depois que o gateway confirmou o pagamento.
+      try {
+        const { getOrderLink } = require('../bot/state');
+        const vinculo = await getOrderLink(id);
+        if (vinculo && vinculo.claim && !vinculo.deliveredAt) claim = vinculo.claim;
+      } catch (error) { console.error('claim lookup failed:', error && error.message); }
     }
-    return reply(200, { ok: true, status: s.status, paid: s.status === 'paid' });
+    return reply(200, { ok: true, status: s.status, paid: pago, claim });
   } catch (error) {
     console.error('status provider error:', error && error.message);
     return reply(502, { ok: false, error: 'provider_error' });

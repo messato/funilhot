@@ -9,6 +9,8 @@ const { getSettings, findValidCoupon, applyCoupon, abVariant } = require('../set
 
 const cleanUtm = (v) => (typeof v === 'string' ? v.slice(0, 80).replace(/[<>"']/g, '') : '');
 const cleanRef = (v) => (typeof v === 'string' ? v.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 16) : '');
+// Token de quem veio pelo bot do Telegram — permite entregar o VIP sozinho.
+const cleanTg = (v) => (typeof v === 'string' ? v.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64) : '');
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 
@@ -116,6 +118,7 @@ exports.handler = async function (event) {
         utmMedium: cleanUtm(payload.um),
         utmCampaign: cleanUtm(payload.uc),
         ref: cleanRef(payload.ref),
+        tgToken: cleanTg(payload.tg),
         createdAt: now,
         paidAt: null,
       });
