@@ -87,6 +87,12 @@ async function rotear(token, upd) {
     await aoMudarMembro(upd.chat_member);
     return;
   }
+  if (upd.channel_post) {
+    // Canal não tem autor no post: quem manda é o próprio canal. A verificação
+    // de dono é feita perguntando ao Telegram se o dono é admin de lá.
+    await comandoDeGrupo(token, upd.channel_post, upd.channel_post.chat || {}, { semAutor: true });
+    return;
+  }
   if (upd.message) {
     await aoReceberMensagem(token, upd.message);
     return;
@@ -107,8 +113,20 @@ const CHAVES = {
  * Vincular pelo próprio grupo evita ter que copiar id numérico para o painel:
  * o dono manda /vincular vip lá dentro e acabou.
  */
-async function comandoDeGrupo(token, msg, chat) {
-  const texto = String(msg.text || '').trim();
+async function comandoDeGrupo(token, msg, chat, opts = {}) {
+  const texto = String(msg.text || msg.caption || '').trim();
+  if (!/^\//.test(texto)) return;
+
+  // Em canal o post não tem autor, então confirmamos a autoria perguntando ao
+  // Telegram se o dono configurado é administrador de lá.
+  if (opts.semAutor) {
+    const dono = cfg.donoId();
+    if (!dono) return;
+    const r = await tg.getChatMember(token, chat.id, dono);
+    const st2 = r.ok ? r.result.status : '';
+    if (st2 !== 'administrator' && st2 !== 'creator') return;
+  }
+
   const m = texto.match(/^\/vincular(?:@\w+)?\s+([a-z0-9-]+)/i);
 
   if (/^\/id\b/.test(texto)) {
@@ -269,6 +287,8 @@ async function aoReceberMensagem(token, msg) {
     await comandoStart(token, u, payload);
   } else if (/^\/suporte\b/.test(texto)) {
     await tg.sendMessage(token, u.chatId, 'Precisa de ajuda? Me chama por aqui que eu te respondo 💬');
+  } else if (dono && String(from.id) === dono && /^\/(grupos|vincular)\b/.test(texto)) {
+    await comandoDonoNoPrivado(token, u, texto);
   } else if (/^\/acesso\b/.test(texto)) {
     await comandoAcesso(token, u);
   } else if (/^\/status\b/.test(texto)) {
@@ -281,6 +301,53 @@ async function aoReceberMensagem(token, msg) {
   }
 
   await st.saveUser(u);
+}
+
+/**
+ * Vínculo pelo privado — alternativa a mandar comando dentro do grupo/canal.
+ *   /grupos                      lista o que já está vinculado e o que falta
+ *   /vincular <chave> <id>       vincula direto pelo id numérico
+ */
+async function comandoDonoNoPrivado(token, u, texto) {
+  const m = texto.match(/^\/vincular(?:@\w+)?\s+([a-z0-9-]+)\s+(-?\d+)/i);
+
+  if (m) {
+    const chave = m[1].toLowerCase();
+    const chatId = parseInt(m[2], 10);
+    if (!CHAVES[chave]) {
+      await tg.sendMessage(token, u.chatId, `Não conheço "${tg.esc(chave)}". Opções: ${Object.keys(CHAVES).join(', ')}`);
+      return;
+    }
+    const info = await tg.getChat(token, chatId);
+    if (!info.ok) {
+      await tg.sendMessage(token, u.chatId, `Não consegui ver esse chat: ${tg.esc(info.error)}\n\nMe adicione lá como administrador primeiro.`);
+      return;
+    }
+    const doc = await chats.vincular(chave, chatId, {
+      title: info.result.title,
+      joinMode: chave === 'cofre' ? 'invite' : 'request',
+    });
+    await tg.sendMessage(token, u.chatId, `✅ <b>${tg.esc(doc.title || chatId)}</b> vinculado como <b>${chave}</b>.`);
+    await st.evento('bot_chat_bind', { chave, chatId: String(chatId) });
+    return;
+  }
+
+  const vinculados = await chats.listarVinculados();
+  const pendentes = await chats.listarPendentes();
+  const linhas = ['<b>Grupos e canais</b>', ''];
+
+  for (const chave of Object.keys(CHAVES)) {
+    const v = vinculados.find((c) => c.chatKey === chave);
+    linhas.push(v
+      ? `✅ <b>${chave}</b> — ${tg.esc(v.title || v.chatId)}`
+      : `⬜ <b>${chave}</b> — ${CHAVES[chave]} <i>(falta vincular)</i>`);
+  }
+  if (pendentes.length) {
+    linhas.push('', '<b>Detectados, aguardando vínculo:</b>');
+    for (const p of pendentes) linhas.push(`• ${tg.esc(p.title)} — <code>${p.chatId}</code>`);
+  }
+  linhas.push('', 'Para vincular: <code>/vincular vip -100123456</code>');
+  await tg.sendMessage(token, u.chatId, linhas.join('\n'));
 }
 
 /** Segunda via do convite, com limite diário para não virar torneira de links. */

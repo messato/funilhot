@@ -155,9 +155,15 @@ const getMe = (token) => call(token, 'getMe', {}, { retries: 1 });
 
 /* ---------- webhook ---------- */
 
-// chat_member NÃO vem por padrão: sem pedir explicitamente, o bot nunca fica
-// sabendo quem entrou ou saiu do grupo.
-const UPDATES = ['message', 'callback_query', 'my_chat_member', 'chat_member', 'chat_join_request'];
+// Duas pegadinhas aqui:
+//  - chat_member não vem por padrão: sem pedir, o bot nunca sabe quem entrou
+//    ou saiu do grupo;
+//  - mensagem publicada em CANAL chega como channel_post, não como message —
+//    sem isso, comando nenhum funciona dentro de canal.
+const UPDATES = [
+  'message', 'channel_post', 'callback_query',
+  'my_chat_member', 'chat_member', 'chat_join_request',
+];
 
 const setWebhook = (token, url, secret) =>
   call(token, 'setWebhook', {
