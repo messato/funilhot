@@ -1366,18 +1366,25 @@
   });
   /* ---------- Bot do Telegram ---------- */
 
-  function botLinha(ok, titulo, detalhe) {
-    return '<div style="display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line)">'
-      + '<span style="flex:none;font-size:15px">' + (ok ? '✅' : '⬜') + '</span>'
-      + '<div><div style="font-weight:700">' + esc(titulo) + '</div>'
-      + (detalhe ? '<div class="sub">' + esc(detalhe) + '</div>' : '') + '</div></div>';
-  }
+  // Cada aba interna carrega só o que precisa: abrir a seção não dispara mais
+  // cinco requisições de uma vez.
+  var BOT_ABAS = {
+    situacao: function () { carregaPanorama(); },
+    previas: function () { carregaPrevias(); },
+    textos: function () { renderBotCopy(); },
+    numeros: function () { carregaFunil(); },
+    assinantes: function () { carregaAssinantes(); },
+  };
 
   function renderBot() {
-    var alvo = $('bot-resumo');
-    if (alvo) alvo.textContent = 'carregando…';
+    var tabs = $('bot-tabs');
+    if (tabs && !tabs.dataset.pronto) {
+      tabs.dataset.pronto = '1';
+      tabs.querySelectorAll('button').forEach(function (b) {
+        b.addEventListener('click', function () { abreAbaBot(b.dataset.bt); });
+      });
+    }
 
-    // Seletor de período do funil (o servidor aceita de 1 a 90 dias).
     var per = $('bot-periodo');
     if (per && !per.dataset.pronto) {
       per.dataset.pronto = '1';
@@ -1386,10 +1393,37 @@
           per.querySelectorAll('button').forEach(function (o) { o.classList.remove('on'); });
           b.classList.add('on');
           state.botDias = Number(b.dataset.d);
-          renderBot();
+          carregaFunil();
         });
       });
     }
+
+    abreAbaBot(state.botAba || 'situacao');
+  }
+
+  function abreAbaBot(nome) {
+    state.botAba = nome;
+    document.querySelectorAll('#bot-tabs button').forEach(function (b) {
+      b.classList.toggle('on', b.dataset.bt === nome);
+    });
+    document.querySelectorAll('.bot-pane').forEach(function (p) {
+      p.classList.toggle('on', p.dataset.bt === nome);
+    });
+    var carrega = BOT_ABAS[nome];
+    if (carrega) carrega();
+    window.scrollTo(0, 0);
+  }
+
+  function botEstado(ok, titulo, detalhe) {
+    return '<div class="bot-st"><span class="dot ' + (ok ? 'ok' : 'no') + '"></span>'
+      + '<div><div class="t">' + esc(titulo) + '</div>'
+      + (detalhe ? '<div class="sub">' + esc(detalhe) + '</div>' : '') + '</div></div>';
+  }
+
+  /* ---- aba Situação ---- */
+  function carregaPanorama() {
+    var alvo = $('bot-resumo');
+    if (alvo) alvo.textContent = 'carregando…';
 
     api('bot/panorama').then(function (r) { return r.json(); }).then(function (d) {
       if (!d.ok) { if (alvo) alvo.textContent = 'Não consegui carregar.'; return; }
@@ -1400,24 +1434,19 @@
       if (alvo) {
         alvo.innerHTML = d.bot && d.bot.username
           ? 'Bot <b>@' + esc(d.bot.username) + '</b> — '
-            + (d.bot.webhookOk ? 'recebendo mensagens' : '<b style="color:var(--bad)">sem webhook registrado</b>')
+            + (d.bot.webhookOk ? 'recebendo mensagens' : '<b style="color:#ff7a7a">sem webhook registrado</b>')
             + (d.bot.ultimoErro ? '<br><span class="sub">último erro: ' + esc(d.bot.ultimoErro) + '</span>' : '')
           : 'Bot não configurado.';
       }
 
-      var falta = [];
       var chatsOk = d.chats.filter(function (c) { return c.ok; }).length;
-      if (!d.previas) falta.push('cadastrar prévias');
-      if (!d.chats.find(function (c) { return c.chave === 'cofre' && c.ok; })) falta.push('vincular o cofre');
-      if (!d.chats.find(function (c) { return c.chave === 'vip' && c.ok; })) falta.push('vincular o grupo VIP');
-
       var cl = $('bot-checklist');
       if (cl) {
         cl.innerHTML =
-          botLinha(Boolean(d.bot && d.bot.webhookOk), 'Bot no ar', d.bot && d.bot.username ? '@' + d.bot.username : '')
-          + botLinha(chatsOk >= 2, 'Grupos vinculados', chatsOk + ' de 3')
-          + botLinha(d.previas > 0, 'Prévias cadastradas', d.previas + ' no catálogo')
-          + botLinha(true, 'Assinantes ativos',
+          botEstado(Boolean(d.bot && d.bot.webhookOk), 'Bot no ar', d.bot && d.bot.username ? '@' + d.bot.username : '')
+          + botEstado(chatsOk >= 2, 'Grupos vinculados', chatsOk + ' de 3')
+          + botEstado(d.previas > 0, 'Prévias cadastradas', d.previas + ' no catálogo')
+          + botEstado(true, 'Assinantes ativos',
             d.assinantes.ativos + ' ativos · ' + d.assinantes.vencendo + ' vencendo em 3 dias'
             + (d.assinantes.semConvite ? ' · ' + d.assinantes.semConvite + ' sem convite (verificar)' : ''));
       }
@@ -1428,18 +1457,18 @@
           var nome = c.chave === 'cofre' ? 'Canal cofre (guarda as prévias)'
             : c.chave === 'vip' ? 'Grupo VIP (mensal e trimestral)'
               : 'Grupo VIP+ (plano anual)';
-          return botLinha(c.ok, nome, c.ok ? c.titulo + ' · ' + c.chatId : 'ainda não vinculado');
+          return botEstado(c.ok, nome, c.ok ? c.titulo + ' · ' + c.chatId : 'ainda não vinculado');
         }).join('');
       }
 
       var pend = $('bot-pendentes');
       if (pend) {
         pend.innerHTML = !d.pendentes.length ? ''
-          : '<div class="sub" style="margin-bottom:6px">Detectados, aguardando você escolher:</div>'
+          : '<div class="feat-cat">Detectados, aguardando você escolher</div>'
             + d.pendentes.map(function (p) {
-              return '<div style="display:flex;gap:8px;align-items:center;margin:5px 0">'
-                + '<span style="flex:1">' + esc(p.titulo) + ' <span class="sub">' + p.chatId + '</span></span>'
-                + '<select class="set-in" style="width:auto" data-pend="' + p.chatId + '">'
+              return '<div class="bot-row"><span class="grow">' + esc(p.titulo)
+                + ' <span class="sub">' + p.chatId + '</span></span>'
+                + '<select class="set-in" style="width:auto;margin:0" data-pend="' + p.chatId + '">'
                 + '<option value="">escolher…</option><option value="vip">Grupo VIP</option>'
                 + '<option value="vip-plus">Grupo VIP+</option><option value="cofre">Canal cofre</option></select></div>';
             }).join('');
@@ -1449,36 +1478,69 @@
             api('bot/vincular', {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ chave: s.value, chatId: Number(s.dataset.pend) }),
-            }).then(function () { renderBot(); });
+            }).then(function () { carregaPanorama(); });
           });
         });
       }
     }).catch(function () { if (alvo) alvo.textContent = 'Não consegui carregar.'; });
+  }
 
-    renderBotCopy();
+  /* ---- aba Prévias ---- */
+  function carregaPrevias() {
+    var el = $('bot-previas');
+    if (!el) return;
+    el.innerHTML = '<div class="sub">carregando…</div>';
 
     api('bot/previas').then(function (r) { return r.json(); }).then(function (d) {
-      var el = $('bot-previas');
-      if (!el) return;
       if (!d.ok || !d.items.length) {
         el.innerHTML = '<div class="sub">Nenhuma prévia ainda. Mande as fotos ou vídeos no privado do bot que ele cadastra sozinho.</div>';
         return;
       }
+      var ids = d.items.map(function (i) { return i.id; });
+
       el.innerHTML = d.items.map(function (it, i) {
-        return '<div style="display:flex;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)">'
-          + '<span style="flex:none;font-weight:800;opacity:.5">' + (i + 1) + '</span>'
-          + '<span class="sub" style="flex:none;text-transform:uppercase">' + esc(it.kind) + '</span>'
-          + '<input class="set-in" style="flex:1;margin:0" value="' + esc(it.caption || '') + '" data-cap="' + esc(it.id) + '" placeholder="legenda…" />'
-          + '<button class="btn-ghost" data-del="' + esc(it.id) + '">remover</button></div>';
+        return '<div class="bot-row">'
+          + '<span class="bot-num">' + (i + 1) + '</span>'
+          + '<span class="bot-chip' + (it.kind === 'video' ? ' hls' : '') + '">' + esc(it.kind === 'photo' ? 'foto' : it.kind) + '</span>'
+          + '<span class="grow"><input class="set-in" data-cap="' + esc(it.id) + '" value="' + esc(it.caption || '') + '" placeholder="legenda (aparece junto da mídia)…" />'
+          + '<div class="copy-err" data-caperr="' + esc(it.id) + '"></div></span>'
+          + '<button class="bot-ib" data-up="' + esc(it.id) + '" title="subir"' + (i === 0 ? ' disabled' : '') + '>↑</button>'
+          + '<button class="bot-ib" data-down="' + esc(it.id) + '" title="descer"' + (i === d.items.length - 1 ? ' disabled' : '') + '>↓</button>'
+          + '<button class="bot-ib danger" data-del="' + esc(it.id) + '" title="remover">✕</button>'
+          + '</div>';
       }).join('');
 
       el.querySelectorAll('input[data-cap]').forEach(function (inp) {
         inp.addEventListener('change', function () {
+          var errEl = el.querySelector('[data-caperr="' + inp.dataset.cap + '"]');
           api('bot/previas', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ acao: 'legenda', id: inp.dataset.cap, caption: inp.value }),
+          }).then(function (r) { return r.json(); }).then(function (j) {
+            if (errEl) {
+              errEl.textContent = j.ok ? '' : (j.error || 'não salvou');
+              errEl.style.display = j.ok ? 'none' : '';
+            }
           });
         });
+      });
+
+      function mover(id, passo) {
+        var i = ids.indexOf(id);
+        var j = i + passo;
+        if (i < 0 || j < 0 || j >= ids.length) return;
+        var novo = ids.slice();
+        novo[i] = ids[j]; novo[j] = ids[i];
+        api('bot/previas', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ acao: 'ordem', ids: novo }),
+        }).then(function () { carregaPrevias(); });
+      }
+      el.querySelectorAll('button[data-up]').forEach(function (b) {
+        b.addEventListener('click', function () { mover(b.dataset.up, -1); });
+      });
+      el.querySelectorAll('button[data-down]').forEach(function (b) {
+        b.addEventListener('click', function () { mover(b.dataset.down, 1); });
       });
       el.querySelectorAll('button[data-del]').forEach(function (b) {
         b.addEventListener('click', function () {
@@ -1486,16 +1548,18 @@
           api('bot/previas', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ acao: 'remover', id: b.dataset.del }),
-          }).then(function () { renderBot(); });
+          }).then(function () { carregaPrevias(); });
         });
       });
-    }).catch(function () { /* silencioso */ });
+    }).catch(function () { el.innerHTML = '<div class="sub">Não consegui carregar.</div>'; });
+  }
 
+  /* ---- aba Números ---- */
+  function carregaFunil() {
     api('bot/funil?days=' + (state.botDias || 7)).then(function (r) { return r.json(); }).then(function (d) {
       var el = $('bot-funil');
       if (!el || !d.ok) return;
 
-      // Origem do lead — o dado sempre existiu e nunca era mostrado.
       var ori = $('bot-origens');
       if (ori) {
         var ents = Object.keys(d.origens || {}).map(function (k) { return { n: k, v: d.origens[k] }; })
@@ -1507,86 +1571,128 @@
           var NOMES = { ig: 'Instagram', tiktok: 'TikTok', x: 'X / Twitter', bio: 'Link na bio' };
           ori.innerHTML = ents.map(function (e) {
             var pct = Math.round((e.v / tot) * 100);
-            return '<div style="margin:7px 0">'
-              + '<div style="display:flex;justify-content:space-between;font-size:12px">'
+            return '<div style="margin:9px 0">'
+              + '<div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px">'
               + '<span>' + esc(NOMES[e.n] || e.n) + '</span><b>' + e.v + ' <span class="sub">(' + pct + '%)</span></b></div>'
-              + '<div style="height:7px;border-radius:4px;background:var(--line);overflow:hidden">'
-              + '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--violet-2),var(--violet))"></div></div></div>';
+              + '<div class="bot-bar"><i style="width:' + pct + '%"></i></div></div>';
           }).join('');
         }
       }
+
       var etapas = [{ n: 'Começaram', v: d.starts }, { n: 'Confirmaram 18+', v: d.idades }];
       (d.passos || []).forEach(function (v, i) { etapas.push({ n: 'Prévia ' + (i + 1), v: v }); });
-      // Este degrau era calculado e descartado — e é justamente o passo
-      // imediatamente anterior à venda.
       etapas.push({ n: 'Viram o convite final', v: d.ctas || 0 });
       etapas.push({ n: 'Chegaram ao VIP', v: d.grants });
-      var max = Math.max.apply(null, etapas.map(function (e) { return e.v; }).concat([1]));
-      el.innerHTML = etapas.map(function (e) {
-        var pct = Math.round((e.v / max) * 100);
-        return '<div style="margin:7px 0">'
-          + '<div style="display:flex;justify-content:space-between;font-size:12px"><span>' + esc(e.n) + '</span><b>' + e.v + '</b></div>'
-          + '<div style="height:7px;border-radius:4px;background:var(--line);overflow:hidden">'
-          + '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--violet-2),var(--violet))"></div></div></div>';
-      }).join('');
-    }).catch(function () { /* silencioso */ });
 
-    api('bot/assinantes').then(function (r) { return r.json(); }).then(function (d) {
-      var el = $('bot-assinantes');
-      if (!el || !d.ok) return;
-      if (!d.subs.length) { el.innerHTML = '<div class="sub">Nenhum assinante ainda.</div>'; return; }
-      el.innerHTML = '<div class="table-scroll"><table class="data"><thead><tr><th>Telegram</th><th>Plano</th><th>Situação</th><th>Vence</th></tr></thead><tbody>'
-        + d.subs.map(function (s) {
-          var venc = s.expiresAt ? new Date(s.expiresAt).toLocaleDateString('pt-BR') : '-';
-          var cor = s.status === 'active' ? 'var(--good)' : s.status === 'removed' ? 'var(--bad)' : '#ffce54';
-          return '<tr><td>' + esc(s.uid) + '</td><td>' + esc(s.plan || '-') + '</td>'
-            + '<td><b style="color:' + cor + '">' + esc(s.status) + '</b></td><td>' + venc + '</td></tr>';
-        }).join('') + '</tbody></table></div>';
+      var max = Math.max.apply(null, etapas.map(function (e) { return e.v; }).concat([1]));
+      el.innerHTML = etapas.map(function (e, i) {
+        var pct = Math.round((e.v / max) * 100);
+        var perdaAnterior = i > 0 && etapas[i - 1].v > 0
+          ? Math.round(((etapas[i - 1].v - e.v) / etapas[i - 1].v) * 100) : 0;
+        return '<div style="margin:9px 0">'
+          + '<div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px">'
+          + '<span>' + esc(e.n) + (perdaAnterior >= 40 ? ' <span class="sub" style="color:#ffce54">−' + perdaAnterior + '%</span>' : '') + '</span>'
+          + '<b>' + e.v + '</b></div>'
+          + '<div class="bot-bar"><i style="width:' + pct + '%"></i></div></div>';
+      }).join('');
     }).catch(function () { /* silencioso */ });
   }
 
-  /** Editor dos textos do bot. */
+  /* ---- aba Assinantes ---- */
+  function carregaAssinantes() {
+    var el = $('bot-assinantes');
+    if (!el) return;
+    el.innerHTML = '<div class="sub">carregando…</div>';
+
+    api('bot/assinantes').then(function (r) { return r.json(); }).then(function (d) {
+      if (!d.ok) { el.innerHTML = '<div class="sub">Não consegui carregar.</div>'; return; }
+      if (!d.subs.length) { el.innerHTML = '<div class="sub">Nenhum assinante ainda.</div>'; return; }
+
+      el.innerHTML = '<div class="table-scroll"><table class="data"><thead><tr>'
+        + '<th>Telegram</th><th>Plano</th><th>Situação</th><th>Vence</th></tr></thead><tbody>'
+        + d.subs.map(function (s) {
+          var venc = s.expiresAt ? new Date(s.expiresAt).toLocaleDateString('pt-BR') : '-';
+          var cor = s.status === 'active' ? 'var(--good)' : s.status === 'removed' ? '#ff7a7a' : '#ffce54';
+          return '<tr><td>' + esc(s.uid) + '</td><td>' + esc(s.plan || '-') + '</td>'
+            + '<td><b style="color:' + cor + '">' + esc(s.status) + '</b></td><td>' + venc + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+    }).catch(function () { el.innerHTML = '<div class="sub">Não consegui carregar.</div>'; });
+  }
+
+  /** Editor dos textos do bot, com um sub-grupo por vez. */
   function renderBotCopy() {
     var el = $('bot-copy');
     if (!el) return;
+    if (state.copyCache) { pintaCopy(state.copyCache); return; }
     el.innerHTML = '<div class="sub">carregando…</div>';
 
     api('bot/copy').then(function (r) { return r.json(); }).then(function (d) {
       if (!d.ok) { el.innerHTML = '<div class="sub">Não consegui carregar.</div>'; return; }
-
-      el.innerHTML = d.grupos.map(function (g) {
-        return '<div class="feat-cat">' + esc(g.nome) + '</div>'
-          + g.itens.map(function (it) {
-            var dica = it.vars.length ? 'pode usar ' + it.vars.map(function (v) { return '{' + v + '}'; }).join(' ') : '';
-            var campo = it.botao
-              ? '<input class="set-in" style="margin:0" data-copy="' + esc(it.chave) + '" maxlength="' + it.limite + '" placeholder="' + esc(it.padrao) + '" value="' + esc(it.valor) + '" />'
-              : '<textarea class="set-in" style="margin:0;min-height:64px" data-copy="' + esc(it.chave) + '" placeholder="' + esc(it.padrao) + '">' + esc(it.valor) + '</textarea>';
-            return '<div style="margin:10px 0" data-linha="' + esc(it.chave) + '">'
-              + '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">'
-              + '<label class="sub">' + esc(rotuloCopy(it.chave)) + (dica ? ' <span style="opacity:.7">— ' + esc(dica) + '</span>' : '') + '</label>'
-              + '<button class="link" data-testar="' + esc(it.chave) + '" style="flex:none">testar em mim</button></div>'
-              + campo
-              + '<div class="sub" data-erro="' + esc(it.chave) + '" style="color:var(--bad);display:none"></div></div>';
-          }).join('');
-      }).join('');
-
-      el.querySelectorAll('button[data-testar]').forEach(function (b) {
-        b.addEventListener('click', function () {
-          var chave = b.dataset.testar;
-          var campo = el.querySelector('[data-copy="' + chave + '"]');
-          b.textContent = 'enviando…';
-          // Manda o texto da TELA: você testa o que está vendo, mesmo sem salvar.
-          api('bot/copy-testar', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chave: chave, texto: campo ? campo.value : '' }),
-          }).then(function (r) { return r.json(); }).then(function (j) {
-            b.textContent = j.ok ? 'chegou ✓' : 'erro';
-            if (!j.ok) mostraErroCopy(chave, j.error);
-            setTimeout(function () { b.textContent = 'testar em mim'; }, 2500);
-          }).catch(function () { b.textContent = 'erro'; });
-        });
-      });
+      state.copyCache = d;
+      pintaCopy(d);
     }).catch(function () { el.innerHTML = '<div class="sub">Não consegui carregar.</div>'; });
+  }
+
+  function pintaCopy(d) {
+    var el = $('bot-copy');
+    var nav = $('copy-grupos');
+    var atual = state.copyGrupo || d.grupos[0].id;
+    if (!d.grupos.some(function (g) { return g.id === atual; })) atual = d.grupos[0].id;
+    state.copyGrupo = atual;
+
+    if (nav) {
+      nav.innerHTML = d.grupos.map(function (g) {
+        return '<button data-cg="' + esc(g.id) + '"' + (g.id === atual ? ' class="on"' : '') + '>' + esc(g.nome) + '</button>';
+      }).join('');
+      nav.querySelectorAll('button').forEach(function (b) {
+        b.addEventListener('click', function () { state.copyGrupo = b.dataset.cg; pintaCopy(d); });
+      });
+    }
+
+    var g = d.grupos.filter(function (x) { return x.id === atual; })[0];
+    el.innerHTML = g.itens.map(function (it) {
+      var dica = it.vars.length
+        ? 'pode usar ' + it.vars.map(function (v) { return '{' + v + '}'; }).join(' ')
+        : '';
+      var campo = it.botao
+        ? '<input class="set-in" data-copy="' + esc(it.chave) + '" maxlength="' + it.limite + '" placeholder="' + esc(it.padrao) + '" value="' + esc(it.valor) + '" />'
+        : '<textarea class="set-in" style="min-height:70px" data-copy="' + esc(it.chave) + '" placeholder="' + esc(it.padrao) + '">' + esc(it.valor) + '</textarea>';
+      return '<div class="copy-item" data-linha="' + esc(it.chave) + '">'
+        + '<div class="copy-head"><label>' + esc(rotuloCopy(it.chave))
+        + (dica ? ' <span class="copy-vars">— ' + esc(dica) + '</span>' : '') + '</label>'
+        + '<button class="copy-test" data-testar="' + esc(it.chave) + '">testar em mim</button></div>'
+        + campo
+        + '<div class="copy-err" data-erro="' + esc(it.chave) + '"></div></div>';
+    }).join('');
+
+    // Guarda o que a pessoa digitou ao trocar de sub-grupo, senão perderia
+    // a edição em andamento ao navegar.
+    el.querySelectorAll('[data-copy]').forEach(function (c) {
+      c.addEventListener('input', function () {
+        var alvo = null;
+        d.grupos.forEach(function (gr) {
+          gr.itens.forEach(function (i2) { if (i2.chave === c.dataset.copy) alvo = i2; });
+        });
+        if (alvo) alvo.valor = c.value;
+      });
+    });
+
+    el.querySelectorAll('button[data-testar]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var chave = b.dataset.testar;
+        var campo = el.querySelector('[data-copy="' + chave + '"]');
+        b.textContent = 'enviando…';
+        // Manda o texto da TELA: você testa o que está vendo, mesmo sem salvar.
+        api('bot/copy-testar', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chave: chave, texto: campo ? campo.value : '' }),
+        }).then(function (r) { return r.json(); }).then(function (j) {
+          b.textContent = j.ok ? 'chegou ✓' : 'erro';
+          mostraErroCopy(chave, j.ok ? '' : j.error);
+          setTimeout(function () { b.textContent = 'testar em mim'; }, 2500);
+        }).catch(function () { b.textContent = 'erro'; });
+      });
+    });
   }
 
   function mostraErroCopy(chave, msg) {
@@ -1621,7 +1727,15 @@
 
   if ($('copy-save')) {
     $('copy-save').addEventListener('click', function () {
+      // Envia TODOS os grupos, não só o visível: o que foi digitado nos outros
+      // sub-grupos fica guardado em state.copyCache pelo listener de input.
       var textos = {};
+      var cache = state.copyCache;
+      if (cache) {
+        cache.grupos.forEach(function (g) {
+          g.itens.forEach(function (it) { textos[it.chave] = it.valor || ''; });
+        });
+      }
       document.querySelectorAll('[data-copy]').forEach(function (c) {
         textos[c.dataset.copy] = c.value;
         mostraErroCopy(c.dataset.copy, '');
@@ -1635,11 +1749,21 @@
         if (j.ok) {
           st.textContent = 'salvo ✓ (vale para todo mundo em até 1 minuto)';
           setTimeout(function () { st.textContent = ''; }, 4000);
+          state.copyCache = null; // recarrega do servidor na próxima abertura
           return;
         }
         st.textContent = 'confira os campos em vermelho';
         (j.erros || []).forEach(function (e) { mostraErroCopy(e.chave, e.erro); });
-        var primeiro = document.querySelector('[data-linha="' + ((j.erros || [])[0] || {}).chave + '"]');
+        var chaveErro = ((j.erros || [])[0] || {}).chave;
+        if (chaveErro && state.copyCache) {
+          // O erro pode estar num sub-grupo que não está à vista.
+          state.copyCache.grupos.forEach(function (g) {
+            if (g.itens.some(function (i2) { return i2.chave === chaveErro; })) state.copyGrupo = g.id;
+          });
+          pintaCopy(state.copyCache);
+          (j.erros || []).forEach(function (e) { mostraErroCopy(e.chave, e.erro); });
+        }
+        var primeiro = document.querySelector('[data-linha="' + chaveErro + '"]');
         if (primeiro) primeiro.scrollIntoView({ block: 'center' });
       }).catch(function () { st.textContent = 'erro ao salvar'; });
     });

@@ -257,6 +257,61 @@
     table.data tr:last-child td { border-bottom: none; }
     table.data td.num, table.data th.num { text-align: right; font-variant-numeric: tabular-nums; }
     .table-scroll { overflow-x: auto; }
+
+    /* --- aba Bot: painéis internos --- */
+    .bot-pane { display: none; }
+    .bot-pane.on { display: block; animation: botFade .18s ease-out; }
+    @keyframes botFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .bot-pane.on { animation: none; } }
+
+    .bot-acoes { display: flex; align-items: center; gap: 10px; margin-top: 14px;
+      padding-top: 14px; border-top: 1px solid var(--line); }
+
+    /* linha de item (prévia, grupo, mensagem) */
+    .bot-row { display: flex; align-items: center; gap: 11px; padding: 11px 0;
+      border-bottom: 1px solid var(--line); }
+    .bot-row:last-child { border-bottom: none; }
+    .bot-row .grow { flex: 1; min-width: 0; }
+    .bot-num { flex: none; width: 26px; height: 26px; border-radius: 8px; display: grid;
+      place-items: center; font-size: 11.5px; font-weight: 800; color: var(--ink-2);
+      background: rgba(255,255,255,.05); border: 1px solid var(--line); }
+    .bot-chip { flex: none; font-size: 9.5px; font-weight: 800; letter-spacing: .06em;
+      text-transform: uppercase; padding: 4px 8px; border-radius: 7px; color: #fff; background: var(--grad); }
+    .bot-chip.hls { background: linear-gradient(135deg,#a385ff,#7c5cff); }
+
+    /* botão de ícone pequeno (mover, remover) */
+    .bot-ib { flex: none; width: 30px; height: 30px; border-radius: 9px; display: grid;
+      place-items: center; cursor: pointer; font-size: 13px; line-height: 1;
+      background: var(--surface); border: 1px solid var(--line); color: var(--ink-2); }
+    .bot-ib:hover { color: var(--ink); border-color: var(--line-strong); }
+    .bot-ib.danger:hover { color: #ff7a7a; border-color: #ff7a7a; }
+    .bot-ib:disabled { opacity: .3; cursor: default; }
+
+    /* estado de cada item do checklist */
+    .bot-st { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0;
+      border-bottom: 1px solid var(--line); }
+    .bot-st:last-child { border-bottom: none; }
+    .bot-st .dot { flex: none; width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; }
+    .bot-st .dot.ok { background: var(--good); box-shadow: 0 0 8px var(--good); }
+    .bot-st .dot.no { background: var(--muted); }
+    .bot-st .t { font-weight: 700; font-size: 13px; }
+
+    /* editor de texto do bot */
+    .copy-item { padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .copy-item:last-child { border-bottom: none; }
+    .copy-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 5px; }
+    .copy-head label { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+    .copy-vars { font-size: 11px; color: var(--muted); font-weight: 500; }
+    .copy-item .set-in { margin: 0; }
+    .copy-err { color: #ff7a7a; font-size: 11.5px; margin-top: 5px; display: none; }
+    .copy-test { flex: none; background: none; border: none; color: var(--violet-2);
+      font-weight: 700; font-size: 11.5px; cursor: pointer; padding: 2px 0; white-space: nowrap; }
+    .copy-test:hover { text-decoration: underline; }
+
+    /* barra de progresso reutilizável */
+    .bot-bar { height: 7px; border-radius: 5px; background: rgba(255,255,255,.06); overflow: hidden; }
+    .bot-bar > i { display: block; height: 100%; background: var(--grad); border-radius: 5px; }
+
     .sub { color: var(--muted); font-size: 11px; }
     .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; }
     .pill.paid { background: var(--good-dim); color: var(--good); }
@@ -915,59 +970,82 @@
         <!-- VIEW: Integrações -->
         <!-- VIEW: Bot do Telegram -->
         <section class="view" data-view="bot">
-          <div class="card" style="margin-bottom:14px">
-            <h2>Situação do bot <span class="hint" id="bot-papel"></span></h2>
-            <div class="cap" id="bot-resumo">carregando…</div>
-            <div id="bot-checklist"></div>
+          <div class="seg" id="bot-tabs" style="margin-bottom:16px;flex-wrap:wrap">
+            <button data-bt="situacao" class="on">Situação</button>
+            <button data-bt="previas">Prévias</button>
+            <button data-bt="textos">Textos</button>
+            <button data-bt="numeros">Números</button>
+            <button data-bt="assinantes">Assinantes</button>
           </div>
 
-          <div class="card" style="margin-bottom:14px">
-            <h2>Grupos e canal</h2>
-            <div class="cap">O bot se registra sozinho quando você o adiciona como administrador. Se algum aparecer como pendente, escolha para que serve.</div>
-            <div id="bot-chats"></div>
-            <div id="bot-pendentes" style="margin-top:10px"></div>
-          </div>
-
-          <div class="card" style="margin-bottom:14px">
-            <h2>Textos do bot <span class="hint">o que o lead lê</span></h2>
-            <div class="cap">Edite e salve — vale para todo mundo em até 1 minuto. Deixe em branco para voltar ao texto original. Use <code>&lt;b&gt;negrito&lt;/b&gt;</code> se quiser destaque.</div>
-            <div id="bot-copy"></div>
-            <div style="margin-top:12px">
-              <button class="btn-o" id="copy-save">Salvar textos</button>
-              <span id="copy-status" class="sub" style="margin-left:8px"></span>
+          <!-- ABA: Situação -->
+          <div class="bot-pane on" data-bt="situacao">
+            <div class="card" style="margin-bottom:14px">
+              <h2>Situação do bot <span class="hint" id="bot-papel"></span></h2>
+              <div class="cap" id="bot-resumo">carregando…</div>
+              <div id="bot-checklist"></div>
+            </div>
+            <div class="card">
+              <h2>Grupos e canal</h2>
+              <div class="cap">O bot se registra sozinho quando você o adiciona como administrador. Se aparecer algum pendente, escolha para que serve.</div>
+              <div id="bot-chats"></div>
+              <div id="bot-pendentes" style="margin-top:10px"></div>
             </div>
           </div>
 
-          <div class="card" style="margin-bottom:14px">
-            <h2>Prévias <span class="hint">mande as mídias no privado do bot</span></h2>
-            <div class="cap">A ordem aqui é a ordem em que o lead recebe. A legenda aparece junto da mídia.</div>
-            <div id="bot-previas"></div>
+          <!-- ABA: Prévias -->
+          <div class="bot-pane" data-bt="previas">
+            <div class="card">
+              <h2>Prévias <span class="hint">mande as mídias no privado do bot</span></h2>
+              <div class="cap">Esta é a ordem em que o lead recebe. Use as setas para reordenar; a legenda salva sozinha ao sair do campo.</div>
+              <div id="bot-previas"></div>
+            </div>
           </div>
 
-          <div class="card" style="margin-bottom:14px">
-            <h2>Onde as pessoas param
-              <span class="seg" id="bot-periodo" style="margin-left:8px;display:inline-flex">
-                <button data-d="7" class="on">7 dias</button>
-                <button data-d="30">30 dias</button>
-                <button data-d="90">90 dias</button>
-              </span>
-            </h2>
-            <div class="cap">Cada degrau é uma prévia. A maior queda é onde vale mexer no gancho.</div>
-            <div id="bot-funil"></div>
+          <!-- ABA: Textos -->
+          <div class="bot-pane" data-bt="textos">
+            <div class="card">
+              <h2>Textos do bot <span class="hint">o que o lead lê</span></h2>
+              <div class="cap">Edite e salve — vale para todo mundo em até 1 minuto. Deixe em branco para voltar ao original. Use <code>&lt;b&gt;negrito&lt;/b&gt;</code> se quiser destaque.</div>
+              <div class="seg" id="copy-grupos" style="margin-bottom:8px;flex-wrap:wrap"></div>
+              <div id="bot-copy"></div>
+              <div class="bot-acoes">
+                <button class="btn-o" id="copy-save">Salvar textos</button>
+                <span id="copy-status" class="sub"></span>
+              </div>
+            </div>
           </div>
 
-          <div class="card" style="margin-bottom:14px">
-            <h2>De onde vêm os leads <span class="hint">quem clicou no seu link</span></h2>
-            <div class="cap">Use links diferentes por rede para separar aqui: acrescente <code>?start=s_ig</code>, <code>s_tiktok</code> ou <code>s_x</code> no fim do link do bot.</div>
-            <div id="bot-origens"></div>
+          <!-- ABA: Números -->
+          <div class="bot-pane" data-bt="numeros">
+            <div class="card" style="margin-bottom:14px">
+              <h2>Onde as pessoas param
+                <span class="seg" id="bot-periodo" style="margin-left:8px">
+                  <button data-d="7" class="on">7 dias</button>
+                  <button data-d="30">30 dias</button>
+                  <button data-d="90">90 dias</button>
+                </span>
+              </h2>
+              <div class="cap">Cada degrau é uma prévia. A maior queda é onde vale mexer no gancho.</div>
+              <div id="bot-funil"></div>
+            </div>
+            <div class="card">
+              <h2>De onde vêm os leads</h2>
+              <div class="cap">Para separar por rede, use um link por origem: <code>?start=s_ig</code>, <code>s_tiktok</code> ou <code>s_x</code> no fim do link do bot.</div>
+              <div id="bot-origens"></div>
+            </div>
           </div>
 
-          <div class="card">
-            <h2>Assinantes do VIP</h2>
-            <div class="cap">Quem o bot colocou no grupo, com a data de vencimento. A remoção é automática.</div>
-            <div id="bot-assinantes"></div>
+          <!-- ABA: Assinantes -->
+          <div class="bot-pane" data-bt="assinantes">
+            <div class="card">
+              <h2>Assinantes do VIP</h2>
+              <div class="cap">Quem o bot colocou no grupo, com a data de vencimento. A remoção é automática.</div>
+              <div id="bot-assinantes"></div>
+            </div>
           </div>
         </section>
+
 
         <section class="view" data-view="integracoes">
           <div class="card" id="sec-webhooks" style="margin-bottom:14px">
