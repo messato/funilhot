@@ -12,6 +12,7 @@ const { getJSON, setJSON } = require('../store');
 const cfg = require('../bot/config');
 const st = require('../bot/state');
 const chats = require('../bot/chats');
+const previews = require('../bot/previews');
 const tg = require('../telegram');
 
 const OK = { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: '{"ok":true}' };
@@ -73,11 +74,62 @@ async function rotear(token, upd) {
     await chats.aoMigrar(upd.message.chat.id, upd.message.migrate_to_chat_id);
     return;
   }
+  if (upd.callback_query) {
+    await aoClicar(token, upd.callback_query);
+    return;
+  }
   if (upd.message) {
     await aoReceberMensagem(token, upd.message);
     return;
   }
-  // callback_query, chat_member e chat_join_request entram nas próximas fases.
+  // chat_member e chat_join_request entram na fase de entrada automática.
+}
+
+/* ---------- cliques nos botões ---------- */
+
+async function aoClicar(token, cq) {
+  const from = cq.from || {};
+  const dados = String(cq.data || '');
+  const chatId = cq.message && cq.message.chat && cq.message.chat.id;
+  if (!from.id || !chatId) return;
+
+  // Sem isso o botão fica girando para sempre no aparelho da pessoa.
+  await tg.answerCallbackQuery(token, cq.id);
+
+  const u = await st.ensureUser(from, chatId);
+  if (!st.dentroDoLimite(u)) { await st.saveUser(u); return; }
+
+  // Tira o botão já usado da mensagem anterior, para não repetir o passo.
+  if (cq.message.message_id) {
+    await tg.editMessageReplyMarkup(token, chatId, cq.message.message_id, { inline_keyboard: [] });
+  }
+
+  if (dados === 'age:no') {
+    u.state = 'blocked';
+    await tg.sendMessage(token, chatId, 'Sem problema 💛 esse conteúdo é só para maiores de 18.');
+  } else if (dados === 'age:ok') {
+    u.ageOkAt = Date.now();
+    u.state = 'previewing';
+    await st.evento('bot_age_ok', { uid: u.uid });
+    await tg.sendMessage(token, chatId, 'Boa 😏 então vem comigo…');
+    await previews.enviarPrevia(token, u, 0);
+  } else {
+    const m = dados.match(/^p:(\d+):(\d+)$/);
+    if (m) {
+      const idx = parseInt(m[1], 10);
+      const versao = parseInt(m[2], 10);
+      const cat = await previews.getCatalogo();
+      // Catálogo mudou depois que o botão foi enviado: os índices não valem mais.
+      if (versao !== cat.v) {
+        await tg.sendMessage(token, chatId, 'Atualizei as prévias — segue daqui 👇');
+        await previews.enviarPrevia(token, u, Math.min(u.step || 0, cat.items.length));
+      } else {
+        await previews.enviarPrevia(token, u, idx);
+      }
+    }
+  }
+
+  await st.saveUser(u);
 }
 
 async function aoReceberMensagem(token, msg) {
@@ -91,15 +143,31 @@ async function aoReceberMensagem(token, msg) {
   const u = await st.ensureUser(from, chat.id);
   if (!st.dentroDoLimite(u)) { await st.saveUser(u); return; }
 
+  // Mídia mandada pelo dono vira prévia no catálogo — dispensa tela de upload.
+  const dono = cfg.donoId();
+  if (dono && String(from.id) === dono && (msg.video || msg.photo || msg.animation)) {
+    const r = await previews.adicionarDoDono(token, msg);
+    await tg.sendMessage(
+      token, u.chatId,
+      r.ok ? `✅ Prévia cadastrada (agora são ${r.total}).\n\nLegenda: ${r.item.caption ? tg.esc(r.item.caption) : '<i>sem legenda — dá para editar no painel</i>'}`
+           : `❌ ${tg.esc(r.erro)}`
+    );
+    await st.saveUser(u);
+    return;
+  }
+
   const texto = String(msg.text || '').trim();
 
   if (/^\/start\b/.test(texto)) {
     const payload = texto.replace(/^\/start\s*/, '').slice(0, 64);
     await comandoStart(token, u, payload);
   } else if (/^\/suporte\b/.test(texto)) {
-    await tg.sendMessage(token, u.chatId, 'Precisa de ajuda? Me chama que eu te respondo por aqui 💬');
+    await tg.sendMessage(token, u.chatId, 'Precisa de ajuda? Me chama por aqui que eu te respondo 💬');
   } else if (/^\/(acesso|status)\b/.test(texto)) {
     await tg.sendMessage(token, u.chatId, 'Esse comando entra em breve 🙈');
+  } else if (u.ageOkAt) {
+    // Já passou pelo gate: retoma de onde parou em vez de mandar recomeçar.
+    await previews.enviarPrevia(token, u, u.step || 0);
   } else {
     await tg.sendMessage(token, u.chatId, 'Manda /start que eu te mostro o que separei 😏');
   }
