@@ -56,8 +56,11 @@ async function getBlobs() {
   return blobsStore;
 }
 
-async function setJSON(key, value) {
-  if (kv) { await kv.put(key, JSON.stringify(value)); return; }
+// `opts` repassa opções do KV (hoje só `expirationTtl`, em segundos), usado
+// pelas chaves efêmeras do bot (de-dup de update, trava do cron, claim de
+// pós-venda). Blobs e memória ignoram — lá o registro só não expira sozinho.
+async function setJSON(key, value, opts) {
+  if (kv) { await kv.put(key, JSON.stringify(value), opts || undefined); return; }
   const store = await getBlobs();
   if (store) {
     await store.setJSON(key, value);

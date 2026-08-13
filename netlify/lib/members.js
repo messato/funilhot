@@ -98,4 +98,7 @@ async function computeMembers(windowDays = 400) {
   return { members, stats, cohort, generatedAt: now };
 }
 
-module.exports = { computeMembers, planDays, PLAN_DAYS, ufFromPhone };
+// custKey é exportado para o bot indexar assinaturas pelo MESMO critério de
+// identidade do painel (e-mail, com telefone de reserva). Duplicar essa regra
+// faria a renovação de um mesmo cliente virar dois cadastros.
+module.exports = { computeMembers, planDays, PLAN_DAYS, ufFromPhone, custKey };

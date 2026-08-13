@@ -13,6 +13,7 @@ const trackFn = require('./netlify/lib/handlers/track');
 const adminFn = require('./netlify/lib/handlers/admin');
 const settingsFn = require('./netlify/lib/handlers/public-settings');
 const pulseFn = require('./netlify/lib/handlers/pulse');
+const tgbotFn = require('./netlify/lib/handlers/tgbot');
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
@@ -85,7 +86,14 @@ function createServer() {
   return http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
 
-    const route = url.pathname.startsWith('/api/admin') ? adminFn : API_ROUTES[url.pathname];
+    // Webhook do bot: /api/tg/<caminho-secreto> — o caminho é conferido aqui,
+    // igual ao que a Pages Function faz em produção.
+    const tgMatch = url.pathname.match(/^\/api\/tg\/([^/]+)$/);
+    const tgPathOk = tgMatch && process.env.TELEGRAM_WEBHOOK_PATH && tgMatch[1] === process.env.TELEGRAM_WEBHOOK_PATH;
+
+    const route = tgPathOk ? tgbotFn
+      : url.pathname.startsWith('/api/admin') ? adminFn
+        : API_ROUTES[url.pathname];
     if (route) {
       try {
         await handleApi(route, req, res, url);
