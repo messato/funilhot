@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header class="hd">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>
+      </div>
+      <div class="who">
+        <div class="t">Baixar vídeos</div>
+        <div class="s" id="host">—</div>
+      </div>
+    </div>
+    <div class="hd-btns">
+      <button class="icon-btn" id="detach" title="Abrir em janela separada (não fecha ao trocar de aba)">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+      </button>
+      <button class="icon-btn" id="reload" title="Recarregar lista">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+      </button>
+      <button class="icon-btn" id="opts" title="Opções">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="seg folder" id="seg">
+    <button class="seg-btn" id="segAsk" type="button">Escolher pasta</button>
+    <button class="seg-btn on" id="segFolder" type="button">Downloads</button>
+    <span class="seg-thumb" id="segThumb"></span>
+  </div>
+
+  <label class="folder-line" id="folderLine" for="subfolder">
+    <span class="fl-pre">Downloads /</span>
+    <input type="text" id="subfolder" placeholder="Agatha" spellcheck="false" autocomplete="off" />
+  </label>
+  <p class="hint" id="hint"></p>
+
+  <button class="analyze" id="analyze" type="button">
+    <svg class="a-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+    <span class="a-label">Analisar página</span>
+    <span class="a-note">rola e capta tudo</span>
+  </button>
+
+  <div class="manual">
+    <input type="text" id="manualUrl" placeholder="Colar link de um vídeo (.mp4, .m3u8…)" spellcheck="false" autocomplete="off" />
+    <button id="manualBtn" class="icon-btn accent" title="Baixar este link" type="button">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/></svg>
+    </button>
+  </div>
+
+  <div class="list-hd">
+    <span id="count">Procurando vídeos…</span>
+    <button id="all" class="text-btn" hidden type="button">Baixar todos</button>
+  </div>
+
+  <ul id="list"></ul>
+
+  <div id="empty" class="empty">
+    <div class="empty-ico">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v9"/><path d="m8 11 4 4 4-4"/><path d="M5 19h14"/></svg>
+    </div>
+    <p class="e-title">Nenhum vídeo por aqui ainda</p>
+    <p class="e-sub">Dê <b>play</b> no vídeo (ou role o feed) e ele aparece aqui na hora. Funciona em qualquer site.</p>
+  </div>
+
+  <footer class="ft">
+    <span>Seu acervo / conteúdo autorizado</span>
+    <button id="clear" class="text-btn muted" hidden type="button">Limpar</button>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

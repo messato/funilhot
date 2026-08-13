@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Opções — Baixador de Vídeos</title>
+  <style>
+    :root { --bg:#fff; --panel:#faf6f8; --ink:#211820; --ink2:#766470; --line:#ecdfe6; --accent:#c92765; }
+    @media (prefers-color-scheme: dark){ :root{ --bg:#171016; --panel:#1f151c; --ink:#efe6eb; --ink2:#a8929f; --line:#33232d; --accent:#ff4d8d; } }
+    body{ margin:0; background:var(--bg); color:var(--ink); font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+    .wrap{ max-width:560px; margin:0 auto; padding:40px 24px; }
+    h1{ font-size:22px; margin:0 0 4px; }
+    p.sub{ color:var(--ink2); margin:0 0 28px; }
+    .card{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 22px; margin:16px 0; }
+    label.radio{ display:flex; gap:9px; align-items:center; cursor:pointer; margin:8px 0; }
+    input[type=radio]{ accent-color:var(--accent); }
+    input[type=text]{ width:220px; padding:7px 10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); font-size:13px; margin-top:6px; }
+    code{ font-family:ui-monospace,Menlo,monospace; background:var(--bg); border:1px solid var(--line); border-radius:4px; padding:0 5px; }
+    .hint{ color:var(--ink2); font-size:12.5px; margin-top:10px; }
+    .saved{ color:var(--accent); font-weight:600; font-size:13px; opacity:0; transition:opacity .2s; }
+    .saved.show{ opacity:1; }
+    h2{ font-size:15px; margin:0 0 8px; }
+    ul{ margin:6px 0 0; padding-left:20px; color:var(--ink2); font-size:13px; }
+    li{ margin:4px 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Baixador de Vídeos</h1>
+    <p class="sub">Onde os vídeos são salvos por padrão.</p>
+
+    <div class="card">
+      <label class="radio"><input type="radio" name="mode" value="ask" id="ask" /> <span>Sempre perguntar onde salvar (janela “Salvar como”)</span></label>
+      <label class="radio"><input type="radio" name="mode" value="folder" id="folder" /> <span>Salvar direto em <code>Downloads/</code> + subpasta:</span></label>
+      <input type="text" id="subfolder" placeholder="ex.: Agatha" />
+      <p class="hint" id="hint"></p>
+      <span class="saved" id="saved">salvo ✓</span>
+    </div>
+
+    <div class="card">
+      <h2>Como funciona a escolha de pasta</h2>
+      <ul>
+        <li><strong>Perguntar onde salvar</strong>: o Chrome abre a janela do sistema e você navega até <em>qualquer</em> pasta — Desktop, um HD externo, onde quiser.</li>
+        <li><strong>Downloads + subpasta</strong>: salva sem perguntar, sempre dentro de <code>Downloads</code>. Por segurança, o Chrome não deixa extensões salvarem fora de <code>Downloads</code> sem a janela “Salvar como”.</li>
+        <li>Dá pra mudar o padrão da pasta Downloads do Chrome em <code>chrome://settings/downloads</code>.</li>
+      </ul>
+    </div>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>
