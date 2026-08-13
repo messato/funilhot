@@ -13,6 +13,7 @@ const cfg = require('../bot/config');
 const st = require('../bot/state');
 const chats = require('../bot/chats');
 const previews = require('../bot/previews');
+const access = require('../bot/access');
 const tg = require('../telegram');
 
 const OK = { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: '{"ok":true}' };
@@ -78,11 +79,60 @@ async function rotear(token, upd) {
     await aoClicar(token, upd.callback_query);
     return;
   }
+  if (upd.chat_join_request) {
+    await aoPedirEntrada(token, upd.chat_join_request);
+    return;
+  }
+  if (upd.chat_member) {
+    await aoMudarMembro(upd.chat_member);
+    return;
+  }
   if (upd.message) {
     await aoReceberMensagem(token, upd.message);
     return;
   }
   // chat_member e chat_join_request entram na fase de entrada automática.
+}
+
+/* ---------- entrada no grupo ---------- */
+
+/**
+ * Pedido de entrada (modo 'request'): só aprova quem tem assinatura em dia.
+ * É esta checagem — e não o convite de uso único — que garante que quem entra
+ * é o comprador, e não alguém que recebeu o link repassado.
+ */
+async function aoPedirEntrada(token, req) {
+  const uid = String(req.from && req.from.id);
+  const chatId = req.chat && req.chat.id;
+  if (!uid || !chatId) return;
+
+  const sub = await st.getSub(uid);
+  const emDia = sub && (sub.status === 'active' || sub.status === 'grace') && sub.expiresAt > Date.now();
+
+  if (emDia) {
+    await tg.approveChatJoinRequest(token, chatId, uid);
+    return;
+  }
+  await tg.declineChatJoinRequest(token, chatId, uid);
+  await tg.sendMessage(token, uid, 'Não achei uma assinatura ativa nesse seu perfil 🤔\n\nSe você já pagou, manda /acesso que eu verifico.');
+}
+
+/** Registra quando a pessoa de fato entrou ou saiu do grupo. */
+async function aoMudarMembro(upd) {
+  const uid = String(upd.new_chat_member && upd.new_chat_member.user && upd.new_chat_member.user.id);
+  const status = upd.new_chat_member && upd.new_chat_member.status;
+  if (!uid || !status) return;
+
+  const sub = await st.getSub(uid);
+  if (!sub) return;
+
+  if (status === 'member' && !sub.joinedAt) {
+    sub.joinedAt = Date.now();
+    await st.saveSub(sub, sub.expDay);
+  } else if (status === 'left') {
+    sub.leftAt = Date.now();
+    await st.saveSub(sub, sub.expDay);
+  }
 }
 
 /* ---------- cliques nos botões ---------- */
@@ -163,8 +213,10 @@ async function aoReceberMensagem(token, msg) {
     await comandoStart(token, u, payload);
   } else if (/^\/suporte\b/.test(texto)) {
     await tg.sendMessage(token, u.chatId, 'Precisa de ajuda? Me chama por aqui que eu te respondo 💬');
-  } else if (/^\/(acesso|status)\b/.test(texto)) {
-    await tg.sendMessage(token, u.chatId, 'Esse comando entra em breve 🙈');
+  } else if (/^\/acesso\b/.test(texto)) {
+    await comandoAcesso(token, u);
+  } else if (/^\/status\b/.test(texto)) {
+    await comandoStatus(token, u);
   } else if (u.ageOkAt) {
     // Já passou pelo gate: retoma de onde parou em vez de mandar recomeçar.
     await previews.enviarPrevia(token, u, u.step || 0);
@@ -175,9 +227,94 @@ async function aoReceberMensagem(token, msg) {
   await st.saveUser(u);
 }
 
+/** Segunda via do convite, com limite diário para não virar torneira de links. */
+async function comandoAcesso(token, u) {
+  const sub = await st.getSub(u.uid);
+  if (!sub || sub.status === 'removed') {
+    await tg.sendMessage(token, u.chatId, 'Não achei uma assinatura ativa nesse seu perfil 🤔\n\nSe você comprou com outro Telegram, me diga o e-mail usado na compra que eu verifico.');
+    return;
+  }
+  if (sub.expiresAt <= Date.now()) {
+    await tg.sendMessage(token, u.chatId, 'Seu acesso venceu 😢 mas dá pra voltar agora mesmo:', {
+      reply_markup: tg.teclado([[tg.botaoUrl('RENOVAR ➜', await previews.linkCta(u))]]),
+    });
+    return;
+  }
+
+  const hoje = st.diaDe(Date.now());
+  if (u.reissueDay !== hoje) { u.reissueDay = hoje; u.reissues = 0; }
+  if (u.reissues >= 3) {
+    await tg.sendMessage(token, u.chatId, 'Já te mandei o link várias vezes hoje 🙈 tenta amanhã ou me chama no /suporte.');
+    return;
+  }
+  u.reissues += 1;
+
+  const chats2 = require('../bot/chats');
+  const chatDoc = await chats2.getChat(sub.chatKey || 'vip');
+  if (!chatDoc || !chatDoc.chatId) {
+    await tg.sendMessage(token, u.chatId, 'Tive um problema aqui — já avisei a equipe, me chama no /suporte 🙏');
+    return;
+  }
+
+  // Invalida o link anterior antes de emitir outro.
+  if (sub.inviteLink) await tg.revokeChatInviteLink(token, chatDoc.chatId, sub.inviteLink);
+  const params = { expire_date: Math.floor((Date.now() + 30 * 60 * 1000) / 1000), name: ('2via ' + u.uid).slice(0, 32) };
+  if (chatDoc.joinMode === 'request') params.creates_join_request = true;
+  else params.member_limit = 1;
+
+  const r = await tg.createChatInviteLink(token, chatDoc.chatId, params);
+  if (!r.ok) {
+    await tg.sendMessage(token, u.chatId, 'Não consegui gerar o link agora 😞 tenta de novo em alguns minutos.');
+    return;
+  }
+  sub.inviteLink = r.result.invite_link;
+  sub.inviteExpiresAt = Date.now() + 30 * 60 * 1000;
+  await st.saveSub(sub, sub.expDay);
+
+  await tg.sendMessage(token, u.chatId, 'Aqui está 👇 vale por 30 minutos.', {
+    reply_markup: tg.teclado([[tg.botaoUrl('ENTRAR NO VIP ➜', sub.inviteLink)]]),
+  });
+}
+
+async function comandoStatus(token, u) {
+  const sub = await st.getSub(u.uid);
+  if (!sub || sub.status === 'removed') {
+    await tg.sendMessage(token, u.chatId, 'Você ainda não tem VIP ativo por aqui 😌', {
+      reply_markup: tg.teclado([[tg.botaoUrl('QUERO ENTRAR ➜', await previews.linkCta(u))]]),
+    });
+    return;
+  }
+  const venc = new Date(sub.expiresAt).toLocaleDateString('pt-BR');
+  const dias = Math.ceil((sub.expiresAt - Date.now()) / st.DIA_MS);
+  await tg.sendMessage(
+    token, u.chatId,
+    dias > 0
+      ? `Seu VIP está ativo ✅\n\nPlano: <b>${tg.esc(sub.plan || '-')}</b>\nVence em <b>${venc}</b> (${dias} dia${dias === 1 ? '' : 's'})`
+      : `Seu acesso venceu em <b>${venc}</b> 😢`
+  );
+}
+
 async function comandoStart(token, u, payload) {
+  // c_<claim>: resgate da compra de quem não passou pelo bot antes.
+  const claim = payload.match(/^c_([A-Za-z0-9_-]{6,40})$/);
+  if (claim) {
+    const r = await access.resgatarClaim(u.uid, claim[1]);
+    if (r.ok) { await st.saveUser(u); return; }
+    await tg.sendMessage(token, u.chatId, r.erro === 'pedido_nao_pago'
+      ? 'Esse pagamento ainda não consta como confirmado 🤔 assim que cair, é só apertar o botão de novo.'
+      : 'Esse link de acesso não vale mais. Manda /acesso que eu verifico sua compra.');
+    return;
+  }
+
   // s_<origem> diz de onde a pessoa veio (s_ig, s_tiktok, s_x...).
   if (/^s_[a-z0-9_-]{1,20}$/i.test(payload)) u.src = payload.slice(2).toLowerCase();
+
+  // Assinante ativo não volta pra sequência de prévias.
+  const sub = await st.getSub(u.uid);
+  if (sub && sub.status === 'active' && sub.expiresAt > Date.now()) {
+    await comandoStatus(token, u);
+    return;
+  }
 
   if (u.state === 'new') {
     u.state = 'age_gate';

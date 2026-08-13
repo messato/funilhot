@@ -118,6 +118,16 @@ async function markPaid(id) {
 
   await notifyTelegram(order);
   await fireWebhooks(order);
+
+  // Entrega do acesso pelo bot. Em try/catch como o resto do fluxo: problema
+  // no Telegram não pode invalidar uma venda já confirmada.
+  try {
+    const botAccess = require('./bot/access');
+    await botAccess.aoPagarPedido(order);
+  } catch (error) {
+    console.error('entrega pelo bot falhou:', error && error.message);
+  }
+
   return order;
 }
 

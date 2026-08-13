@@ -181,7 +181,10 @@ async function saveSub(sub, diaAnterior) {
   if (diaAnterior && diaAnterior !== sub.expDay) {
     try { await del(kExp(diaAnterior, sub.uid)); } catch { /* palpite órfão não quebra nada */ }
   }
-  if (sub.status === 'active' || sub.status === 'grace') {
+  // `pending_invite` também entra no índice: é gente que PAGOU e só não recebeu
+  // o convite (grupo não vinculado, bot sem permissão). Deixar de fora faria
+  // essas pessoas nunca serem avisadas nem vencerem — some do radar do cron.
+  if (sub.status === 'active' || sub.status === 'grace' || sub.status === 'pending_invite') {
     await setJSON(kExp(sub.expDay, sub.uid), {
       uid: sub.uid, chatKey: sub.chatKey || 'vip', expiresAt: sub.expiresAt,
     });
