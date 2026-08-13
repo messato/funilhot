@@ -935,9 +935,21 @@
           </div>
 
           <div class="card" style="margin-bottom:14px">
-            <h2>Onde as pessoas param <span class="hint">últimos 7 dias</span></h2>
+            <h2>Onde as pessoas param
+              <span class="seg" id="bot-periodo" style="margin-left:8px;display:inline-flex">
+                <button data-d="7" class="on">7 dias</button>
+                <button data-d="30">30 dias</button>
+                <button data-d="90">90 dias</button>
+              </span>
+            </h2>
             <div class="cap">Cada degrau é uma prévia. A maior queda é onde vale mexer no gancho.</div>
             <div id="bot-funil"></div>
+          </div>
+
+          <div class="card" style="margin-bottom:14px">
+            <h2>De onde vêm os leads <span class="hint">quem clicou no seu link</span></h2>
+            <div class="cap">Use links diferentes por rede para separar aqui: acrescente <code>?start=s_ig</code>, <code>s_tiktok</code> ou <code>s_x</code> no fim do link do bot.</div>
+            <div id="bot-origens"></div>
           </div>
 
           <div class="card">

@@ -218,10 +218,19 @@ async function listarAssinaturas() {
  * irreversível. A atribuição real acontece sozinha quando a pessoa clica no
  * CTA e cai na LP com utm_source=telegram.
  */
+// 60 dias, não 30: a margem entre o evento bruto e o resumo diário é o que
+// separa "dado consolidado" de "dado perdido porque o agendador ficou fora do
+// ar por uns dias".
+const EVENTO_TTL_S = 60 * 24 * 3600;
+
 async function evento(tipo, dados = {}) {
   const ts = Date.now();
   try {
-    await setJSON(`bev/${diaDe(ts)}/${ts}-${tokenAleatorio(6)}.json`, { e: tipo, ...dados, ts });
+    await setJSON(
+      `bev/${diaDe(ts)}/${ts}-${tokenAleatorio(6)}.json`,
+      { e: tipo, ...dados, ts },
+      { expirationTtl: EVENTO_TTL_S }
+    );
   } catch { /* métrica nunca derruba fluxo */ }
 }
 

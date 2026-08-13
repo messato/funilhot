@@ -1377,6 +1377,20 @@
     var alvo = $('bot-resumo');
     if (alvo) alvo.textContent = 'carregando…';
 
+    // Seletor de período do funil (o servidor aceita de 1 a 90 dias).
+    var per = $('bot-periodo');
+    if (per && !per.dataset.pronto) {
+      per.dataset.pronto = '1';
+      per.querySelectorAll('button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          per.querySelectorAll('button').forEach(function (o) { o.classList.remove('on'); });
+          b.classList.add('on');
+          state.botDias = Number(b.dataset.d);
+          renderBot();
+        });
+      });
+    }
+
     api('bot/panorama').then(function (r) { return r.json(); }).then(function (d) {
       if (!d.ok) { if (alvo) alvo.textContent = 'Não consegui carregar.'; return; }
 
@@ -1475,9 +1489,30 @@
       });
     }).catch(function () { /* silencioso */ });
 
-    api('bot/funil?days=7').then(function (r) { return r.json(); }).then(function (d) {
+    api('bot/funil?days=' + (state.botDias || 7)).then(function (r) { return r.json(); }).then(function (d) {
       var el = $('bot-funil');
       if (!el || !d.ok) return;
+
+      // Origem do lead — o dado sempre existiu e nunca era mostrado.
+      var ori = $('bot-origens');
+      if (ori) {
+        var ents = Object.keys(d.origens || {}).map(function (k) { return { n: k, v: d.origens[k] }; })
+          .sort(function (a, b) { return b.v - a.v; });
+        if (!ents.length) {
+          ori.innerHTML = '<div class="sub">Ainda sem dados no período.</div>';
+        } else {
+          var tot = ents.reduce(function (s, e) { return s + e.v; }, 0) || 1;
+          var NOMES = { ig: 'Instagram', tiktok: 'TikTok', x: 'X / Twitter', bio: 'Link na bio' };
+          ori.innerHTML = ents.map(function (e) {
+            var pct = Math.round((e.v / tot) * 100);
+            return '<div style="margin:7px 0">'
+              + '<div style="display:flex;justify-content:space-between;font-size:12px">'
+              + '<span>' + esc(NOMES[e.n] || e.n) + '</span><b>' + e.v + ' <span class="sub">(' + pct + '%)</span></b></div>'
+              + '<div style="height:7px;border-radius:4px;background:var(--line);overflow:hidden">'
+              + '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--violet-2),var(--violet))"></div></div></div>';
+          }).join('');
+        }
+      }
       var etapas = [{ n: 'Começaram', v: d.starts }, { n: 'Confirmaram 18+', v: d.idades }];
       (d.passos || []).forEach(function (v, i) { etapas.push({ n: 'Prévia ' + (i + 1), v: v }); });
       // Este degrau era calculado e descartado — e é justamente o passo

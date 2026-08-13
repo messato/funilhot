@@ -166,10 +166,19 @@ async function rodar(nome) {
   const s = await getSettings();
 
   if (nome === 'manha') {
-    return await comTrava('manha', async () => ({
-      avisos: await avisarVencimentos(token, s),
-      remocoes: await removerVencidos(token, s),
-    }));
+    return await comTrava('manha', async () => {
+      const avisos = await avisarVencimentos(token, s);
+      const remocoes = await removerVencidos(token, s);
+      // Consolida os dias fechados aqui (09h BRT, bem depois da meia-noite),
+      // para o painel nunca pagar a varredura dos eventos ao abrir a aba.
+      let consolidacao = {};
+      try {
+        consolidacao = await require('../../netlify/lib/handlers/bot-admin').consolidarDias();
+      } catch (error) {
+        consolidacao = { erroConsolidacao: error && error.message };
+      }
+      return { avisos, remocoes, ...consolidacao };
+    });
   }
   if (nome === 'resumo') return await comTrava('resumo', () => resumoDiario(token));
   if (nome === 'reconciliar') return await reconciliar();

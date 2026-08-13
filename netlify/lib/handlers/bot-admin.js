@@ -67,29 +67,96 @@ async function panorama() {
   };
 }
 
+/**
+ * Consolida os eventos de UM dia.
+ * `passos` é objeto e não lista: o gráfico é dimensionado pela quantidade atual
+ * de prévias, então uma lista de tamanho fixo desalinharia tudo silenciosamente
+ * no dia em que uma prévia fosse acrescentada ou removida.
+ */
+async function agregarDia(dia) {
+  const { listKeys, getJSON } = require('../store');
+  const agg = { v: 1, dia, starts: 0, idades: 0, ctas: 0, grants: 0, passos: {}, origens: {} };
+
+  const chaves = await listKeys(`bev/${dia}/`);
+  const evs = await Promise.all(chaves.map((k) => getJSON(k)));
+  for (const e of evs) {
+    if (!e) continue;
+    if (e.e === 'bot_start') {
+      agg.starts++;
+      // A origem já era gravada em todo /start e nunca era lida.
+      const src = e.src || '(direto)';
+      agg.origens[src] = (agg.origens[src] || 0) + 1;
+    } else if (e.e === 'bot_age_ok') agg.idades++;
+    else if (e.e === 'bot_preview' && typeof e.idx === 'number') {
+      agg.passos[e.idx] = (agg.passos[e.idx] || 0) + 1;
+    } else if (e.e === 'bot_cta_view') agg.ctas++;
+    else if (e.e === 'bot_grant') agg.grants++;
+  }
+  return agg;
+}
+
+/**
+ * Dia fechado vem do resumo gravado; se ainda não existir, calcula e grava.
+ * O dia corrente é sempre ao vivo — nunca cacheado.
+ * Mesmo desenho que o site já usa para o funil de vendas.
+ */
+async function diaAgg(dia) {
+  const { getJSON, setJSON, dayKey } = require('../store');
+  const hoje = dayKey();
+  if (dia !== hoje) {
+    const salvo = await getJSON(`rollup/bot/${dia}.json`);
+    if (salvo && salvo.v === 1) return salvo;
+  }
+  const agg = await agregarDia(dia);
+  if (dia !== hoje) await setJSON(`rollup/bot/${dia}.json`, agg);
+  return agg;
+}
+
 /** Funil das prévias: em qual passo as pessoas param de clicar. */
 async function funilPrevias(dias) {
-  const { listKeys, getJSON, dayKey } = require('../store');
+  const { dayKey } = require('../store');
   const DIA = 24 * 3600 * 1000;
   const cat = await previews.getCatalogo();
-  const passos = new Array(Math.max(cat.items.length, 1)).fill(0);
+  const total = Math.max(cat.items.length, 1);
+
+  const passos = new Array(total).fill(0);
+  const origens = {};
   let starts = 0, idades = 0, ctas = 0, grants = 0;
 
   for (let i = 0; i < dias; i++) {
-    const dia = dayKey(Date.now() - i * DIA);
-    const chaves = await listKeys(`bev/${dia}/`);
-    const evs = await Promise.all(chaves.map((k) => getJSON(k)));
-    for (const e of evs) {
-      if (!e) continue;
-      if (e.e === 'bot_start') starts++;
-      else if (e.e === 'bot_age_ok') idades++;
-      else if (e.e === 'bot_preview' && typeof e.idx === 'number' && e.idx < passos.length) passos[e.idx]++;
-      else if (e.e === 'bot_cta_view') ctas++;
-      else if (e.e === 'bot_grant') grants++;
+    const agg = await diaAgg(dayKey(Date.now() - i * DIA));
+    starts += agg.starts; idades += agg.idades; ctas += agg.ctas; grants += agg.grants;
+    for (const [idx, n] of Object.entries(agg.passos || {})) {
+      if (Number(idx) < total) passos[Number(idx)] += n;
+    }
+    for (const [src, n] of Object.entries(agg.origens || {})) {
+      origens[src] = (origens[src] || 0) + n;
     }
   }
-  return { starts, idades, passos, ctas, grants };
+  return { starts, idades, passos, ctas, grants, origens };
 }
+
+/**
+ * Consolida os dias já fechados. Chamado pelo agendador, para o painel nunca
+ * pagar a varredura. Nunca consolida o dia corrente, e não consolida ontem
+ * cedo demais: a listagem do banco é eventualmente consistente e escritas do
+ * fim da noite podem ainda não ter aparecido.
+ */
+async function consolidarDias() {
+  const { getJSON, setJSON, dayKey } = require('../store');
+  const DIA = 24 * 3600 * 1000;
+  const feitos = [];
+  for (const atras of [1, 2]) {
+    const dia = dayKey(Date.now() - atras * DIA);
+    const salvo = await getJSON(`rollup/bot/${dia}.json`);
+    if (salvo && salvo.v === 1) continue;
+    await setJSON(`rollup/bot/${dia}.json`, await agregarDia(dia));
+    feitos.push(dia);
+  }
+  return { consolidados: feitos };
+}
+
+exports.consolidarDias = consolidarDias;
 
 exports.handler = async function (event) {
   if (!process.env.ADMIN_PASSWORD) return reply(503, { ok: false, error: 'admin_not_configured' });
