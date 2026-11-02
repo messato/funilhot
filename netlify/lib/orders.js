@@ -4,6 +4,7 @@ const { setJSON, getJSON, listKeys, dayKey } = require('./store');
 const { formatBRL } = require('./catalog');
 const { isEnabled } = require('./features');
 const { incrementCouponUse, getSettings } = require('./settings');
+const utmify = require('./utmify');
 
 // Pedidos particionados por mês: orders/<yyyy-mm>/<txid>.json
 function monthOf(ts = Date.now()) {
@@ -118,6 +119,19 @@ async function markPaid(id) {
 
   await notifyTelegram(order);
   await fireWebhooks(order);
+
+  // Mesmo evento de venda real, repassado pra Utmify. No-op silencioso se
+  // UTMIFY_API_TOKEN não estiver configurado. Nunca bloqueia a venda — o
+  // resultado só fica registrado no pedido, pro painel mostrar se chegou.
+  try {
+    const resultado = await utmify.notificarVenda(order);
+    if (resultado) {
+      order.utmify = resultado;
+      await setJSON(orderKey(found.month, id), order);
+    }
+  } catch (error) {
+    console.error('utmify notify falhou:', error && error.message);
+  }
 
   // Entrega do acesso pelo bot. Em try/catch como o resto do fluxo: problema
   // no Telegram não pode invalidar uma venda já confirmada.

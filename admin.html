@@ -1055,6 +1055,18 @@
             <div style="margin-top:10px"><button class="btn-ghost" id="wh-add"><svg class="ic ic-sm"><use href="#ic-plus"></use></svg> Adicionar webhook</button>
               <button class="btn-o" id="wh-save" style="margin-left:6px">Salvar webhooks</button> <span id="wh-status" class="sub" style="margin-left:8px"></span></div>
           </div>
+          <div class="card" id="sec-utmify" style="margin-bottom:14px">
+            <h2>Utmify <span class="hint">recebe toda venda paga automaticamente</span></h2>
+            <div class="cap">Sem botão de disparo — o mesmo pagamento confirmado que aparece na tabela de Vendas é repassado sozinho pra Utmify, com o plano e a origem reais do pedido.</div>
+            <label class="sub">Credencial de API <span id="utmify-atual" class="sub"></span></label>
+            <input id="utmify-token" class="set-in" type="text" placeholder="cole um token novo pra trocar…" autocomplete="off" spellcheck="false" />
+            <div class="cap" style="margin-top:-8px">Pegue em Integrações → Credenciais de API na sua conta Utmify. Deixe em branco e salve outra coisa nesta aba que o token atual continua valendo — só um valor novo aqui o substitui.</div>
+            <div style="margin-top:10px">
+              <button class="btn-o" id="utmify-save">Salvar token</button>
+              <button class="btn-ghost" id="utmify-test" style="margin-left:6px">Testar conexão</button>
+              <span id="utmify-status" class="sub" style="margin-left:8px"></span>
+            </div>
+          </div>
           <div class="card" id="sec-backup">
             <h2>Backup total <span class="hint">baixe todos os seus dados</span></h2>
             <div class="cap">Exporta pedidos, eventos, métricas e configurações num único arquivo JSON. Guarde em local seguro — contém dados de clientes.</div>

@@ -58,6 +58,11 @@ const DEFAULTS = {
   abTest: { enabled: false, plan: 'mensal', priceB: 0 },
   // Webhooks de saída: disparados a cada venda paga. Interno.
   webhooks: [],
+  // Credencial de API da Utmify (Integrações -> Credenciais de API na conta
+  // dela). Editável no painel de propósito — token de terceiro que ela troca
+  // por conta própria, sem precisar de deploy. Nunca volta em texto puro pro
+  // navegador (ver maskUtmifyToken) nem entra no backup sem máscara.
+  utmifyToken: '',
 };
 
 // Variante A/B determinística a partir do vid do visitante (mesma no cliente e no servidor).
@@ -100,7 +105,29 @@ async function getSettings() {
   if (!Array.isArray(out.quiz.options)) out.quiz.options = [];
   out.abTest = Object.assign({}, DEFAULTS.abTest, saved.abTest || {});
   out.webhooks = Array.isArray(saved.webhooks) ? saved.webhooks : DEFAULTS.webhooks;
+  out.utmifyToken = saved.utmifyToken || DEFAULTS.utmifyToken;
   return out;
+}
+
+// Zero-width que vem junto ao copiar de WhatsApp/Notion/PDF e faz a chamada
+// falhar sem explicação — mesmo detalhe que o utmify-disparo já documentou.
+function limparToken(v) {
+  return String(v || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+}
+
+// Campo vazio no salvamento NUNCA apaga o token atual — só um valor novo
+// sobrescreve. É o que torna seguro deixar o campo do painel sempre em branco.
+function cleanUtmifyToken(v, atual) {
+  const limpo = limparToken(v);
+  return limpo ? limpo.slice(0, 200) : (atual || '');
+}
+
+// Pro painel mostrar "token salvo" sem o token voltar em texto puro pro
+// navegador a cada carregamento da aba.
+function maskUtmifyToken(token) {
+  const t = String(token || '');
+  if (!t) return '';
+  return t.length <= 4 ? '••••' : '•'.repeat(t.length - 4) + t.slice(-4);
 }
 
 function cleanWebhooks(arr) {
@@ -272,6 +299,9 @@ async function saveSettings(patch) {
     const wh = cleanWebhooks(patch.webhooks);
     if (wh) next.webhooks = wh;
   }
+  if ('utmifyToken' in patch) {
+    next.utmifyToken = cleanUtmifyToken(patch.utmifyToken, cur.utmifyToken);
+  }
 
   await setJSON('config/settings.json', next);
   return getSettings();
@@ -337,4 +367,4 @@ function applyCoupon(amount, coupon) {
   return { amount: amount - discount, discount };
 }
 
-module.exports = { DEFAULTS, getSettings, saveSettings, publicView, bumpMedia, findValidCoupon, applyCoupon, incrementCouponUse, abVariant };
+module.exports = { DEFAULTS, getSettings, saveSettings, publicView, bumpMedia, findValidCoupon, applyCoupon, incrementCouponUse, abVariant, maskUtmifyToken };

@@ -306,10 +306,13 @@
       return true;
     }).slice(0, 60);
     $('orders').innerHTML = tableHTML(
-      [{ t: 'Quando' }, { t: 'Cliente' }, { t: 'Produto' }, { t: 'Origem' }, { t: 'Valor', num: 1 }, { t: 'Status' }],
+      [{ t: 'Quando' }, { t: 'Cliente' }, { t: 'Produto' }, { t: 'Origem' }, { t: 'Valor', num: 1 }, { t: 'Status' }, { t: 'Utmify' }],
       rows.map(function (o) {
         var pill = o.status === 'paid' ? '<span class="pill paid"><span class="pd"></span>PAGO</span>' : '<span class="pill pending"><span class="pd"></span>PENDENTE</span>';
-        return [fmtDH(o.createdAt), esc(o.nome) + '<div class="sub">' + esc(maskEmail(o.email)) + '</div>', esc(o.label), esc(o.utmSource || '—'), o.price, pill];
+        var uk = !o.utmify ? '<span class="sub">—</span>'
+          : o.utmify.ok ? '<span class="sub" style="color:#4ecfa2" title="enviado às ' + fmtDH(o.utmify.enviadoEm) + '">✓ enviado</span>'
+          : '<span class="sub" style="color:#f0736f" title="' + esc(o.utmify.erro || '') + '">✗ falhou</span>';
+        return [fmtDH(o.createdAt), esc(o.nome) + '<div class="sub">' + esc(maskEmail(o.email)) + '</div>', esc(o.label), esc(o.utmSource || '—'), o.price, pill, uk];
       }),
       'Nenhum pedido no período.'
     );
@@ -1364,6 +1367,33 @@
   if ($('backup-download')) $('backup-download').addEventListener('click', function () {
     api('backup').then(function (r) { return r.blob(); }).then(function (blob) { var a = el('a'); a.href = URL.createObjectURL(blob); a.download = 'backup-funilhot.json'; a.click(); URL.revokeObjectURL(a.href); });
   });
+  // Campo vazio no salvamento não apaga o token atual — só um valor novo troca.
+  if ($('utmify-save')) $('utmify-save').addEventListener('click', function () {
+    var campo = $('utmify-token');
+    var st = $('utmify-status');
+    var novo = (campo.value || '').trim();
+    if (!novo) { st.textContent = 'digite um token novo pra salvar'; return; }
+    st.textContent = 'salvando…';
+    api('settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ utmifyToken: novo }) })
+      .then(function (r) { return r.json(); }).then(function (j) {
+        if (!j.ok) { st.textContent = 'erro ao salvar'; return; }
+        state.settings = j.settings;
+        campo.value = ''; // nunca deixa o token digitado visível depois de salvar
+        renderUtmifyStatus();
+        st.textContent = '✅ token salvo';
+        setTimeout(function () { st.textContent = ''; }, 3000);
+      }).catch(function () { st.textContent = 'erro ao salvar'; });
+  });
+  // Só confirma que o token alcança a API — não cria nenhum pedido de teste.
+  if ($('utmify-test')) $('utmify-test').addEventListener('click', function () {
+    var st = $('utmify-status'); st.textContent = 'testando…';
+    api('utmify-testar', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (j) {
+      st.textContent = j.motivo === 'token_valido' ? '✅ conectado — token válido'
+        : j.motivo === 'sem_token' ? '⚪ UTMIFY_API_TOKEN não configurado'
+        : j.motivo === 'token_invalido' ? '❌ token recusado pela Utmify'
+        : '❌ resposta inesperada — confira o token';
+    }).catch(function () { st.textContent = 'erro ao testar'; });
+  });
   /* ---------- Bot do Telegram ---------- */
 
   // Cada aba interna carrega só o que precisa: abrir a seção não dispara mais
@@ -1769,7 +1799,13 @@
     });
   }
 
-  function renderIntegracoes() { renderWebhooks(); }
+  function renderIntegracoes() { renderWebhooks(); renderUtmifyStatus(); }
+
+  function renderUtmifyStatus() {
+    var el = $('utmify-atual'); if (!el || !state.settings) return;
+    var mascarado = state.settings.utmifyToken || '';
+    el.textContent = mascarado ? '— salvo: ' + mascarado : '— nenhum token salvo ainda';
+  }
 
   // ---------- Central de remarketing (WhatsApp por segmento) ----------
   var REM_TPL = { abandonado: 'recoveryMsg', vencendo: 'expiringMsg', expirado: 'winbackMsg', novo: 'welcomeMsg' };

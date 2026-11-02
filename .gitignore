@@ -13,3 +13,4 @@ npm-debug.log*
 dist/
 .dev.vars
 .wrangler/
+tools/baixador/downloads/

@@ -8,7 +8,7 @@ const { formatBRL } = require('../catalog');
 const { rateLimit, clientIp } = require('../ratelimit');
 const { summary, setSpend, setGoal, DAY_MS } = require('../metrics');
 const { FEATURES, getFlags, setFlag } = require('../features');
-const { getSettings, saveSettings } = require('../settings');
+const { getSettings, saveSettings, maskUtmifyToken } = require('../settings');
 const { computeMembers, ufFromPhone } = require('../members');
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
@@ -91,12 +91,16 @@ exports.handler = async function (event) {
     }
 
     if (route === 'settings') {
+      // O token da Utmify nunca volta em texto puro pro navegador — só o
+      // preview mascarado (últimos 4 caracteres), tanto ao carregar a aba
+      // quanto logo depois de salvar um token novo.
+      const mascarar = (s) => ({ ...s, utmifyToken: maskUtmifyToken(s.utmifyToken) });
       if (event.httpMethod === 'POST') {
         let body = {};
         try { body = JSON.parse(event.body || '{}'); } catch { /* ignore */ }
-        return reply(200, { ok: true, settings: await saveSettings(body) });
+        return reply(200, { ok: true, settings: mascarar(await saveSettings(body)) });
       }
-      return reply(200, { ok: true, settings: await getSettings() });
+      return reply(200, { ok: true, settings: mascarar(await getSettings()) });
     }
 
     if (route === 'members') {
@@ -223,6 +227,14 @@ exports.handler = async function (event) {
         const keys = await listKeys(p);
         for (const k of keys) data[k] = await getJSON(k);
       }
+      // O backup é um arquivo baixado e guardado por conta própria — credencial
+      // de API de terceiro não pode sair em texto puro dentro dele.
+      if (data['config/settings.json'] && data['config/settings.json'].utmifyToken) {
+        data['config/settings.json'] = {
+          ...data['config/settings.json'],
+          utmifyToken: maskUtmifyToken(data['config/settings.json'].utmifyToken),
+        };
+      }
       return reply(200, JSON.stringify({ exportedAt: Date.now(), data }), {
         'Content-Type': 'application/json; charset=utf-8',
         'Content-Disposition': `attachment; filename="backup-funilhot-${dayKey()}.json"`,
@@ -244,6 +256,13 @@ exports.handler = async function (event) {
       } catch (e) {
         return reply(200, { ok: false, error: 'falha_ao_enviar' });
       }
+    }
+
+    // Testa se o token da Utmify alcança a API SEM criar nenhum pedido —
+    // manda um corpo que falha o schema de propósito; ver netlify/lib/utmify.js.
+    if (route === 'utmify-testar' && event.httpMethod === 'POST') {
+      const r = await require('../utmify').testarConexao();
+      return reply(200, { ok: true, ...r });
     }
 
     // Definir meta do mês
